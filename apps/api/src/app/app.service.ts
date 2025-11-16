@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { Security } from '@dividends/shared';
 
 @Injectable()
 export class AppService {
-  getData(): { message: string } {
-    return { message: 'Hello API' };
+  getData(): Security {
+    return { id: '1', name: 'Example Security', ticker: 'EXM' };
   }
 }
