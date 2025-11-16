@@ -50,6 +50,10 @@
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
+      "dependsOn": ["api:serve"],
+      "options": {
+        "proxyConfig": "apps/dividends/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "dividends:build:production"
