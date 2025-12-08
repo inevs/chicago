@@ -1,46 +1,183 @@
 # Dividends
 
+A full-stack application for tracking dividends built with NestJS, Angular, and PostgreSQL in an Nx monorepo.
+
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Architecture
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+This monorepo contains:
 
-## Generate a library
+- **Backend API** (`apps/api`) - NestJS application with Prisma ORM
+- **Frontend** (`apps/dividends`) - Angular 20 standalone application
+- **Shared Library** (`packages/shared`) - Shared code between frontend and backend
+- **E2E Tests** (`apps/api-e2e`) - End-to-end tests for the API
+
+## Prerequisites
+
+- Node.js (LTS version recommended)
+- PostgreSQL database
+- npm or yarn
+
+## Getting Started
+
+### 1. Install dependencies
 
 ```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+npm install
 ```
 
-## Run tasks
+### 2. Set up environment variables
 
-To build the library use:
+Create a `.env` file in the root directory:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/dividends?schema=public"
+PORT=3000
+```
+
+### 3. Set up the database
 
 ```sh
-npx nx build pkg1
+# Generate Prisma Client
+npm run db:generate
+
+# Run migrations
+npm run db:migrate
+
+# (Optional) Seed the database
+npm run db:seed
 ```
 
-To run any task with Nx use:
+### 4. Start the application
 
 ```sh
-npx nx <target> <project-name>
+# Start both API and frontend (recommended)
+nx serve dividends
+
+# Or start only the API
+nx serve api
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+The API will be available at `http://localhost:3000/api` and the frontend at `http://localhost:4200`.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Development Commands
 
-## Versioning and releasing
+### Running Applications
 
-To version and release the library use
+```sh
+# Serve the full stack (starts API + Angular dev server)
+nx serve dividends
+
+# Serve only the API
+nx serve api
+```
+
+### Building
+
+```sh
+# Build a specific project
+nx build api
+nx build dividends
+
+# Build all projects
+nx run-many -t build
+```
+
+### Testing
+
+```sh
+# Run tests for a specific project
+nx test api
+nx test dividends
+nx test shared
+
+# Run tests for all projects
+nx run-many -t test
+```
+
+### Linting
+
+```sh
+# Lint a specific project
+nx lint api
+nx lint dividends
+
+# Lint all projects
+nx run-many -t lint
+```
+
+## Database Commands
+
+### Core Operations
+
+```sh
+# Generate Prisma Client (run after schema changes)
+npm run db:generate
+
+# Push schema changes to database (prototyping)
+npm run db:push
+
+# Open Prisma Studio to view/edit data
+npm run db:studio
+```
+
+### Migrations
+
+```sh
+# Create and apply a new migration (development)
+npm run db:migrate
+
+# Create migration without applying
+npm run db:migrate:create
+
+# Apply pending migrations (production)
+npm run db:migrate:deploy
+
+# Check migration status
+npm run db:migrate:status
+
+# Reset database and reapply all migrations
+npm run db:migrate:reset
+```
+
+### Utilities
+
+```sh
+# Seed the database
+npm run db:seed
+
+# Reset database without seeds
+npm run db:reset
+
+# Format Prisma schema
+npm run db:format
+
+# Validate Prisma schema
+npm run db:validate
+```
+
+## Project Structure
 
 ```
-npx nx release
+dividends/
+├── apps/
+│   ├── api/              # NestJS backend
+│   │   ├── src/
+│   │   └── prisma/       # Database schema and migrations
+│   ├── api-e2e/          # API E2E tests
+│   └── dividends/        # Angular frontend
+├── packages/
+│   └── shared/           # Shared library (@dividends/shared)
+└── package.json
 ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+## Visualizing Dependencies
 
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```sh
+# Open interactive project graph
+nx graph
+```
 
 ## Set up CI!
 
