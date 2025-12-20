@@ -4,14 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Architecture
 
-This is an **Nx monorepo** containing a full-stack application with:
+This is an **Nx monorepo** containing a full-stack dividends tracking application with:
 
-- **Backend API** (`apps/api`): NestJS application built with Webpack
+- **Backend API** (`apps/api`): NestJS application with Prisma ORM for PostgreSQL
 - **Frontend** (`apps/dividends`): Angular 20 standalone application
 - **Shared Library** (`packages/shared`): Common code shared between frontend and backend
 - **E2E Tests** (`apps/api-e2e`): End-to-end tests for the API
 
 ### Key Architectural Details
+
+**Database**: Uses PostgreSQL with Prisma ORM v7. The Prisma schema is located at `apps/api/prisma/schema.prisma` with a custom output directory for the generated client (`apps/api/generated/prisma`). A Docker Compose file provides a local PostgreSQL instance.
 
 **Monorepo Path Aliases**: The shared library is accessible via the path alias `@dividends/shared` (defined in `tsconfig.base.json`). Both the API and Angular app can import from this shared package.
 
@@ -37,6 +39,69 @@ nx serve api
 # Build for production
 nx build api
 nx build dividends
+```
+
+### Database Commands
+
+The project uses Prisma for database management. Both npm scripts (for convenience) and Nx targets are available:
+
+```bash
+# Generate Prisma Client (run after schema changes)
+npm run db:generate
+# or
+nx run api:prisma-generate
+
+# Push schema changes to database (prototyping)
+npm run db:push
+# or
+nx run api:prisma-push
+
+# Create and apply migration (development)
+npm run db:migrate
+# or
+nx run api:prisma-migrate
+
+# Create migration without applying
+npm run db:migrate:create
+
+# Apply pending migrations (production)
+npm run db:migrate:deploy
+
+# Check migration status
+npm run db:migrate:status
+
+# Open Prisma Studio to view/edit data
+npm run db:studio
+# or
+nx run api:prisma-studio
+
+# Seed the database
+npm run db:seed
+
+# Reset database (reapply all migrations)
+npm run db:migrate:reset
+
+# Reset database without seeds
+npm run db:reset
+
+# Format Prisma schema
+npm run db:format
+
+# Validate Prisma schema
+npm run db:validate
+```
+
+### Docker Database
+
+```bash
+# Start PostgreSQL database
+docker compose up -d
+
+# Stop database
+docker compose down
+
+# Stop and remove volumes
+docker compose down -v
 ```
 
 ### Testing
@@ -109,6 +174,9 @@ nx graph
 - Default port: `3000` (configurable via `PORT` environment variable)
 - Build output: `dist/apps/api`
 - Uses TypeScript compilation via Webpack with the Nx App plugin
+- **Prisma Configuration**: Schema at `apps/api/prisma/schema.prisma`, generated client at `apps/api/generated/prisma`
+- **Environment**: Copy `apps/api/.env.example` to `apps/api/.env` and configure `DATABASE_URL`
+- The API build uses a custom build command (`webpack-cli build`) instead of the standard Nx webpack executor
 
 ### Dividends (Angular)
 
@@ -118,12 +186,19 @@ nx graph
 - Entry point: `apps/dividends/src/main.ts`
 - Build output: `dist/apps/dividends`
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle
+- Proxies `/api` requests to `http://localhost:3000` via `proxy.conf.json`
 
 ### Shared Package
 
 - Location: `packages/shared`
 - Import path: `@dividends/shared`
 - Used by both API and frontend for shared types, utilities, etc.
+
+## Environment Setup
+
+1. **Node Version**: This project uses Node.js v25.2.1 (specified in `.nvmrc`)
+2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d`)
+3. **Environment Variables**: Copy `apps/api/.env.example` to create `.env` file in the root or `apps/api/.env`
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
