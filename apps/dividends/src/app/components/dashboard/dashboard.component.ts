@@ -18,6 +18,8 @@ export class DashboardComponent implements OnInit {
   searchTerm = signal('');
   isDarkMode = signal(false);
   showModal = signal(false);
+  showSecurityModal = signal(false);
+  showMenu = signal(false);
 
   filteredTransactions = computed(() => {
     return this.dataService.getFilteredTransactions(
@@ -49,6 +51,16 @@ export class DashboardComponent implements OnInit {
     taxes: 0,
     buyPrice: 0,
     finalPayment: 0,
+  };
+
+  newSecurity = {
+    name: '',
+    isin: '',
+    wkn: '',
+    symbol: '',
+    type: 'STOCK' as 'STOCK' | 'ETF' | 'BOND',
+    exchange: '',
+    currency: 'EUR' as 'EUR' | 'USD' | 'NOK',
   };
 
   constructor(private dataService: DividendDataService) {
@@ -103,6 +115,16 @@ export class DashboardComponent implements OnInit {
 
   toggleModal() {
     this.showModal.update((show) => !show);
+    this.showMenu.set(false);
+  }
+
+  toggleSecurityModal() {
+    this.showSecurityModal.update((show) => !show);
+    this.showMenu.set(false);
+  }
+
+  toggleMenu() {
+    this.showMenu.update((show) => !show);
   }
 
   formatCurrency(value: number): string {
@@ -152,6 +174,25 @@ export class DashboardComponent implements OnInit {
       taxes: 0,
       buyPrice: 0,
       finalPayment: 0,
+    };
+  }
+
+  handleSecurityFormSubmit() {
+    // TODO: Implement security creation logic
+    console.log('New security:', this.newSecurity);
+    this.toggleSecurityModal();
+    this.resetSecurityForm();
+  }
+
+  resetSecurityForm() {
+    this.newSecurity = {
+      name: '',
+      isin: '',
+      wkn: '',
+      symbol: '',
+      type: 'STOCK',
+      exchange: '',
+      currency: 'EUR',
     };
   }
 
