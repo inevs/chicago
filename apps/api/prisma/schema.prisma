@@ -13,11 +13,67 @@ datasource db {
   provider = "postgresql"
 }
 
-// Example model - you can modify this based on your needs
-model User {
+// Enum for security types
+enum SecurityType {
+  STOCK
+  ETF
+  BOND
+}
+
+// Security model - represents stocks, ETFs, and bonds
+model Security {
   id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
+  name      String   // Company/fund name (e.g., "Apple Inc.")
+  symbol    String   @unique // Ticker symbol (e.g., "AAPL")
+  isin      String?  // International Securities Identification Number
+  wkn       String?  // Wertpapierkennnummer (German security identifier)
+  type      SecurityType // STOCK, ETF, or BOND
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  dividendPayments DividendPayment[]
+
+  // Indexes for common queries
+  @@index([isin])
+  @@index([wkn])
+  @@map("securities") // Plural table name convention
+}
+
+// DividendPayment model - represents individual dividend payments
+model DividendPayment {
+  id              String   @id @default(uuid())
+
+  // Dates
+  exDate          DateTime // Ex-dividend date
+  payoutDate      DateTime // Actual payment/settlement date
+
+  // Security relationship
+  securityId      String
+  security        Security @relation(fields: [securityId], references: [id], onDelete: Cascade)
+
+  // Fundamental amounts (other amounts can be computed)
+  shares          Decimal  @db.Decimal(19, 8) // Number of shares held at ex-date
+  dividendYield   Decimal  @db.Decimal(19, 4) // Dividend per share
+  taxAmount       Decimal  @db.Decimal(19, 4) // Tax withheld
+
+  // Currency conversion
+  originCurrency  String   // Currency of original dividend (ISO 4217 code, e.g., "USD")
+  destCurrency    String   // Destination/account currency (ISO 4217 code, e.g., "EUR")
+  conversionRate  Decimal  @db.Decimal(19, 8) // Exchange rate used for conversion
+  finalPayment    Decimal  @db.Decimal(19, 4) // Final payment in destination currency
+
+  // Optional fields
+  note            String?  @db.Text // User notes about this payment
+
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Indexes for common queries
+  @@index([securityId])
+  @@index([exDate])
+  @@index([payoutDate])
+  @@index([securityId, exDate]) // Compound index for filtering by security and date
+  @@map("dividend_payments") // Plural table name convention
 }
