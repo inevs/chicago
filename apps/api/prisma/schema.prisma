@@ -28,6 +28,8 @@ model Security {
   isin      String?  // International Securities Identification Number
   wkn       String?  // Wertpapierkennnummer (German security identifier)
   type      SecurityType // STOCK, ETF, or BOND
+  exchange  String   // Stock exchange (e.g., "NASDAQ", "NYSE", "XETRA")
+  currency  String   // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
