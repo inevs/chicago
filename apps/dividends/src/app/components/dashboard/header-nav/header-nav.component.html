@@ -1,0 +1,219 @@
+<nav
+  class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 transition-colors duration-300"
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div
+      class="flex flex-col sm:flex-row justify-between h-auto sm:h-16 py-3 sm:py-0 items-center gap-4 sm:gap-0"
+    >
+      <div class="flex items-center gap-3 self-start sm:self-center">
+        <div class="bg-blue-600 text-white p-2 rounded-lg">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <span
+          class="font-bold text-xl text-slate-900 dark:text-white tracking-tight"
+          >DiviTrack</span
+        >
+      </div>
+
+      <div
+        class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end"
+      >
+        <div
+          class="bg-slate-100 dark:bg-slate-700 p-1 rounded-lg flex text-sm font-medium transition-colors"
+        >
+          <button
+            (click)="onRangeChange('M')"
+            [class.bg-white]="currentRange() === 'M'"
+            [class.dark:bg-slate-600]="currentRange() === 'M'"
+            [class.text-slate-900]="currentRange() === 'M'"
+            [class.dark:text-white]="currentRange() === 'M'"
+            [class.shadow-sm]="currentRange() === 'M'"
+            [class.font-semibold]="currentRange() === 'M'"
+            [class.text-slate-500]="currentRange() !== 'M'"
+            [class.dark:text-slate-300]="currentRange() !== 'M'"
+            class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
+          >
+            1M
+          </button>
+          <button
+            (click)="onRangeChange('Y')"
+            [class.bg-white]="currentRange() === 'Y'"
+            [class.dark:bg-slate-600]="currentRange() === 'Y'"
+            [class.text-slate-900]="currentRange() === 'Y'"
+            [class.dark:text-white]="currentRange() === 'Y'"
+            [class.shadow-sm]="currentRange() === 'Y'"
+            [class.font-semibold]="currentRange() === 'Y'"
+            [class.text-slate-500]="currentRange() !== 'Y'"
+            [class.dark:text-slate-300]="currentRange() !== 'Y'"
+            class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
+          >
+            1J
+          </button>
+          <button
+            (click)="onRangeChange('5Y')"
+            [class.bg-white]="currentRange() === '5Y'"
+            [class.dark:bg-slate-600]="currentRange() === '5Y'"
+            [class.text-slate-900]="currentRange() === '5Y'"
+            [class.dark:text-white]="currentRange() === '5Y'"
+            [class.shadow-sm]="currentRange() === '5Y'"
+            [class.font-semibold]="currentRange() === '5Y'"
+            [class.text-slate-500]="currentRange() !== '5Y'"
+            [class.dark:text-slate-300]="currentRange() !== '5Y'"
+            class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
+          >
+            5J
+          </button>
+          <button
+            (click)="onRangeChange('ALL')"
+            [class.bg-white]="currentRange() === 'ALL'"
+            [class.dark:bg-slate-600]="currentRange() === 'ALL'"
+            [class.text-slate-900]="currentRange() === 'ALL'"
+            [class.dark:text-white]="currentRange() === 'ALL'"
+            [class.shadow-sm]="currentRange() === 'ALL'"
+            [class.font-semibold]="currentRange() === 'ALL'"
+            [class.text-slate-500]="currentRange() !== 'ALL'"
+            [class.dark:text-slate-300]="currentRange() !== 'ALL'"
+            class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
+          >
+            Max
+          </button>
+        </div>
+
+        <button
+          (click)="onThemeToggle()"
+          class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+        >
+          @if (isDarkMode()) {
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+            />
+          </svg>
+          } @else {
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+            />
+          </svg>
+          }
+        </button>
+
+        <div class="relative">
+          <button
+            (click)="onMenuToggle()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2 whitespace-nowrap"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            <span>Neu</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 transition-transform"
+              [class.rotate-180]="showMenu()"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+
+          @if (showMenu()) {
+          <div
+            class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50"
+          >
+            <button
+              (click)="onNewSecurityClick()"
+              class="w-full px-4 py-3 text-left text-sm text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-blue-600 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <span>Neues Wertpapier</span>
+            </button>
+            <button
+              (click)="onNewTransactionClick()"
+              class="w-full px-4 py-3 text-left text-sm text-slate-900 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-3 border-t border-slate-100 dark:border-slate-700"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-blue-600 dark:text-blue-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>Neue Buchung</span>
+            </button>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
