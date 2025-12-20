@@ -1,0 +1,140 @@
+@if (show()) {
+<div
+  class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity"
+  (click)="onClose()"
+>
+  <div
+    class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full p-6 m-4 border dark:border-slate-700 transition-colors"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+        Neues Wertpapier anlegen
+      </h2>
+      <button
+        (click)="onClose()"
+        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <form (submit)="onSubmit(); $event.preventDefault()">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Wertpapiername</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="formData().name"
+            name="securityName"
+            required
+            class="modal-input"
+            placeholder="z.B. Apple Inc."
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Typ</label
+          >
+          <select [(ngModel)]="formData().type" name="securityType" required class="modal-input">
+            <option value="STOCK">Aktie</option>
+            <option value="ETF">ETF</option>
+            <option value="BOND">Anleihe</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Ticker Symbol</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="formData().symbol"
+            name="symbol"
+            required
+            class="modal-input"
+            placeholder="z.B. AAPL"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >ISIN</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="formData().isin"
+            name="isin"
+            class="modal-input"
+            placeholder="z.B. US0378331005"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >WKN</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="formData().wkn"
+            name="wkn"
+            class="modal-input"
+            placeholder="z.B. 865985"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Handelsplatz</label
+          >
+          <input
+            type="text"
+            [(ngModel)]="formData().exchange"
+            name="exchange"
+            required
+            class="modal-input"
+            placeholder="z.B. NASDAQ, XETRA"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Handelswährung</label
+          >
+          <select [(ngModel)]="formData().currency" name="securityCurrency" required class="modal-input">
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+            <option value="NOK">NOK</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          (click)="onClose()"
+          class="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-sm"
+        >
+          Speichern
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
