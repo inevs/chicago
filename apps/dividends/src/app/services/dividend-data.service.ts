@@ -164,7 +164,7 @@ export class DividendDataService {
     this.transactions.update((txs) => [...txs, newTransaction]);
   }
 
-  getFilteredTransactions(range: TimeRange, searchTerm: string = ''): DividendTransaction[] {
+  getFilteredTransactions(range: TimeRange, searchTerm = ''): DividendTransaction[] {
     const now = new Date();
     let cutoff: Date | null = null;
 

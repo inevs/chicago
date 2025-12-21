@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UsePipes,
@@ -28,6 +29,11 @@ export class SecuritiesController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateSecurityDto): Promise<Security> {
     return this.securitiesService.createSecurity(dto);
+  }
+
+  @Get('search')
+  async search(@Query('q') query: string): Promise<Security[]> {
+    return this.securitiesService.searchSecurities(query || '');
   }
 
   @Get()

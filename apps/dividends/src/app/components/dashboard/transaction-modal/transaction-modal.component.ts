@@ -1,6 +1,8 @@
 import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
+import { Security } from '@dividends/shared';
 
 export interface TransactionForm {
   name: string;
@@ -16,7 +18,7 @@ export interface TransactionForm {
 
 @Component({
   selector: 'app-transaction-modal',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SecurityAutocompleteComponent],
   templateUrl: './transaction-modal.component.html',
   styleUrls: ['./transaction-modal.component.scss'],
 })
@@ -62,5 +64,9 @@ export class TransactionModalComponent {
 
   updateFormData(field: keyof TransactionForm, value: unknown) {
     this.formData.update(data => ({ ...data, [field]: value }));
+  }
+
+  onSecuritySelected(security: Security) {
+    this.formData.update(data => ({ ...data, name: security.name }));
   }
 }
