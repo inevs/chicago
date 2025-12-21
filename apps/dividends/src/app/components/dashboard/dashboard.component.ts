@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
+import { SecurityService } from '../../services/security.service';
 import { TimeRange } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
 import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
@@ -25,6 +26,7 @@ import { SecurityModalComponent, SecurityForm } from './security-modal/security-
 })
 export class DashboardComponent implements OnInit {
   private readonly dataService = inject(DividendDataService);
+  private readonly securityService = inject(SecurityService);
 
   currentRange = signal<TimeRange>('ALL');
   searchTerm = signal('');
@@ -108,8 +110,25 @@ export class DashboardComponent implements OnInit {
   }
 
   handleSecuritySubmit(security: SecurityForm) {
-    // TODO: Implement security creation logic
-    console.log('New security:', security);
-    this.toggleSecurityModal();
+    const createRequest = {
+      name: security.name,
+      symbol: security.symbol,
+      isin: security.isin || undefined,
+      wkn: security.wkn || undefined,
+      type: security.type,
+      exchange: security.exchange,
+      currency: security.currency,
+    };
+
+    this.securityService.createSecurity(createRequest).subscribe({
+      next: (createdSecurity) => {
+        console.log('Security created successfully:', createdSecurity);
+        this.toggleSecurityModal();
+      },
+      error: (error) => {
+        console.error('Error creating security:', error);
+        alert(`Failed to create security: ${error.message}`);
+      },
+    });
   }
 }

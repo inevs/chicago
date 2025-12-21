@@ -13,6 +13,8 @@ export interface Security {
   isin: string | null;
   wkn: string | null;
   type: SecurityType;
+  exchange: string;
+  currency: string;
   createdAt: Date;
   updatedAt: Date;
 }

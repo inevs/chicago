@@ -11,6 +11,8 @@ export class AppService {
       isin: null,
       wkn: null,
       type: SecurityType.STOCK,
+      exchange: 'NASDAQ',
+      currency: 'USD',
       createdAt: new Date(),
       updatedAt: new Date(),
     };
