@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { TimeRange } from '../../models/dividend.model';
@@ -24,6 +24,8 @@ import { SecurityModalComponent, SecurityForm } from './security-modal/security-
   styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
+  private readonly dataService = inject(DividendDataService);
+
   currentRange = signal<TimeRange>('ALL');
   searchTerm = signal('');
   isDarkMode = signal(false);
@@ -47,8 +49,6 @@ export class DashboardComponent implements OnInit {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   });
-
-  constructor(private dataService: DividendDataService) {}
 
   ngOnInit() {
     this.initTheme();
