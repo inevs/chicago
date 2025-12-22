@@ -36,3 +36,23 @@ export interface DividendPayment {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// DividendPayment with Security details (for API responses with includes)
+export interface DividendPaymentWithSecurity extends DividendPayment {
+  security: Security;
+}
+
+// DTO for creating a new dividend payment
+export interface CreateDividendPaymentDto {
+  exDate: string;
+  payoutDate: string;
+  securityId: string;
+  shares: number;
+  dividendYield: number;
+  taxAmount: number;
+  originCurrency: string;
+  destCurrency: string;
+  conversionRate: number;
+  finalPayment: number;
+  note?: string;
+}

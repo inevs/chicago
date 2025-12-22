@@ -1,10 +1,13 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { DividendTransaction, TimeRange, DashboardKPIs } from '../models/dividend.model';
+import { DividendPaymentService } from './dividend-payment.service';
+import { DividendPayment } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DividendDataService {
+  private readonly dividendPaymentService = inject(DividendPaymentService);
   private transactions = signal<DividendTransaction[]>([
     {
       id: 1,
@@ -162,6 +165,38 @@ export class DividendDataService {
       id: Date.now(),
     };
     this.transactions.update((txs) => [...txs, newTransaction]);
+  }
+
+  // Load transactions from backend
+  loadTransactionsFromBackend() {
+    this.dividendPaymentService.getDividendPayments().subscribe({
+      next: (payments) => {
+        // Convert DividendPayment[] to DividendTransaction[]
+        const converted = payments.map((payment: DividendPayment & { security?: { name?: string } }) =>
+          this.convertToTransaction(payment)
+        );
+        this.transactions.set(converted);
+      },
+      error: (error) => {
+        console.error('Error loading dividend payments:', error);
+      }
+    });
+  }
+
+  // Convert DividendPayment to DividendTransaction
+  private convertToTransaction(payment: DividendPayment & { security?: { name?: string } }): DividendTransaction {
+    return {
+      id: payment.id,
+      date: new Date(payment.payoutDate).toISOString().split('T')[0],
+      name: payment.security?.name || 'Unknown',
+      amount: Number(payment.shares),
+      dividend: Number(payment.dividendYield),
+      taxes: Number(payment.taxAmount),
+      currency: payment.originCurrency as 'EUR' | 'USD' | 'NOK',
+      rate: Number(payment.conversionRate),
+      finalPayment: Number(payment.finalPayment),
+      buyPrice: 0, // Set to 0 as buyPrice is not stored in backend
+    };
   }
 
   getFilteredTransactions(range: TimeRange, searchTerm = ''): DividendTransaction[] {

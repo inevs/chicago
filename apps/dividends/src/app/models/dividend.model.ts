@@ -1,5 +1,5 @@
 export interface DividendTransaction {
-  id: number;
+  id: string | number;
   date: string;
   name: string;
   amount: number;

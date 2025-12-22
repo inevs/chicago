@@ -45,14 +45,28 @@
         </div>
 
         <div>
-          <label for="date" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
-            >Zahldatum</label
+          <label for="exDate" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Ex-Datum</label
           >
           <input
-            id="date"
+            id="exDate"
             type="date"
-            [(ngModel)]="formData().date"
-            name="date"
+            [(ngModel)]="formData().exDate"
+            name="exDate"
+            required
+            class="modal-input"
+          />
+        </div>
+
+        <div>
+          <label for="payoutDate" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Auszahlungsdatum</label
+          >
+          <input
+            id="payoutDate"
+            type="date"
+            [(ngModel)]="formData().payoutDate"
+            name="payoutDate"
             required
             class="modal-input"
           />
@@ -125,23 +139,6 @@
             [(ngModel)]="formData().taxes"
             name="taxes"
             class="modal-input"
-          />
-        </div>
-
-        <div>
-          <label
-            for="buyPrice"
-            class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 text-blue-600 dark:text-blue-400"
-            >Kaufkurs Ø (EUR)</label
-          >
-          <input
-            id="buyPrice"
-            type="number"
-            step="0.01"
-            [(ngModel)]="formData().buyPrice"
-            name="buyPrice"
-            class="w-full border border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-100 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="Dein Einstiegskurs"
           />
         </div>
 

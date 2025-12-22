@@ -2,6 +2,8 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { SecurityService } from '../../services/security.service';
+import { DividendPaymentService } from '../../services/dividend-payment.service';
+import { CreateDividendPaymentDto } from '@dividends/shared';
 import { TimeRange } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
 import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
@@ -27,6 +29,7 @@ import { SecurityModalComponent, SecurityForm } from './security-modal/security-
 export class DashboardComponent implements OnInit {
   private readonly dataService = inject(DividendDataService);
   private readonly securityService = inject(SecurityService);
+  private readonly dividendPaymentService = inject(DividendPaymentService);
 
   currentRange = signal<TimeRange>('ALL');
   searchTerm = signal('');
@@ -54,6 +57,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.initTheme();
+    this.dataService.loadTransactionsFromBackend();
   }
 
   initTheme() {
@@ -105,8 +109,40 @@ export class DashboardComponent implements OnInit {
   }
 
   handleTransactionSubmit(transaction: TransactionForm) {
-    this.dataService.addTransaction(transaction);
-    this.toggleModal();
+    // Validation
+    if (!transaction.securityId) {
+      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      return;
+    }
+
+    // Create DTO with proper mapping
+    const dto: CreateDividendPaymentDto = {
+      exDate: transaction.exDate,
+      payoutDate: transaction.payoutDate,
+      securityId: transaction.securityId,
+      shares: transaction.amount,
+      dividendYield: transaction.dividend,
+      taxAmount: transaction.taxes,
+      originCurrency: transaction.currency,
+      destCurrency: 'EUR', // Fixed for now
+      conversionRate: transaction.rate,
+      finalPayment: transaction.finalPayment,
+      note: undefined,
+    };
+
+    // Persist to backend
+    this.dividendPaymentService.createDividendPayment(dto).subscribe({
+      next: (createdPayment) => {
+        console.log('Dividend payment created successfully:', createdPayment);
+        // Reload transactions from backend
+        this.dataService.loadTransactionsFromBackend();
+        this.toggleModal();
+      },
+      error: (error) => {
+        console.error('Error creating dividend payment:', error);
+        alert(`Failed to create dividend payment: ${error.message}`);
+      },
+    });
   }
 
   handleSecuritySubmit(security: SecurityForm) {
