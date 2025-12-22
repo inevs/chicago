@@ -50,4 +50,27 @@ export class SecuritiesService {
 
     return security as Security;
   }
+
+  async searchSecurities(query: string): Promise<Security[]> {
+    if (!query || query.trim().length === 0) {
+      return this.getAllSecurities();
+    }
+
+    const searchTerm = query.trim().toLowerCase();
+
+    const securities = await this.prisma.security.findMany({
+      where: {
+        OR: [
+          { name: { contains: searchTerm, mode: 'insensitive' } },
+          { symbol: { contains: searchTerm, mode: 'insensitive' } },
+          { isin: { contains: searchTerm, mode: 'insensitive' } },
+          { wkn: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { symbol: 'asc' },
+      take: 10,
+    });
+
+    return securities as Security[];
+  }
 }

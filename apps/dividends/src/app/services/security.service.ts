@@ -39,6 +39,14 @@ export class SecurityService {
     );
   }
 
+  searchSecurities(query: string): Observable<Security[]> {
+    return this.http.get<Security[]>(`${this.apiUrl}/search`, {
+      params: { q: query }
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An error occurred';
 

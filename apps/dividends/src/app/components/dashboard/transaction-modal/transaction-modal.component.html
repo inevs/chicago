@@ -30,15 +30,12 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
-            >Unternehmen</label
+            >Wertpapier</label
           >
-          <input
-            type="text"
-            [(ngModel)]="formData().name"
-            name="name"
-            required
-            class="modal-input"
-            placeholder="z.B. Apple Inc."
+          <app-security-autocomplete
+            [value]="formData().name"
+            placeholder="z.B. Apple Inc. oder AAPL"
+            (securitySelected)="onSecuritySelected($event)"
           />
         </div>
 
