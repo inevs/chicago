@@ -2,10 +2,14 @@
 <div
   class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity"
   (click)="onClose()"
+  (keydown.escape)="onClose()"
+  tabindex="-1"
 >
   <div
     class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full p-6 m-4 border dark:border-slate-700 transition-colors"
     (click)="$event.stopPropagation()"
+    (keydown)="$event.stopPropagation()"
+    tabindex="0"
   >
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-bold text-slate-900 dark:text-white">
@@ -29,10 +33,11 @@
     <form (submit)="onSubmit(); $event.preventDefault()">
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="securityName" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Wertpapiername</label
           >
           <input
+            id="securityName"
             type="text"
             [(ngModel)]="formData().name"
             name="securityName"
@@ -43,10 +48,10 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="securityType" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Typ</label
           >
-          <select [(ngModel)]="formData().type" name="securityType" required class="modal-input">
+          <select id="securityType" [(ngModel)]="formData().type" name="securityType" required class="modal-input">
             <option value="STOCK">Aktie</option>
             <option value="ETF">ETF</option>
             <option value="BOND">Anleihe</option>
@@ -54,10 +59,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="symbol" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Ticker Symbol</label
           >
           <input
+            id="symbol"
             type="text"
             [(ngModel)]="formData().symbol"
             name="symbol"
@@ -68,10 +74,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="isin" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >ISIN</label
           >
           <input
+            id="isin"
             type="text"
             [(ngModel)]="formData().isin"
             name="isin"
@@ -81,10 +88,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="wkn" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >WKN</label
           >
           <input
+            id="wkn"
             type="text"
             [(ngModel)]="formData().wkn"
             name="wkn"
@@ -94,10 +102,11 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="exchange" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Handelsplatz</label
           >
           <input
+            id="exchange"
             type="text"
             [(ngModel)]="formData().exchange"
             name="exchange"
@@ -108,10 +117,10 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+          <label for="securityCurrency" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Handelswährung</label
           >
-          <select [(ngModel)]="formData().currency" name="securityCurrency" required class="modal-input">
+          <select id="securityCurrency" [(ngModel)]="formData().currency" name="securityCurrency" required class="modal-input">
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
             <option value="NOK">NOK</option>
