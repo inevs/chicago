@@ -13,7 +13,7 @@
   >
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-bold text-slate-900 dark:text-white">
-        Neue Dividende erfassen
+        {{ editTransaction() ? 'Dividende bearbeiten' : 'Neue Dividende erfassen' }}
       </h2>
       <button
         (click)="onClose()"
@@ -171,7 +171,7 @@
           type="submit"
           class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-sm"
         >
-          Speichern
+          {{ editTransaction() ? 'Aktualisieren' : 'Speichern' }}
         </button>
       </div>
     </form>

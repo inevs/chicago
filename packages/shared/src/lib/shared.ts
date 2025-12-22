@@ -56,3 +56,18 @@ export interface CreateDividendPaymentDto {
   finalPayment: number;
   note?: string;
 }
+
+// DTO for updating an existing dividend payment
+export interface UpdateDividendPaymentDto {
+  exDate?: string;
+  payoutDate?: string;
+  securityId?: string;
+  shares?: number;
+  dividendYield?: number;
+  taxAmount?: number;
+  originCurrency?: string;
+  destCurrency?: string;
+  conversionRate?: number;
+  finalPayment?: number;
+  note?: string;
+}

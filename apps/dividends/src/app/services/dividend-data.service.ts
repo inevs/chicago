@@ -1,7 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { DividendTransaction, TimeRange, DashboardKPIs } from '../models/dividend.model';
 import { DividendPaymentService } from './dividend-payment.service';
-import { DividendPayment } from '@dividends/shared';
+import { DividendPayment, UpdateDividendPaymentDto } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -167,6 +167,51 @@ export class DividendDataService {
     this.transactions.update((txs) => [...txs, newTransaction]);
   }
 
+  updateTransaction(id: string, updatedPayment: DividendPayment & { security?: { name?: string } }) {
+    const converted = this.convertToTransaction(updatedPayment);
+    this.transactions.update((txs) =>
+      txs.map((tx) => {
+        const txId = typeof tx.id === 'string' ? tx.id : String(tx.id);
+        return txId === id ? converted : tx;
+      })
+    );
+  }
+
+  deleteTransaction(id: string) {
+    this.transactions.update((txs) =>
+      txs.filter((tx) => {
+        const txId = typeof tx.id === 'string' ? tx.id : String(tx.id);
+        return txId !== id;
+      })
+    );
+  }
+
+  // Update transaction via backend
+  updateTransactionViaBackend(id: string, dto: UpdateDividendPaymentDto) {
+    this.dividendPaymentService.updateDividendPayment(id, dto).subscribe({
+      next: (updatedPayment) => {
+        this.updateTransaction(id, updatedPayment);
+      },
+      error: (error) => {
+        console.error('Error updating dividend payment:', error);
+        throw error;
+      }
+    });
+  }
+
+  // Delete transaction via backend
+  deleteTransactionViaBackend(id: string) {
+    this.dividendPaymentService.deleteDividendPayment(id).subscribe({
+      next: () => {
+        this.deleteTransaction(id);
+      },
+      error: (error) => {
+        console.error('Error deleting dividend payment:', error);
+        throw error;
+      }
+    });
+  }
+
   // Load transactions from backend
   loadTransactionsFromBackend() {
     this.dividendPaymentService.getDividendPayments().subscribe({
@@ -184,7 +229,7 @@ export class DividendDataService {
   }
 
   // Convert DividendPayment to DividendTransaction
-  private convertToTransaction(payment: DividendPayment & { security?: { name?: string } }): DividendTransaction {
+  convertToTransaction(payment: DividendPayment & { security?: { name?: string } }): DividendTransaction {
     return {
       id: payment.id,
       date: new Date(payment.payoutDate).toISOString().split('T')[0],

@@ -11,10 +11,20 @@ import { DividendTransaction } from '../../../models/dividend.model';
 export class TransactionTableComponent {
   transactions = input.required<DividendTransaction[]>();
   searchChange = output<string>();
+  editTransaction = output<DividendTransaction>();
+  deleteTransaction = output<DividendTransaction>();
 
   onSearchChange(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.searchChange.emit(value);
+  }
+
+  onEdit(transaction: DividendTransaction) {
+    this.editTransaction.emit(transaction);
+  }
+
+  onDelete(transaction: DividendTransaction) {
+    this.deleteTransaction.emit(transaction);
   }
 
   formatCurrency(value: number): string {

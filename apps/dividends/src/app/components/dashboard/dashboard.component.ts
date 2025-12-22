@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { SecurityService } from '../../services/security.service';
 import { DividendPaymentService } from '../../services/dividend-payment.service';
-import { CreateDividendPaymentDto } from '@dividends/shared';
-import { TimeRange } from '../../models/dividend.model';
+import { CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/shared';
+import { TimeRange, DividendTransaction } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
 import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
 import { ChartsSectionComponent } from './charts-section/charts-section.component';
@@ -37,6 +37,8 @@ export class DashboardComponent implements OnInit {
   showModal = signal(false);
   showSecurityModal = signal(false);
   showMenu = signal(false);
+  editingTransaction = signal<DividendTransaction | null>(null);
+  deletingTransaction = signal<DividendTransaction | null>(null);
 
   filteredTransactions = computed(() => {
     return this.dataService.getFilteredTransactions(
@@ -95,6 +97,10 @@ export class DashboardComponent implements OnInit {
   }
 
   toggleModal() {
+    const isClosing = this.showModal();
+    if (isClosing) {
+      this.editingTransaction.set(null);
+    }
     this.showModal.update((show) => !show);
     this.showMenu.set(false);
   }
@@ -115,34 +121,64 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Create DTO with proper mapping
-    const dto: CreateDividendPaymentDto = {
-      exDate: transaction.exDate,
-      payoutDate: transaction.payoutDate,
-      securityId: transaction.securityId,
-      shares: transaction.amount,
-      dividendYield: transaction.dividend,
-      taxAmount: transaction.taxes,
-      originCurrency: transaction.currency,
-      destCurrency: 'EUR', // Fixed for now
-      conversionRate: transaction.rate,
-      finalPayment: transaction.finalPayment,
-      note: undefined,
-    };
+    const editingTx = this.editingTransaction();
 
-    // Persist to backend
-    this.dividendPaymentService.createDividendPayment(dto).subscribe({
-      next: (createdPayment) => {
-        console.log('Dividend payment created successfully:', createdPayment);
-        // Reload transactions from backend
-        this.dataService.loadTransactionsFromBackend();
-        this.toggleModal();
-      },
-      error: (error) => {
-        console.error('Error creating dividend payment:', error);
-        alert(`Failed to create dividend payment: ${error.message}`);
-      },
-    });
+    if (editingTx && transaction.id) {
+      // UPDATE existing transaction
+      const dto: UpdateDividendPaymentDto = {
+        exDate: transaction.exDate,
+        payoutDate: transaction.payoutDate,
+        securityId: transaction.securityId,
+        shares: transaction.amount,
+        dividendYield: transaction.dividend,
+        taxAmount: transaction.taxes,
+        originCurrency: transaction.currency,
+        destCurrency: 'EUR',
+        conversionRate: transaction.rate,
+        finalPayment: transaction.finalPayment,
+        note: undefined,
+      };
+
+      this.dividendPaymentService.updateDividendPayment(transaction.id, dto).subscribe({
+        next: (updatedPayment) => {
+          console.log('Dividend payment updated successfully:', updatedPayment);
+          this.dataService.loadTransactionsFromBackend();
+          this.toggleModal();
+          this.editingTransaction.set(null);
+        },
+        error: (error) => {
+          console.error('Error updating dividend payment:', error);
+          alert(`Failed to update dividend payment: ${error.message}`);
+        },
+      });
+    } else {
+      // CREATE new transaction
+      const dto: CreateDividendPaymentDto = {
+        exDate: transaction.exDate,
+        payoutDate: transaction.payoutDate,
+        securityId: transaction.securityId,
+        shares: transaction.amount,
+        dividendYield: transaction.dividend,
+        taxAmount: transaction.taxes,
+        originCurrency: transaction.currency,
+        destCurrency: 'EUR',
+        conversionRate: transaction.rate,
+        finalPayment: transaction.finalPayment,
+        note: undefined,
+      };
+
+      this.dividendPaymentService.createDividendPayment(dto).subscribe({
+        next: (createdPayment) => {
+          console.log('Dividend payment created successfully:', createdPayment);
+          this.dataService.loadTransactionsFromBackend();
+          this.toggleModal();
+        },
+        error: (error) => {
+          console.error('Error creating dividend payment:', error);
+          alert(`Failed to create dividend payment: ${error.message}`);
+        },
+      });
+    }
   }
 
   handleSecuritySubmit(security: SecurityForm) {
@@ -166,5 +202,48 @@ export class DashboardComponent implements OnInit {
         alert(`Failed to create security: ${error.message}`);
       },
     });
+  }
+
+  handleEditTransaction(transaction: DividendTransaction) {
+    this.editingTransaction.set(transaction);
+    this.showModal.set(true);
+  }
+
+  handleDeleteTransaction(transaction: DividendTransaction) {
+    this.deletingTransaction.set(transaction);
+  }
+
+  confirmDelete() {
+    const transaction = this.deletingTransaction();
+    if (!transaction || !transaction.id) return;
+
+    const id = typeof transaction.id === 'string' ? transaction.id : String(transaction.id);
+
+    this.dividendPaymentService.deleteDividendPayment(id).subscribe({
+      next: () => {
+        console.log('Dividend payment deleted successfully');
+        this.dataService.loadTransactionsFromBackend();
+        this.deletingTransaction.set(null);
+      },
+      error: (error) => {
+        console.error('Error deleting dividend payment:', error);
+        alert(`Failed to delete dividend payment: ${error.message}`);
+      },
+    });
+  }
+
+  cancelDelete() {
+    this.deletingTransaction.set(null);
+  }
+
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(value);
+  }
+
+  formatDate(date: string): string {
+    return new Date(date).toLocaleDateString('de-DE');
   }
 }

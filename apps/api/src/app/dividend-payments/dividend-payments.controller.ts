@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -12,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { DividendPaymentsService } from './dividend-payments.service';
 import { CreateDividendPaymentDto } from './dto/create-dividend-payment.dto';
+import { UpdateDividendPaymentDto } from './dto/update-dividend-payment.dto';
 import { DividendPayment } from '@dividends/shared';
 
 @Controller('dividend-payments')
@@ -63,5 +66,19 @@ export class DividendPaymentsController {
   @Get(':id')
   async findOne(@Param('id') id: string): Promise<DividendPayment> {
     return this.dividendPaymentsService.getDividendPaymentById(id);
+  }
+
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDividendPaymentDto
+  ): Promise<DividendPayment> {
+    return this.dividendPaymentsService.updateDividendPayment(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.dividendPaymentsService.deleteDividendPayment(id);
   }
 }

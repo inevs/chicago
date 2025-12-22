@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { DividendPayment, CreateDividendPaymentDto } from '@dividends/shared';
+import { DividendPayment, CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -50,6 +50,21 @@ export class DividendPaymentService {
 
   getDividendPaymentById(id: string): Observable<DividendPayment> {
     return this.http.get<DividendPayment>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateDividendPayment(
+    id: string,
+    payment: UpdateDividendPaymentDto
+  ): Observable<DividendPayment> {
+    return this.http.patch<DividendPayment>(`${this.apiUrl}/${id}`, payment).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteDividendPayment(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       catchError(this.handleError)
     );
   }

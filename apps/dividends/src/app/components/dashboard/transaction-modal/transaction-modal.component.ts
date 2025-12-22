@@ -1,10 +1,12 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
 import { Security } from '@dividends/shared';
+import { DividendTransaction } from '../../../models/dividend.model';
 
 export interface TransactionForm {
+  id?: string;
   name: string;
   securityId: string;
   exDate: string;
@@ -23,8 +25,9 @@ export interface TransactionForm {
   templateUrl: './transaction-modal.component.html',
   styleUrls: ['./transaction-modal.component.scss'],
 })
-export class TransactionModalComponent {
+export class TransactionModalComponent implements OnChanges {
   show = input.required<boolean>();
+  editTransaction = input<DividendTransaction | null>(null);
   closeModal = output<void>();
   transactionSubmit = output<TransactionForm>();
 
@@ -40,6 +43,31 @@ export class TransactionModalComponent {
     taxes: 0,
     finalPayment: 0,
   });
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Populate form when editTransaction is provided
+    if (changes['editTransaction']) {
+      const tx = this.editTransaction();
+      if (tx) {
+        this.formData.set({
+          id: typeof tx.id === 'string' ? tx.id : String(tx.id),
+          name: tx.name,
+          securityId: '', // Will be populated if we have the securityId from backend
+          exDate: tx.date,
+          payoutDate: tx.date, // Use same date if no separate payout date
+          amount: tx.amount,
+          dividend: tx.dividend,
+          currency: tx.currency,
+          rate: tx.rate,
+          taxes: tx.taxes,
+          finalPayment: tx.finalPayment,
+        });
+      } else {
+        // Reset form when editTransaction becomes null
+        this.resetForm();
+      }
+    }
+  }
 
   onClose() {
     this.closeModal.emit();
