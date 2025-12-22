@@ -192,7 +192,7 @@ export class DividendDataService {
       amount: Number(payment.shares),
       dividend: Number(payment.dividendYield),
       taxes: Number(payment.taxAmount),
-      currency: payment.originCurrency as 'EUR' | 'USD' | 'NOK',
+      currency: payment.originCurrency as 'EUR' | 'USD' | 'NOK' | 'GBP',
       rate: Number(payment.conversionRate),
       finalPayment: Number(payment.finalPayment),
       buyPrice: 0, // Set to 0 as buyPrice is not stored in backend

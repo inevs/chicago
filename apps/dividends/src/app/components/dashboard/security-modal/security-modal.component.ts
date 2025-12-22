@@ -9,7 +9,7 @@ export interface SecurityForm {
   symbol: string;
   type: 'STOCK' | 'ETF' | 'BOND';
   exchange: string;
-  currency: 'EUR' | 'USD' | 'NOK';
+  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
 }
 
 @Component({

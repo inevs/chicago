@@ -5,7 +5,7 @@ export interface DividendTransaction {
   amount: number;
   dividend: number;
   taxes: number;
-  currency: 'EUR' | 'USD' | 'NOK';
+  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
   rate: number;
   finalPayment: number;
   buyPrice?: number;

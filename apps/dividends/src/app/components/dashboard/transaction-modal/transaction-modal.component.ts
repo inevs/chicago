@@ -11,7 +11,7 @@ export interface TransactionForm {
   payoutDate: string;
   amount: number;
   dividend: number;
-  currency: 'EUR' | 'USD' | 'NOK';
+  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
   rate: number;
   taxes: number;
   finalPayment: number;
