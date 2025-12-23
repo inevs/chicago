@@ -16,6 +16,49 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - dividends-network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: dividends-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://dividends:dividends@postgres:5432/dividends
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'node', '-e', "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - dividends-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/dividends/Dockerfile
+    container_name: dividends-frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      - api
+    networks:
+      - dividends-network
 
 volumes:
   postgres-data:
+
+networks:
+  dividends-network:
+    driver: bridge
