@@ -15,10 +15,10 @@ RUN npm ci
 COPY packages ./packages
 COPY apps/api ./apps/api
 
-# Generate Prisma Client (needs DATABASE_URL env var even though it doesn't connect)
-WORKDIR /app/apps/api
+# Generate Prisma Client
+WORKDIR /app
 ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
-RUN npx prisma generate
+RUN npx prisma generate --config=apps/api/prisma.config.ts
 
 # Build the application from workspace root
 WORKDIR /app
@@ -37,6 +37,7 @@ RUN npm ci --omit=dev
 # Copy built application and workspace modules
 COPY --from=builder /app/dist/apps/api ./
 COPY --from=builder /app/apps/api/prisma ./prisma
+COPY --from=builder /app/apps/api/prisma.config.ts ./prisma.config.ts
 
 # Copy generated Prisma client
 COPY --from=builder /app/apps/api/generated ./generated
@@ -45,4 +46,4 @@ COPY --from=builder /app/apps/api/generated ./generated
 EXPOSE 3000
 
 # Run migrations and start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && node main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --config=prisma.config.ts && node main.js"]
