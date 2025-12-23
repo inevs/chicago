@@ -18,7 +18,7 @@ export class TransactionTableComponent {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   } | null>(null);
-  currentPageSize = input<5 | 10 | 20>(10);
+  currentPageSize = input<5 | 10 | 20>(5);
 
   searchChange = output<string>();
   editTransaction = output<DividendTransaction>();

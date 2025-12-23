@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 
 const STORAGE_KEY = 'dividends_page_size';
-const DEFAULT_PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 5;
 const ALLOWED_PAGE_SIZES = [5, 10, 20] as const;
 
 export type PageSize = typeof ALLOWED_PAGE_SIZES[number];

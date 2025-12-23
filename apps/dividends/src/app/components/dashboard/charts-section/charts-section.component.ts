@@ -46,7 +46,7 @@ export class ChartsSectionComponent implements OnDestroy {
   }
 
   private renderCharts(data: DividendTransaction[], isDark: boolean, range: TimeRange) {
-    const months: Record<string, number> = {};
+    const monthsMap: Map<string, { date: Date; amount: number }> = new Map();
     const companies: Record<string, number> = {};
 
     const textColor = isDark ? '#cbd5e1' : '#64748b';
@@ -65,8 +65,23 @@ export class ChartsSectionComponent implements OnDestroy {
         timeKey = date.toLocaleDateString('de-DE', { month: 'long' });
       }
 
-      months[timeKey] = (months[timeKey] || 0) + t.finalPayment;
+      const existing = monthsMap.get(timeKey);
+      if (existing) {
+        existing.amount += t.finalPayment;
+      } else {
+        monthsMap.set(timeKey, { date, amount: t.finalPayment });
+      }
+
       companies[t.name] = (companies[t.name] || 0) + t.finalPayment;
+    });
+
+    // Sort by actual date (ascending: oldest to newest)
+    const sortedMonths = Array.from(monthsMap.entries())
+      .sort((a, b) => a[1].date.getTime() - b[1].date.getTime());
+
+    const months: Record<string, number> = {};
+    sortedMonths.forEach(([label, data]) => {
+      months[label] = data.amount;
     });
 
     this.renderMonthlyChart(months, isDark, textColor, gridColor);
@@ -86,6 +101,7 @@ export class ChartsSectionComponent implements OnDestroy {
       this.monthlyChart.destroy();
     }
 
+    // Data is already sorted in renderCharts
     const config: ChartConfiguration<'bar'> = {
       type: 'bar',
       data: {
@@ -141,22 +157,31 @@ export class ChartsSectionComponent implements OnDestroy {
       this.allocationChart.destroy();
     }
 
+    // Sort companies by value (descending: highest to lowest)
+    const sortedCompanies = Object.entries(companies)
+      .sort((a, b) => b[1] - a[1]);
+
+    const colors = [
+      '#10B981',
+      '#3B82F6',
+      '#6366F1',
+      '#8B5CF6',
+      '#EC4899',
+      '#F59E0B',
+      '#14B8A6',
+      '#EF4444',
+      '#F97316',
+      '#84CC16',
+    ];
+
     const config: ChartConfiguration<'doughnut'> = {
       type: 'doughnut',
       data: {
-        labels: Object.keys(companies),
+        labels: sortedCompanies.map(([name]) => name),
         datasets: [
           {
-            data: Object.values(companies),
-            backgroundColor: [
-              '#10B981',
-              '#3B82F6',
-              '#6366F1',
-              '#8B5CF6',
-              '#EC4899',
-              '#F59E0B',
-              '#14B8A6',
-            ],
+            data: sortedCompanies.map(([, value]) => value),
+            backgroundColor: sortedCompanies.map((_, i) => colors[i % colors.length]),
             borderColor: isDark ? '#1e293b' : '#fff',
             borderWidth: 2,
           },
@@ -187,5 +212,42 @@ export class ChartsSectionComponent implements OnDestroy {
     };
 
     this.allocationChart = new Chart(canvas, config);
+  }
+
+  private parseMonthLabel(label: string): Date {
+    // Map of German month names (both short and long forms)
+    const germanMonths: Record<string, number> = {
+      'Jan': 0, 'Januar': 0,
+      'Feb': 1, 'Februar': 1,
+      'Mär': 2, 'März': 2,
+      'Apr': 3, 'April': 3,
+      'Mai': 4,
+      'Jun': 5, 'Juni': 5,
+      'Jul': 6, 'Juli': 6,
+      'Aug': 7, 'August': 7,
+      'Sep': 8, 'Sept': 8, 'September': 8,
+      'Okt': 9, 'Oktober': 9,
+      'Nov': 10, 'November': 10,
+      'Dez': 11, 'Dezember': 11
+    };
+
+    // Try to parse labels like "Juni 18", "Dez 23", "Januar 24", etc.
+    const monthYearMatch = label.match(/^(\w+)\.?\s+(\d{2})$/);
+    if (monthYearMatch) {
+      const [, monthStr, yearStr] = monthYearMatch;
+      const monthIndex = germanMonths[monthStr];
+      if (monthIndex !== undefined) {
+        return new Date(2000 + parseInt(yearStr), monthIndex, 1);
+      }
+    }
+
+    // Try to parse full month names without year (like "Januar", "Februar")
+    const monthIndex = germanMonths[label];
+    if (monthIndex !== undefined) {
+      return new Date(new Date().getFullYear(), monthIndex, 1);
+    }
+
+    // Fallback: return current date
+    return new Date();
   }
 }
