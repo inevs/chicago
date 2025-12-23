@@ -19,10 +19,14 @@
   ></app-charts-section>
 
   <app-transaction-table
-    [transactions]="sortedTransactions()"
+    [transactions]="paginatedTransactions()"
+    [paginationMetadata]="paginationMetadata()"
+    [currentPageSize]="currentPageSize()"
     (searchChange)="onSearchChange($event)"
     (editTransaction)="handleEditTransaction($event)"
     (deleteTransaction)="handleDeleteTransaction($event)"
+    (pageChange)="onPageChange($event)"
+    (pageSizeChange)="onPageSizeChange($event)"
   ></app-transaction-table>
 </main>
 

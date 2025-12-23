@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { SecurityService } from '../../services/security.service';
 import { DividendPaymentService } from '../../services/dividend-payment.service';
+import { PaginationStateService } from '../../services/pagination-state.service';
 import { CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/shared';
 import { TimeRange, DividendTransaction } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
@@ -30,6 +31,7 @@ export class DashboardComponent implements OnInit {
   private readonly dataService = inject(DividendDataService);
   private readonly securityService = inject(SecurityService);
   private readonly dividendPaymentService = inject(DividendPaymentService);
+  private readonly paginationStateService = inject(PaginationStateService);
 
   currentRange = signal<TimeRange>('ALL');
   searchTerm = signal('');
@@ -55,6 +57,36 @@ export class DashboardComponent implements OnInit {
     return [...this.filteredTransactions()].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+  });
+
+  // Pagination computed signals
+  currentPageSize = computed(() => this.paginationStateService.getPageSize()());
+  currentPage = computed(() => this.paginationStateService.getCurrentPage()());
+
+  paginatedTransactions = computed(() => {
+    const sorted = this.sortedTransactions();
+    const page = this.currentPage();
+    const pageSize = this.currentPageSize();
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return sorted.slice(start, end);
+  });
+
+  paginationMetadata = computed(() => {
+    const sorted = this.sortedTransactions();
+    const pageSize = this.currentPageSize();
+    const page = this.currentPage();
+    const totalItems = sorted.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    return {
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    };
   });
 
   ngOnInit() {
@@ -90,10 +122,20 @@ export class DashboardComponent implements OnInit {
 
   setRange(range: TimeRange) {
     this.currentRange.set(range);
+    this.paginationStateService.resetPagination();
   }
 
   onSearchChange(searchTerm: string) {
     this.searchTerm.set(searchTerm);
+    this.paginationStateService.resetPagination();
+  }
+
+  onPageChange(page: number) {
+    this.paginationStateService.setCurrentPage(page);
+  }
+
+  onPageSizeChange(pageSize: 5 | 10 | 20) {
+    this.paginationStateService.setPageSize(pageSize);
   }
 
   toggleModal() {
