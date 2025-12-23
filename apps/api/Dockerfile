@@ -23,24 +23,30 @@ RUN npx prisma generate --config=apps/api/prisma.config.ts
 # Build the application from workspace root
 WORKDIR /app
 RUN npx nx build api
-RUN npx nx run api:prune
 
 # Stage 2: Production
 FROM node:25.2.1-alpine
 
 WORKDIR /app
 
-# Install production dependencies only
-COPY --from=builder /app/dist/apps/api/package*.json ./
-RUN npm ci --omit=dev
+# Copy package files from builder
+COPY --from=builder /app/package*.json ./
 
-# Copy built application and workspace modules
+# Install production dependencies only
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copy built application
 COPY --from=builder /app/dist/apps/api ./
+
+# Copy Prisma files
 COPY --from=builder /app/apps/api/prisma ./prisma
 COPY --from=builder /app/apps/api/prisma.config.ts ./prisma.config.ts
 
 # Copy generated Prisma client
 COPY --from=builder /app/apps/api/generated ./generated
+
+# Install Prisma CLI for migrations
+RUN npm install -g prisma@7.1.0
 
 # Expose port
 EXPOSE 3000
