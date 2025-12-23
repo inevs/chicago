@@ -8,17 +8,20 @@ COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 
-# Copy workspace configuration
+# Install dependencies first (better caching)
+RUN npm ci
+
+# Copy workspace configuration and source code
 COPY packages ./packages
 COPY apps/api ./apps/api
 
-# Install dependencies
-RUN npm ci
+# Generate Prisma Client (needs DATABASE_URL env var even though it doesn't connect)
+WORKDIR /app/apps/api
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+RUN npx prisma generate
 
-# Generate Prisma Client
-RUN cd apps/api && npx prisma generate
-
-# Build the application
+# Build the application from workspace root
+WORKDIR /app
 RUN npx nx build api
 RUN npx nx run api:prune
 
