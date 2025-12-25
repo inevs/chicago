@@ -19,3 +19,8 @@ export interface DashboardKPIs {
   avgYield: number;
   count: number;
 }
+
+export interface SecuritySummary {
+  name: string;           // Security name (unique identifier)
+  totalDividends: number; // Sum of all finalPayment values in EUR
+}

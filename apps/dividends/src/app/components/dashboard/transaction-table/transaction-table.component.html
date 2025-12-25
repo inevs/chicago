@@ -26,8 +26,6 @@
           <th class="px-6 py-4">Unternehmen</th>
           <th class="px-6 py-4 text-right">Anteile</th>
           <th class="px-6 py-4 text-right">Div/Aktie</th>
-          <th class="px-6 py-4 text-right">Kaufkurs Ø</th>
-          <th class="px-6 py-4 text-right">YoC %</th>
           <th class="px-6 py-4 text-right">Steuer (EUR)</th>
           <th
             class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400 font-bold"
@@ -52,18 +50,6 @@
           <td class="px-6 py-4 text-right">
             {{ transaction.dividend.toFixed(4) }}
             <span class="text-xs text-slate-400 ml-1">{{ transaction.currency }}</span>
-          </td>
-          <td class="px-6 py-4 text-right">
-            {{ transaction.buyPrice ? formatCurrency(transaction.buyPrice) : '-' }}
-          </td>
-          <td class="px-6 py-4 text-right">
-            @if (calculateYoC(transaction); as yoc) {
-            <span
-              class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 py-1 px-2 rounded text-xs font-semibold"
-            >
-              {{ formatNumber(yoc) }}%
-            </span>
-            } @else { - }
           </td>
           <td class="px-6 py-4 text-right text-slate-500 dark:text-slate-400">
             {{ formatCurrency(calculateTaxInEur(transaction)) }}

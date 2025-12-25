@@ -18,6 +18,10 @@
     [currentRange]="currentRange()"
   ></app-charts-section>
 
+  <app-securities-summary
+    [filteredTransactions]="filteredTransactions()"
+  ></app-securities-summary>
+
   <app-transaction-table
     [transactions]="paginatedTransactions()"
     [paginationMetadata]="paginationMetadata()"

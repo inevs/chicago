@@ -57,13 +57,6 @@ export class TransactionTableComponent {
     return new Date(date).toLocaleDateString('de-DE');
   }
 
-  calculateYoC(transaction: DividendTransaction): number | null {
-    if (!transaction.buyPrice || transaction.buyPrice <= 0) return null;
-    const safeRate = transaction.rate && transaction.rate > 0 ? transaction.rate : 1;
-    const divInEur = transaction.dividend / safeRate;
-    return (divInEur / transaction.buyPrice) * 100;
-  }
-
   calculateTaxInEur(transaction: DividendTransaction): number {
     const safeRate = transaction.rate && transaction.rate > 0 ? transaction.rate : 1;
     return transaction.taxes / safeRate;

@@ -8,6 +8,7 @@ import { CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/s
 import { TimeRange, DividendTransaction } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
 import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
+import { SecuritiesSummaryComponent } from './securities-summary/securities-summary.component';
 import { ChartsSectionComponent } from './charts-section/charts-section.component';
 import { TransactionTableComponent } from './transaction-table/transaction-table.component';
 import { TransactionModalComponent, TransactionForm } from './transaction-modal/transaction-modal.component';
@@ -19,6 +20,7 @@ import { SecurityModalComponent, SecurityForm } from './security-modal/security-
     CommonModule,
     HeaderNavComponent,
     KpiCardsComponent,
+    SecuritiesSummaryComponent,
     ChartsSectionComponent,
     TransactionTableComponent,
     TransactionModalComponent,

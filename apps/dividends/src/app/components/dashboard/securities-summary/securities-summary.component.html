@@ -1,0 +1,104 @@
+<div
+  class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden transition-colors mb-8"
+>
+  <!-- Header -->
+  <div
+    class="p-6 border-b border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4"
+  >
+    <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+      Wertpapiere
+    </h3>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+      <thead
+        class="bg-slate-50 dark:bg-slate-700/50 text-slate-700 dark:text-slate-400 uppercase font-semibold text-xs border-b border-slate-200 dark:border-slate-700"
+      >
+        <tr>
+          <th class="px-6 py-4">Wertpapierbezeichnung</th>
+          <th class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400 font-bold">
+            Gesamte Dividenden (EUR)
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+        @for (security of paginatedSecurities(); track security.name) {
+        <tr
+          class="hover:bg-slate-50 dark:hover:bg-slate-800 transition border-b border-slate-50 dark:border-slate-800"
+        >
+          <td class="px-6 py-4 font-medium text-slate-900 dark:text-white">
+            {{ security.name }}
+          </td>
+          <td
+            class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400"
+          >
+            {{ formatCurrency(security.totalDividends) }}
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  @if (paginationMetadata(); as pagination) {
+  <div class="p-4 border-t border-slate-100 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-4">
+
+    <!-- Page Size Selector -->
+    <div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+      <label for="pageSize">Einträge pro Seite:</label>
+      <select
+        id="pageSize"
+        [value]="pageSize()"
+        (change)="onPageSizeChange($event)"
+        class="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+
+    <!-- Page Info -->
+    <div class="text-sm text-slate-600 dark:text-slate-300">
+      Seite {{ pagination.page }} von {{ pagination.totalPages }}
+      ({{ pagination.totalItems }} Gesamt)
+    </div>
+
+    <!-- Page Navigation -->
+    <div class="flex items-center gap-2">
+      <button
+        (click)="previousPage()"
+        [disabled]="!pagination.hasPreviousPage"
+        class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        title="Vorherige Seite"
+      >
+        ← Zurück
+      </button>
+
+      <span class="text-sm text-slate-600 dark:text-slate-300 px-2">
+        {{ pagination.page }} / {{ pagination.totalPages }}
+      </span>
+
+      <button
+        (click)="nextPage()"
+        [disabled]="!pagination.hasNextPage"
+        class="px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        title="Nächste Seite"
+      >
+        Weiter →
+      </button>
+    </div>
+
+  </div>
+  }
+
+  <!-- Empty State -->
+  @if (aggregatedSecurities().length === 0) {
+  <div class="p-8 text-center text-slate-400 dark:text-slate-500">
+    Keine Daten für diesen Zeitraum gefunden.
+  </div>
+  }
+</div>
