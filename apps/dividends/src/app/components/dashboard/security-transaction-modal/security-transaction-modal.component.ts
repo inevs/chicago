@@ -136,6 +136,15 @@ export class SecurityTransactionModalComponent implements OnChanges {
     this.formData.update(data => ({ ...data, [field]: value }));
   }
 
+  // Helper to parse number input - accepts both comma and period as decimal separator
+  parseNumberInput(value: string): number {
+    if (!value) return 0;
+    // Replace comma with period for German number format
+    const normalized = value.toString().replace(',', '.');
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
   onSecuritySelected(security: Security) {
     this.formData.update(data => ({
       ...data,

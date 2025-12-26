@@ -90,7 +90,7 @@
       </div>
     </div>
 
-    <div class="bg-slate-50 dark:bg-slate-750/50 rounded-lg p-4 mb-6">
+    <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-6">
       <div class="text-sm text-slate-700 dark:text-slate-300">
         <strong>{{ deletingTransaction()?.name }}</strong><br/>
         {{ formatDate(deletingTransaction()?.date || '') }}<br/>
@@ -156,7 +156,7 @@
       </div>
     </div>
 
-    <div class="bg-slate-50 dark:bg-slate-750/50 rounded-lg p-4 mb-6">
+    <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-6">
       <div class="text-sm text-slate-700 dark:text-slate-300">
         <strong>{{ deletingSecurityTransaction()?.security?.name }}</strong><br/>
         {{ deletingSecurityTransaction()?.date ? formatDate(deletingSecurityTransaction()!.date.toString()) : '' }}<br/>
