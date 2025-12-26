@@ -1,57 +1,85 @@
 # Dividends
 
-A full-stack application for tracking dividends built with NestJS, Angular, and PostgreSQL in an Nx monorepo.
+A full-stack dividends tracking application built with NestJS, Angular, and PostgreSQL in an Nx monorepo.
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+
+## Tech Stack
+
+- **Backend**: NestJS 11 with Prisma ORM 7
+- **Frontend**: Angular 20 (standalone components)
+- **Database**: PostgreSQL 16
+- **Monorepo**: Nx 22
+- **Styling**: SCSS with TailwindCSS
 
 ## Architecture
 
 This monorepo contains:
 
-- **Backend API** (`apps/api`) - NestJS application with Prisma ORM
+- **Backend API** (`apps/api`) - NestJS application with Prisma ORM for PostgreSQL
 - **Frontend** (`apps/dividends`) - Angular 20 standalone application
-- **Shared Library** (`packages/shared`) - Shared code between frontend and backend
+- **Shared Library** (`packages/shared`) - Shared types and utilities (`@dividends/shared`)
 - **E2E Tests** (`apps/api-e2e`) - End-to-end tests for the API
+
+**Key Features**:
+- Frontend automatically proxies `/api` requests to the backend via `proxy.conf.json`
+- Running `nx serve dividends` automatically starts the API server first
+- Prisma schema located at `apps/api/prisma/schema.prisma` with custom client output to `apps/api/generated/prisma`
 
 ## Prerequisites
 
-- Node.js (LTS version recommended)
-- PostgreSQL database
-- npm or yarn
+- Node.js v25.2.1 (see `.nvmrc`)
+- Docker and Docker Compose (for PostgreSQL)
+- npm
 
 ## Getting Started
 
 ### 1. Install dependencies
 
-```sh
+```bash
 npm install
 ```
 
-### 2. Set up environment variables
+### 2. Start the database
 
-Create a `.env` file in the root directory:
+Use Docker Compose to start a local PostgreSQL instance:
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/dividends?schema=public"
-PORT=3000
+```bash
+docker compose up -d
 ```
 
-### 3. Set up the database
+This starts PostgreSQL 16 on `localhost:5432` with default credentials configured for local development.
 
-```sh
+### 3. Set up environment variables
+
+Copy the example environment file:
+
+```bash
+cp .env.example .env
+```
+
+The default configuration works with the Docker Compose database:
+
+```env
+DATABASE_URL="postgresql://dividends:dividends@localhost:5432/dividends?schema=public"
+```
+
+### 4. Set up the database schema
+
+```bash
 # Generate Prisma Client
 npm run db:generate
 
-# Run migrations
+# Run migrations to set up the database schema
 npm run db:migrate
 
-# (Optional) Seed the database
+# (Optional) Seed the database with sample data
 npm run db:seed
 ```
 
-### 4. Start the application
+### 5. Start the application
 
-```sh
+```bash
 # Start both API and frontend (recommended)
 nx serve dividends
 
@@ -61,11 +89,13 @@ nx serve api
 
 The API will be available at `http://localhost:3000/api` and the frontend at `http://localhost:4200`.
 
+Note: Running `nx serve dividends` automatically starts the backend API first before starting the frontend dev server.
+
 ## Development Commands
 
 ### Running Applications
 
-```sh
+```bash
 # Serve the full stack (starts API + Angular dev server)
 nx serve dividends
 
@@ -75,18 +105,21 @@ nx serve api
 
 ### Building
 
-```sh
+```bash
 # Build a specific project
 nx build api
 nx build dividends
 
 # Build all projects
 nx run-many -t build
+
+# Build only affected projects (based on git changes)
+nx affected -t build
 ```
 
 ### Testing
 
-```sh
+```bash
 # Run tests for a specific project
 nx test api
 nx test dividends
@@ -94,41 +127,71 @@ nx test shared
 
 # Run tests for all projects
 nx run-many -t test
+
+# Run tests for affected projects only
+nx affected -t test
 ```
 
 ### Linting
 
-```sh
+```bash
 # Lint a specific project
 nx lint api
 nx lint dividends
 
 # Lint all projects
 nx run-many -t lint
+
+# Lint affected projects only
+nx affected -t lint
 ```
 
 ## Database Commands
 
-### Core Operations
+All database commands use Prisma with a custom configuration file (`apps/api/prisma.config.ts`). The Prisma schema is located at `apps/api/prisma/schema.prisma`.
 
-```sh
+### Docker Database Management
+
+```bash
+# Start PostgreSQL database
+docker compose up -d
+
+# Stop database
+docker compose down
+
+# Stop and remove volumes (WARNING: deletes all data)
+docker compose down -v
+
+# View database logs
+docker compose logs db
+```
+
+### Prisma Core Operations
+
+```bash
 # Generate Prisma Client (run after schema changes)
 npm run db:generate
 
-# Push schema changes to database (prototyping)
+# Push schema changes to database (prototyping, skips migrations)
 npm run db:push
 
-# Open Prisma Studio to view/edit data
+# Open Prisma Studio to view/edit data in browser
 npm run db:studio
+
+# Format Prisma schema file
+npm run db:format
+
+# Validate Prisma schema for errors
+npm run db:validate
 ```
 
 ### Migrations
 
-```sh
+```bash
 # Create and apply a new migration (development)
 npm run db:migrate
 
-# Create migration without applying
+# Create migration file without applying it
 npm run db:migrate:create
 
 # Apply pending migrations (production)
@@ -137,92 +200,88 @@ npm run db:migrate:deploy
 # Check migration status
 npm run db:migrate:status
 
-# Reset database and reapply all migrations
+# Reset database and reapply all migrations (WARNING: deletes all data)
 npm run db:migrate:reset
 ```
 
-### Utilities
+### Data Management
 
-```sh
-# Seed the database
+```bash
+# Seed the database with sample data
 npm run db:seed
 
-# Reset database without seeds
+# Reset database without running seeds
 npm run db:reset
-
-# Format Prisma schema
-npm run db:format
-
-# Validate Prisma schema
-npm run db:validate
 ```
+
+## Deployment
+
+### API Deployment Preparation
+
+The API has special targets to prepare it for containerization or deployment:
+
+```bash
+# Generate pruned lockfile and copy workspace modules
+nx run api:prune
+```
+
+This runs both `prune-lockfile` and `copy-workspace-modules` to prepare the API build with only the necessary dependencies.
 
 ## Project Structure
 
 ```
-dividends/
+chicago/
 ├── apps/
-│   ├── api/              # NestJS backend
-│   │   ├── src/
-│   │   └── prisma/       # Database schema and migrations
-│   ├── api-e2e/          # API E2E tests
-│   └── dividends/        # Angular frontend
+│   ├── api/                    # NestJS backend API
+│   │   ├── src/                # Application source code
+│   │   ├── prisma/             # Database schema and migrations
+│   │   │   ├── schema.prisma   # Prisma schema definition
+│   │   │   ├── migrations/     # Database migration files
+│   │   │   └── seed.ts         # Database seeding script
+│   │   ├── generated/          # Generated Prisma client
+│   │   └── webpack.config.js   # Custom Webpack configuration
+│   ├── api-e2e/                # API end-to-end tests
+│   └── dividends/              # Angular frontend
+│       ├── src/
+│       │   ├── app/            # Application components
+│       │   └── main.ts         # Application entry point
+│       └── proxy.conf.json     # Dev server proxy configuration
 ├── packages/
-│   └── shared/           # Shared library (@dividends/shared)
-└── package.json
+│   └── shared/                 # Shared library (@dividends/shared)
+│       └── src/                # Shared types and utilities
+├── docker-compose.yml          # PostgreSQL database setup
+├── .nvmrc                      # Node version specification
+└── package.json                # Root package configuration
 ```
 
-## Visualizing Dependencies
+## Nx Workspace Tools
 
-```sh
+### Visualizing Dependencies
+
+```bash
 # Open interactive project graph
 nx graph
 ```
 
-## Set up CI!
+### Nx Console
 
-### Step 1
+Nx Console is an editor extension that lets you run tasks, generate code, and improves code autocompletion. Available for VSCode and IntelliJ.
 
-To connect to Nx Cloud, run the following command:
+[Install Nx Console](https://nx.dev/getting-started/editor-setup)
 
-```sh
+### CI/CD
+
+To set up continuous integration with Nx Cloud (optional):
+
+```bash
 npx nx connect
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+Learn more about [Nx on CI](https://nx.dev/ci/intro/ci-with-nx).
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Resources
 
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Nx Documentation](https://nx.dev)
+- [Angular Documentation](https://angular.dev)
+- [NestJS Documentation](https://docs.nestjs.com)
+- [Prisma Documentation](https://www.prisma.io/docs)
