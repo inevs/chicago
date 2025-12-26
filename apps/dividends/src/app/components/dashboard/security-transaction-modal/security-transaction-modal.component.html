@@ -1,0 +1,233 @@
+@if (show()) {
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <!-- Backdrop -->
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      (click)="onClose()"
+    ></div>
+
+    <!-- Modal -->
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div
+        class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6"
+        (click)="$event.stopPropagation()"
+      >
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            {{ editTransaction() ? 'Transaktion bearbeiten' : 'Neue Transaktion' }}
+          </h3>
+          <button
+            (click)="onClose()"
+            class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+          >
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Form -->
+        <form (ngSubmit)="onSubmit()" class="space-y-4">
+          <!-- Date and Type Row -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Date -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Datum *
+              </label>
+              <input
+                type="date"
+                [value]="formData().date"
+                (input)="updateFormData('date', $any($event.target).value)"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- Transaction Type -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Typ *
+              </label>
+              <select
+                [value]="formData().type"
+                (change)="updateFormData('type', $any($event.target).value)"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option [value]="TransactionType.BUY">Kauf</option>
+                <option [value]="TransactionType.SELL">Verkauf</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Security Autocomplete -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Wertpapier *
+            </label>
+            <app-security-autocomplete
+              [value]="formData().securityName"
+              (securitySelected)="onSecuritySelected($event)"
+            />
+          </div>
+
+          <!-- Quantity and Price Row -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Quantity -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Anzahl *
+              </label>
+              <input
+                type="number"
+                step="0.00000001"
+                [value]="formData().quantity"
+                (input)="updateFormData('quantity', +$any($event.target).value || 0)"
+                required
+                min="0"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- Price Per Share -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Preis pro Anteil *
+              </label>
+              <input
+                type="number"
+                step="0.0001"
+                [value]="formData().pricePerShare"
+                (input)="updateFormData('pricePerShare', +$any($event.target).value || 0)"
+                required
+                min="0"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <!-- Fees and Currency Row -->
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Fees -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Gebühren
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                [value]="formData().fees"
+                (input)="updateFormData('fees', +$any($event.target).value || 0)"
+                min="0"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <!-- Currency -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Währung *
+              </label>
+              <select
+                [value]="formData().currency"
+                (change)="updateFormData('currency', $any($event.target).value)"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+                <option value="NOK">NOK</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Exchange Rate -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Wechselkurs zu EUR *
+            </label>
+            <input
+              type="number"
+              step="0.00000001"
+              [value]="formData().exchangeRate"
+              (input)="updateFormData('exchangeRate', +$any($event.target).value || 1)"
+              required
+              min="0"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                     focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              1 {{ formData().currency }} = {{ formData().exchangeRate }} EUR
+            </p>
+          </div>
+
+          <!-- Calculated Total Display -->
+          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
+            <div class="flex justify-between items-center">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Gesamtwert (berechnet):
+              </span>
+              <span class="text-lg font-bold text-gray-900 dark:text-white">
+                {{ formatCurrency(calculatedTotal()) }}
+              </span>
+            </div>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              ({{ formData().quantity }} × {{ formData().pricePerShare }} + {{ formData().fees }}) × {{ formData().exchangeRate }}
+            </p>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Notizen
+            </label>
+            <textarea
+              [value]="formData().note"
+              (input)="updateFormData('note', $any($event.target).value)"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                     focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            ></textarea>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              (click)="onClose()"
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                     text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700
+                     focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md
+                     hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {{ editTransaction() ? 'Aktualisieren' : 'Erstellen' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+}

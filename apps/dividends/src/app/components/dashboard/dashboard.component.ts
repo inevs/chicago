@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { SecurityService } from '../../services/security.service';
 import { DividendPaymentService } from '../../services/dividend-payment.service';
+import { SecurityTransactionService } from '../../services/security-transaction.service';
 import { PaginationStateService } from '../../services/pagination-state.service';
-import { CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/shared';
+import { CreateDividendPaymentDto, UpdateDividendPaymentDto, SecurityTransactionWithSecurity, CreateSecurityTransactionDto, UpdateSecurityTransactionDto } from '@dividends/shared';
 import { TimeRange, DividendTransaction } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
 import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
@@ -13,6 +14,8 @@ import { ChartsSectionComponent } from './charts-section/charts-section.componen
 import { TransactionTableComponent } from './transaction-table/transaction-table.component';
 import { TransactionModalComponent, TransactionForm } from './transaction-modal/transaction-modal.component';
 import { SecurityModalComponent, SecurityForm } from './security-modal/security-modal.component';
+import { SecurityTransactionTableComponent } from './security-transaction-table/security-transaction-table.component';
+import { SecurityTransactionModalComponent, SecurityTransactionForm } from './security-transaction-modal/security-transaction-modal.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,6 +28,8 @@ import { SecurityModalComponent, SecurityForm } from './security-modal/security-
     TransactionTableComponent,
     TransactionModalComponent,
     SecurityModalComponent,
+    SecurityTransactionTableComponent,
+    SecurityTransactionModalComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
@@ -33,6 +38,7 @@ export class DashboardComponent implements OnInit {
   private readonly dataService = inject(DividendDataService);
   private readonly securityService = inject(SecurityService);
   private readonly dividendPaymentService = inject(DividendPaymentService);
+  private readonly securityTransactionService = inject(SecurityTransactionService);
   private readonly paginationStateService = inject(PaginationStateService);
 
   currentRange = signal<TimeRange>('ALL');
@@ -43,6 +49,15 @@ export class DashboardComponent implements OnInit {
   showMenu = signal(false);
   editingTransaction = signal<DividendTransaction | null>(null);
   deletingTransaction = signal<DividendTransaction | null>(null);
+
+  // Security transaction state
+  showSecurityTransactionModal = signal(false);
+  editingSecurityTransaction = signal<SecurityTransactionWithSecurity | null>(null);
+  deletingSecurityTransaction = signal<SecurityTransactionWithSecurity | null>(null);
+  securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
+  securityTransactionSearchTerm = signal('');
+  securityTransactionPage = signal(1);
+  securityTransactionPageSize = signal<5 | 10 | 20>(10);
 
   filteredTransactions = computed(() => {
     return this.dataService.getFilteredTransactions(
@@ -91,9 +106,56 @@ export class DashboardComponent implements OnInit {
     };
   });
 
+  // Security transaction computed properties
+  filteredSecurityTransactions = computed(() => {
+    const search = this.securityTransactionSearchTerm().toLowerCase();
+    const transactions = this.securityTransactions();
+
+    if (!search) return transactions;
+
+    return transactions.filter(tx =>
+      tx.security?.name.toLowerCase().includes(search) ||
+      tx.security?.symbol.toLowerCase().includes(search) ||
+      tx.note?.toLowerCase().includes(search)
+    );
+  });
+
+  sortedSecurityTransactions = computed(() => {
+    return [...this.filteredSecurityTransactions()].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  });
+
+  paginatedSecurityTransactions = computed(() => {
+    const sorted = this.sortedSecurityTransactions();
+    const page = this.securityTransactionPage();
+    const pageSize = this.securityTransactionPageSize();
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    return sorted.slice(start, end);
+  });
+
+  securityTransactionPaginationMetadata = computed(() => {
+    const sorted = this.sortedSecurityTransactions();
+    const pageSize = this.securityTransactionPageSize();
+    const page = this.securityTransactionPage();
+    const totalItems = sorted.length;
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    return {
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    };
+  });
+
   ngOnInit() {
     this.initTheme();
     this.dataService.loadTransactionsFromBackend();
+    this.loadSecurityTransactions();
   }
 
   initTheme() {
@@ -289,5 +351,135 @@ export class DashboardComponent implements OnInit {
 
   formatDate(date: string): string {
     return new Date(date).toLocaleDateString('de-DE');
+  }
+
+  // Security Transaction Methods
+  loadSecurityTransactions() {
+    this.securityTransactionService.getSecurityTransactions().subscribe({
+      next: (transactions) => {
+        this.securityTransactions.set(transactions);
+      },
+      error: (error) => {
+        console.error('Error loading security transactions:', error);
+      },
+    });
+  }
+
+  toggleSecurityTransactionModal() {
+    const isClosing = this.showSecurityTransactionModal();
+    if (isClosing) {
+      this.editingSecurityTransaction.set(null);
+    }
+    this.showSecurityTransactionModal.update((show) => !show);
+    this.showMenu.set(false);
+  }
+
+  handleSecurityTransactionSubmit(transaction: SecurityTransactionForm) {
+    // Validation
+    if (!transaction.securityId) {
+      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      return;
+    }
+
+    const editingTx = this.editingSecurityTransaction();
+
+    if (editingTx && transaction.id) {
+      // UPDATE existing transaction
+      const dto: UpdateSecurityTransactionDto = {
+        date: transaction.date,
+        type: transaction.type,
+        securityId: transaction.securityId,
+        quantity: transaction.quantity,
+        pricePerShare: transaction.pricePerShare,
+        fees: transaction.fees,
+        currency: transaction.currency,
+        exchangeRate: transaction.exchangeRate,
+        totalValue: transaction.totalValue,
+        note: transaction.note || undefined,
+      };
+
+      this.securityTransactionService.updateSecurityTransaction(transaction.id, dto).subscribe({
+        next: (updatedTransaction) => {
+          console.log('Security transaction updated successfully:', updatedTransaction);
+          this.loadSecurityTransactions();
+          this.toggleSecurityTransactionModal();
+          this.editingSecurityTransaction.set(null);
+        },
+        error: (error) => {
+          console.error('Error updating security transaction:', error);
+          alert(`Failed to update security transaction: ${error.message}`);
+        },
+      });
+    } else {
+      // CREATE new transaction
+      const dto: CreateSecurityTransactionDto = {
+        date: transaction.date,
+        type: transaction.type,
+        securityId: transaction.securityId,
+        quantity: transaction.quantity,
+        pricePerShare: transaction.pricePerShare,
+        fees: transaction.fees,
+        currency: transaction.currency,
+        exchangeRate: transaction.exchangeRate,
+        totalValue: transaction.totalValue,
+        note: transaction.note || undefined,
+      };
+
+      this.securityTransactionService.createSecurityTransaction(dto).subscribe({
+        next: (createdTransaction) => {
+          console.log('Security transaction created successfully:', createdTransaction);
+          this.loadSecurityTransactions();
+          this.toggleSecurityTransactionModal();
+        },
+        error: (error) => {
+          console.error('Error creating security transaction:', error);
+          alert(`Failed to create security transaction: ${error.message}`);
+        },
+      });
+    }
+  }
+
+  handleEditSecurityTransaction(transaction: SecurityTransactionWithSecurity) {
+    this.editingSecurityTransaction.set(transaction);
+    this.showSecurityTransactionModal.set(true);
+  }
+
+  handleDeleteSecurityTransaction(transaction: SecurityTransactionWithSecurity) {
+    this.deletingSecurityTransaction.set(transaction);
+  }
+
+  confirmDeleteSecurityTransaction() {
+    const transaction = this.deletingSecurityTransaction();
+    if (!transaction || !transaction.id) return;
+
+    this.securityTransactionService.deleteSecurityTransaction(transaction.id).subscribe({
+      next: () => {
+        console.log('Security transaction deleted successfully');
+        this.loadSecurityTransactions();
+        this.deletingSecurityTransaction.set(null);
+      },
+      error: (error) => {
+        console.error('Error deleting security transaction:', error);
+        alert(`Failed to delete security transaction: ${error.message}`);
+      },
+    });
+  }
+
+  cancelDeleteSecurityTransaction() {
+    this.deletingSecurityTransaction.set(null);
+  }
+
+  onSecurityTransactionSearchChange(searchTerm: string) {
+    this.securityTransactionSearchTerm.set(searchTerm);
+    this.securityTransactionPage.set(1); // Reset to first page
+  }
+
+  onSecurityTransactionPageChange(page: number) {
+    this.securityTransactionPage.set(page);
+  }
+
+  onSecurityTransactionPageSizeChange(pageSize: 5 | 10 | 20) {
+    this.securityTransactionPageSize.set(pageSize);
+    this.securityTransactionPage.set(1); // Reset to first page
   }
 }

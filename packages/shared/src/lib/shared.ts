@@ -71,3 +71,59 @@ export interface UpdateDividendPaymentDto {
   finalPayment?: number;
   note?: string;
 }
+
+// Enum for transaction types (matches Prisma schema)
+export enum TransactionType {
+  BUY = 'BUY',
+  SELL = 'SELL',
+}
+
+// SecurityTransaction interface (matches Prisma model)
+export interface SecurityTransaction {
+  id: string;
+  date: Date;
+  type: TransactionType;
+  securityId: string;
+  quantity: number;
+  pricePerShare: number;
+  fees: number;
+  currency: string;
+  exchangeRate: number;
+  totalValue: number;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// SecurityTransaction with Security details (for API responses with includes)
+export interface SecurityTransactionWithSecurity extends SecurityTransaction {
+  security: Security;
+}
+
+// DTO for creating a new security transaction
+export interface CreateSecurityTransactionDto {
+  date: string;
+  type: TransactionType;
+  securityId: string;
+  quantity: number;
+  pricePerShare: number;
+  fees: number;
+  currency: string;
+  exchangeRate: number;
+  totalValue: number;
+  note?: string;
+}
+
+// DTO for updating an existing security transaction
+export interface UpdateSecurityTransactionDto {
+  date?: string;
+  type?: TransactionType;
+  securityId?: string;
+  quantity?: number;
+  pricePerShare?: number;
+  fees?: number;
+  currency?: string;
+  exchangeRate?: number;
+  totalValue?: number;
+  note?: string;
+}

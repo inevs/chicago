@@ -7,6 +7,7 @@
   (menuToggle)="toggleMenu()"
   (newTransactionClick)="toggleModal()"
   (newSecurityClick)="toggleSecurityModal()"
+  (newSecurityTransactionClick)="toggleSecurityTransactionModal()"
 ></app-header-nav>
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -32,6 +33,20 @@
     (pageChange)="onPageChange($event)"
     (pageSizeChange)="onPageSizeChange($event)"
   ></app-transaction-table>
+
+  <!-- Security Transactions Widget -->
+  <div class="mt-8">
+    <app-security-transaction-table
+      [transactions]="paginatedSecurityTransactions()"
+      [paginationMetadata]="securityTransactionPaginationMetadata()"
+      [currentPageSize]="securityTransactionPageSize()"
+      (searchChange)="onSecurityTransactionSearchChange($event)"
+      (editTransaction)="handleEditSecurityTransaction($event)"
+      (deleteTransaction)="handleDeleteSecurityTransaction($event)"
+      (pageChange)="onSecurityTransactionPageChange($event)"
+      (pageSizeChange)="onSecurityTransactionPageSizeChange($event)"
+    />
+  </div>
 </main>
 
 <app-transaction-modal
@@ -96,6 +111,72 @@
       <button
         type="button"
         (click)="confirmDelete()"
+        class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm"
+      >
+        Löschen
+      </button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Security Transaction Modal -->
+<app-security-transaction-modal
+  [show]="showSecurityTransactionModal()"
+  [editTransaction]="editingSecurityTransaction()"
+  (closeModal)="toggleSecurityTransactionModal()"
+  (transactionSubmit)="handleSecurityTransactionSubmit($event)"
+/>
+
+<!-- Delete Confirmation Modal for Security Transactions -->
+@if (deletingSecurityTransaction()) {
+<div
+  class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity"
+  (click)="cancelDeleteSecurityTransaction()"
+  tabindex="-1"
+>
+  <div
+    class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 m-4 border dark:border-slate-700 transition-colors"
+    (click)="$event.stopPropagation()"
+    tabindex="0"
+  >
+    <div class="flex items-center gap-4 mb-4">
+      <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+          Transaktion löschen?
+        </h3>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          Diese Aktion kann nicht rückgängig gemacht werden.
+        </p>
+      </div>
+    </div>
+
+    <div class="bg-slate-50 dark:bg-slate-750/50 rounded-lg p-4 mb-6">
+      <div class="text-sm text-slate-700 dark:text-slate-300">
+        <strong>{{ deletingSecurityTransaction()?.security?.name }}</strong><br/>
+        {{ deletingSecurityTransaction()?.date ? formatDate(deletingSecurityTransaction()!.date.toString()) : '' }}<br/>
+        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">
+          {{ formatCurrency(deletingSecurityTransaction()?.totalValue || 0) }}
+        </span>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <button
+        type="button"
+        (click)="cancelDeleteSecurityTransaction()"
+        class="px-4 py-2 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+      >
+        Abbrechen
+      </button>
+      <button
+        type="button"
+        (click)="confirmDeleteSecurityTransaction()"
         class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm"
       >
         Löschen

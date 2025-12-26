@@ -20,6 +20,12 @@ enum SecurityType {
   BOND
 }
 
+// Enum for transaction types
+enum TransactionType {
+  BUY
+  SELL
+}
+
 // Security model - represents stocks, ETFs, and bonds
 model Security {
   id        String   @id @default(uuid())
@@ -34,7 +40,8 @@ model Security {
   updatedAt DateTime @updatedAt
 
   // Relations
-  dividendPayments DividendPayment[]
+  dividendPayments      DividendPayment[]
+  securityTransactions  SecurityTransaction[]
 
   // Indexes for common queries
   @@index([isin])
@@ -78,4 +85,41 @@ model DividendPayment {
   @@index([payoutDate])
   @@index([securityId, exDate]) // Compound index for filtering by security and date
   @@map("dividend_payments") // Plural table name convention
+}
+
+// SecurityTransaction model - represents buy/sell transactions for securities
+model SecurityTransaction {
+  id              String          @id @default(uuid())
+
+  // Transaction metadata
+  date            DateTime        // Transaction date
+  type            TransactionType // BUY or SELL
+
+  // Security relationship
+  securityId      String
+  security        Security        @relation(fields: [securityId], references: [id], onDelete: Cascade)
+
+  // Transaction details
+  quantity        Decimal         @db.Decimal(19, 8) // Number of shares/units
+  pricePerShare   Decimal         @db.Decimal(19, 4) // Price per share/unit
+  fees            Decimal         @db.Decimal(19, 4) // Fees and commissions
+
+  // Currency conversion
+  currency        String          // Transaction currency (ISO 4217 code, e.g., "USD", "EUR")
+  exchangeRate    Decimal         @db.Decimal(19, 8) // Exchange rate to base currency (EUR)
+  totalValue      Decimal         @db.Decimal(19, 4) // Total value in base currency (EUR)
+
+  // Optional fields
+  note            String?         @db.Text // User notes/comments
+
+  // Timestamps
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Indexes for common queries
+  @@index([securityId])
+  @@index([date])
+  @@index([type])
+  @@index([securityId, date]) // Compound index for filtering by security and date
+  @@map("security_transactions") // Plural table name convention
 }

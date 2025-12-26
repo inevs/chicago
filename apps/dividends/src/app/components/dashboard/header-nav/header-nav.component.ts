@@ -18,6 +18,7 @@ export class HeaderNavComponent {
   menuToggle = output<void>();
   newTransactionClick = output<void>();
   newSecurityClick = output<void>();
+  newSecurityTransactionClick = output<void>();
 
   onRangeChange(range: TimeRange) {
     this.rangeChange.emit(range);
@@ -37,5 +38,9 @@ export class HeaderNavComponent {
 
   onNewSecurityClick() {
     this.newSecurityClick.emit();
+  }
+
+  onNewSecurityTransactionClick() {
+    this.newSecurityTransactionClick.emit();
   }
 }
