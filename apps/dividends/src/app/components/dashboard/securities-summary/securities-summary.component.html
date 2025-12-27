@@ -18,6 +18,12 @@
       >
         <tr>
           <th class="px-6 py-4">Wertpapierbezeichnung</th>
+          <th class="px-6 py-4 text-right text-blue-600 dark:text-blue-400 font-bold">
+            Anteile
+          </th>
+          <th class="px-6 py-4 text-right text-purple-600 dark:text-purple-400 font-bold">
+            Ø Kaufpreis (EUR)
+          </th>
           <th class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400 font-bold">
             Gesamte Dividenden (EUR)
           </th>
@@ -32,6 +38,16 @@
             {{ security.name }}
           </td>
           <td
+            class="px-6 py-4 text-right font-bold text-blue-600 dark:text-blue-400"
+          >
+            {{ formatNumber(security.quantity) }}
+          </td>
+          <td
+            class="px-6 py-4 text-right font-bold text-purple-600 dark:text-purple-400"
+          >
+            {{ formatCurrency(security.averageBuyPrice) }}
+          </td>
+          <td
             class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400"
           >
             {{ formatCurrency(security.totalDividends) }}
@@ -39,6 +55,22 @@
         </tr>
         }
       </tbody>
+      <tfoot class="bg-slate-100 dark:bg-slate-700 border-t-2 border-slate-300 dark:border-slate-600">
+        <tr>
+          <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">
+            Gesamt
+          </td>
+          <td class="px-6 py-4 text-right font-bold text-blue-600 dark:text-blue-400">
+            {{ formatNumber(totals().totalQuantity) }}
+          </td>
+          <td class="px-6 py-4 text-right font-bold text-slate-400 dark:text-slate-500">
+            –
+          </td>
+          <td class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
+            {{ formatCurrency(totals().totalDividends) }}
+          </td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 
