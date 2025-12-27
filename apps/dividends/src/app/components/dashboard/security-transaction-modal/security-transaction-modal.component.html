@@ -28,57 +28,70 @@
         </div>
 
         <!-- Form -->
-        <form (ngSubmit)="onSubmit()" class="space-y-4">
-          <!-- Date and Type Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Date -->
+        <form (ngSubmit)="onSubmit()" class="space-y-5">
+          <!-- Transaction Details Section -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Transaktionsdetails
+            </h4>
+
+            <!-- Date and Type Row -->
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Date -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Datum *
+                </label>
+                <input
+                  type="date"
+                  [value]="formData().date"
+                  (input)="updateFormData('date', $any($event.target).value)"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <!-- Transaction Type -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Typ *
+                </label>
+                <select
+                  [value]="formData().type"
+                  (change)="updateFormData('type', $any($event.target).value)"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option [value]="TransactionType.BUY">Kauf</option>
+                  <option [value]="TransactionType.SELL">Verkauf</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Security Autocomplete -->
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Datum *
+                Wertpapier *
               </label>
-              <input
-                type="date"
-                [value]="formData().date"
-                (input)="updateFormData('date', $any($event.target).value)"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              <app-security-autocomplete
+                [value]="formData().securityName"
+                (securitySelected)="onSecuritySelected($event)"
               />
             </div>
-
-            <!-- Transaction Type -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Typ *
-              </label>
-              <select
-                [value]="formData().type"
-                (change)="updateFormData('type', $any($event.target).value)"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option [value]="TransactionType.BUY">Kauf</option>
-                <option [value]="TransactionType.SELL">Verkauf</option>
-              </select>
-            </div>
           </div>
 
-          <!-- Security Autocomplete -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Wertpapier *
-            </label>
-            <app-security-autocomplete
-              [value]="formData().securityName"
-              (securitySelected)="onSecuritySelected($event)"
-            />
-          </div>
+          <!-- Price Details Section -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Preisdetails
+            </h4>
 
-          <!-- Quantity and Price Row -->
-          <div class="grid grid-cols-2 gap-4">
+            <!-- Quantity and Price Row -->
+            <div class="grid grid-cols-2 gap-4">
             <!-- Quantity -->
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -116,95 +129,109 @@
             </div>
           </div>
 
-          <!-- Fees and Currency Row -->
-          <div class="grid grid-cols-2 gap-4">
-            <!-- Fees -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Gebühren
-              </label>
-              <input
-                type="text"
-                inputmode="decimal"
-                [value]="formData().fees"
-                (input)="updateFormData('fees', parseNumberInput($any($event.target).value))"
-                placeholder="0.00"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+            <!-- Fees, Currency and Exchange Rate Row -->
+            <div class="grid grid-cols-3 gap-4">
+              <!-- Fees -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Gebühren
+                </label>
+                <input
+                  type="text"
+                  inputmode="decimal"
+                  [value]="formData().fees"
+                  (input)="updateFormData('fees', parseNumberInput($any($event.target).value))"
+                  placeholder="0.00"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <!-- Currency -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Währung *
+                </label>
+                <select
+                  [value]="formData().currency"
+                  (change)="onCurrencyChange($any($event.target).value)"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                         focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="NOK">NOK</option>
+                </select>
+              </div>
+
+              <!-- Exchange Rate (only visible for non-EUR currencies) -->
+              @if (formData().currency !== 'EUR') {
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Kurs zu EUR *
+                  </label>
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    [value]="formData().exchangeRate"
+                    (input)="updateFormData('exchangeRate', parseNumberInput($any($event.target).value) || 1)"
+                    required
+                    placeholder="1.0"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                           focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              }
             </div>
 
-            <!-- Currency -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Währung *
-              </label>
-              <select
-                [value]="formData().currency"
-                (change)="updateFormData('currency', $any($event.target).value)"
-                required
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
-                <option value="NOK">NOK</option>
-              </select>
-            </div>
-          </div>
+            @if (formData().currency !== 'EUR') {
+              <p class="text-xs text-gray-500 dark:text-gray-400 -mt-2">
+                1 {{ formData().currency }} = {{ formData().exchangeRate }} EUR
+              </p>
+            }
 
-          <!-- Exchange Rate -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Wechselkurs zu EUR *
-            </label>
-            <input
-              type="text"
-              inputmode="decimal"
-              [value]="formData().exchangeRate"
-              (input)="updateFormData('exchangeRate', parseNumberInput($any($event.target).value) || 1)"
-              required
-              placeholder="1.0"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                     focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              1 {{ formData().currency }} = {{ formData().exchangeRate }} EUR
-            </p>
-          </div>
-
-          <!-- Calculated Total Display -->
-          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-            <div class="flex justify-between items-center">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Gesamtwert (berechnet):
-              </span>
-              <span class="text-lg font-bold text-gray-900 dark:text-white">
+            <!-- Calculated Total Display -->
+            <div class="flex items-center justify-between px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Gesamtwert:
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  ({{ formData().quantity }} × {{ formData().pricePerShare }}{{ formData().fees > 0 ? ' + ' + formData().fees : '' }}){{ formData().currency !== 'EUR' ? ' × ' + formData().exchangeRate : '' }}
+                </span>
+              </div>
+              <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
                 {{ formatCurrency(calculatedTotal()) }}
               </span>
             </div>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              ({{ formData().quantity }} × {{ formData().pricePerShare }} + {{ formData().fees }}) × {{ formData().exchangeRate }}
-            </p>
           </div>
 
-          <!-- Notes -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notizen
-            </label>
-            <textarea
-              [value]="formData().note"
-              (input)="updateFormData('note', $any($event.target).value)"
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                     focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            ></textarea>
+          <!-- Additional Information Section -->
+          <div class="space-y-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
+              Zusätzliche Informationen
+            </h4>
+
+            <!-- Notes -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Notizen
+              </label>
+              <textarea
+                [value]="formData().note"
+                (input)="updateFormData('note', $any($event.target).value)"
+                rows="3"
+                placeholder="Optional: Notizen zu dieser Transaktion"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
+                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                       focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              ></textarea>
+            </div>
           </div>
 
           <!-- Buttons -->

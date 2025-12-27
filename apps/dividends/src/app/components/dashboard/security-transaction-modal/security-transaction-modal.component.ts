@@ -146,11 +146,23 @@ export class SecurityTransactionModalComponent implements OnChanges {
   }
 
   onSecuritySelected(security: Security) {
+    const newCurrency = security.currency as 'EUR' | 'USD' | 'NOK' | 'GBP';
     this.formData.update(data => ({
       ...data,
       securityName: security.name,
       securityId: security.id,
-      currency: security.currency as 'EUR' | 'USD' | 'NOK' | 'GBP',
+      currency: newCurrency,
+      // Set exchange rate to 1 if currency is EUR
+      exchangeRate: newCurrency === 'EUR' ? 1.0 : data.exchangeRate,
+    }));
+  }
+
+  onCurrencyChange(currency: string) {
+    this.formData.update(data => ({
+      ...data,
+      currency: currency as 'EUR' | 'USD' | 'NOK' | 'GBP',
+      // Automatically set exchange rate to 1 when EUR is selected
+      exchangeRate: currency === 'EUR' ? 1.0 : data.exchangeRate,
     }));
   }
 
