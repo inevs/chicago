@@ -53,7 +53,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
     const data = this.formData();
     const subtotal = data.quantity * data.pricePerShare;
     const totalInCurrency = subtotal + data.fees;
-    return totalInCurrency * data.exchangeRate;
+    return totalInCurrency / data.exchangeRate;
   });
 
   ngOnChanges(changes: SimpleChanges) {
