@@ -18,6 +18,9 @@ export class SecuritiesSummaryComponent {
   currentPage = signal<number>(1);
   pageSize = signal<5 | 10 | 20>(5);
 
+  // Filter signal
+  showOnlyWithHoldings = signal<boolean>(false);
+
   // Aggregate transactions by security name, sum dividends, calculate quantities and avg buy price
   aggregatedSecurities = computed(() => {
     // Map to store aggregated data by security name
@@ -71,7 +74,7 @@ export class SecuritiesSummaryComponent {
     });
 
     // Convert to array and calculate averages
-    return Array.from(securitiesMap.entries())
+    const securities = Array.from(securitiesMap.entries())
       .map(([name, data]) => {
         const avgPrice = data.buyCount > 0 && isFinite(data.totalBuyValue / data.buyCount)
           ? data.totalBuyValue / data.buyCount
@@ -85,6 +88,22 @@ export class SecuritiesSummaryComponent {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Apply filter if enabled
+    if (this.showOnlyWithHoldings()) {
+      // Use epsilon to handle floating-point precision issues
+      const EPSILON = 0.0001;
+      const filtered = securities.filter(s => s.quantity > EPSILON);
+      console.log('Filter active - Total securities:', securities.length, 'After filter:', filtered.length);
+      securities.forEach(s => {
+        if (s.quantity <= EPSILON) {
+          console.log('Filtered out:', s.name, 'Quantity:', s.quantity);
+        }
+      });
+      return filtered;
+    }
+
+    return securities;
   });
 
   // Paginate aggregated securities
@@ -153,5 +172,10 @@ export class SecuritiesSummaryComponent {
     const size = parseInt(select.value, 10) as 5 | 10 | 20;
     this.pageSize.set(size);
     this.currentPage.set(1); // Reset to first page when changing page size
+  }
+
+  toggleHoldingsFilter() {
+    this.showOnlyWithHoldings.update(value => !value);
+    this.currentPage.set(1); // Reset to first page when changing filter
   }
 }
