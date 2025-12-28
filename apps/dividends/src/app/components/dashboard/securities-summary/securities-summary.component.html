@@ -42,6 +42,9 @@
           <th class="px-6 py-4 text-right text-purple-600 dark:text-purple-400 font-bold">
             Ø Kaufpreis (EUR)
           </th>
+          <th class="px-6 py-4 text-right text-orange-600 dark:text-orange-400 font-bold">
+            Dividendenrendite
+          </th>
           <th class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400 font-bold">
             Gesamte Dividenden (EUR)
           </th>
@@ -64,6 +67,11 @@
             class="px-6 py-4 text-right font-bold text-purple-600 dark:text-purple-400"
           >
             {{ formatCurrency(security.averageBuyPrice) }}
+          </td>
+          <td
+            class="px-6 py-4 text-right font-bold text-orange-600 dark:text-orange-400"
+          >
+            {{ formatPercent(security.dividendYield) }}
           </td>
           <td
             class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400"

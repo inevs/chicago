@@ -80,11 +80,19 @@ export class SecuritiesSummaryComponent {
           ? data.totalBuyValue / data.buyCount
           : 0;
 
+        const totalDividends = isFinite(data.totalDividends) ? data.totalDividends : 0;
+        const quantity = isFinite(data.quantity) ? data.quantity : 0;
+
+        // Calculate dividend yield: total dividends / original total investment
+        // Use totalBuyValue (all historical purchases) instead of current holding value
+        const dividendYield = data.totalBuyValue > 0 ? (totalDividends / data.totalBuyValue) * 100 : 0;
+
         return {
           name,
-          totalDividends: isFinite(data.totalDividends) ? data.totalDividends : 0,
-          quantity: isFinite(data.quantity) ? data.quantity : 0,
-          averageBuyPrice: avgPrice
+          totalDividends,
+          quantity,
+          averageBuyPrice: avgPrice,
+          dividendYield: isFinite(dividendYield) ? dividendYield : 0
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -151,6 +159,13 @@ export class SecuritiesSummaryComponent {
       minimumFractionDigits: 0,
       maximumFractionDigits: 6,
     }).format(value);
+  }
+
+  formatPercent(value: number): string {
+    return new Intl.NumberFormat('de-DE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value) + ' %';
   }
 
   previousPage() {
