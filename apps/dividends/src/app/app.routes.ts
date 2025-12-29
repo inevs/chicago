@@ -19,16 +19,27 @@ export const appRoutes: Route[] = [
     title: 'Portfolio - DiviTrack',
   },
   {
-    path: 'transaktionen',
+    path: 'dividenden',
     loadComponent: () =>
-      import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent),
-    title: 'Transaktionen - DiviTrack',
+      import('./pages/dividends/dividends.component').then(m => m.DividendsComponent),
+    title: 'Dividenden - DiviTrack',
+  },
+  {
+    path: 'wertpapiere',
+    loadComponent: () =>
+      import('./pages/security-transactions/security-transactions.component').then(m => m.SecurityTransactionsComponent),
+    title: 'Käufe & Verkäufe - DiviTrack',
   },
   {
     path: 'analysen',
     loadComponent: () =>
       import('./pages/analyses/analyses.component').then(m => m.AnalysesComponent),
     title: 'Analysen - DiviTrack',
+  },
+  {
+    path: 'transaktionen',
+    redirectTo: 'dividenden',
+    pathMatch: 'full',
   },
   {
     path: '**',

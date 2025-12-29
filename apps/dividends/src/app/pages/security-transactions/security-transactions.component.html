@@ -1,0 +1,16 @@
+<div class="page-container">
+  <h1 class="page-title">Käufe & Verkäufe</h1>
+
+  <section>
+    <app-security-transaction-table
+      [transactions]="paginatedSecurityTransactions()"
+      [paginationMetadata]="securityTransactionPaginationMetadata()"
+      [currentPageSize]="securityTransactionPageSize()"
+      (searchChange)="securityTransactionSearchTerm.set($event)"
+      (editTransaction)="appState.setEditingSecurityTransaction($event)"
+      (deleteTransaction)="appState.setDeletingSecurityTransaction($event)"
+      (pageChange)="securityTransactionPage.set($event)"
+      (pageSizeChange)="securityTransactionPageSize.set($event)"
+    />
+  </section>
+</div>

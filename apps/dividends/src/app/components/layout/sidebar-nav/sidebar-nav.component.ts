@@ -6,7 +6,8 @@ import {
   LucideAngularModule,
   LayoutDashboard,
   Briefcase,
-  FileText,
+  DollarSign,
+  ArrowLeftRight,
   LineChart,
   ChevronLeft,
   ChevronRight,
@@ -34,7 +35,8 @@ export class SidebarNavComponent {
   navItems: NavItem[] = [
     { path: '/uebersicht', label: 'Übersicht', icon: LayoutDashboard },
     { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
-    { path: '/transaktionen', label: 'Transaktionen', icon: FileText },
+    { path: '/dividenden', label: 'Dividenden', icon: DollarSign },
+    { path: '/wertpapiere', label: 'Käufe & Verkäufe', icon: ArrowLeftRight },
     { path: '/analysen', label: 'Analysen', icon: LineChart },
   ];
 
