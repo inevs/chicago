@@ -1,1 +1,31 @@
-// KPI cards styles can be added here if needed
+// KPI cards responsive styles
+
+// Mobile optimizations
+@media (max-width: 768px) {
+  // Adjust card spacing on mobile
+  .grid {
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  // Slightly reduce padding on mobile cards
+  .bg-white {
+    padding: 1.25rem;
+  }
+
+  // Adjust font sizes for mobile
+  .text-3xl {
+    font-size: 2rem;
+  }
+
+  .text-sm {
+    font-size: 0.8125rem;
+  }
+}
+
+// Very small screens - stack everything
+@media (max-width: 400px) {
+  .text-3xl {
+    font-size: 1.75rem;
+  }
+}

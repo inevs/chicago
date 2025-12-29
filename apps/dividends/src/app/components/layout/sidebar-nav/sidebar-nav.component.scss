@@ -189,14 +189,61 @@
   }
 }
 
-// Responsive - Mobile
-@media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+// Mobile backdrop overlay
+.sidebar-backdrop {
+  display: none; // Hidden by default on desktop
+}
 
-    &.show-mobile {
-      transform: translateX(0);
+// Responsive - Mobile and Tablet
+@media (max-width: 1024px) {
+  // Backdrop for mobile sidebar
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+
+    // Show backdrop when sidebar is NOT collapsed (opened)
+    &.active {
+      opacity: 1;
+      pointer-events: auto;
     }
+  }
+
+  .sidebar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0s;
+    z-index: 1000;
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.1);
+    width: 280px !important; // Always full width on mobile, never collapsed
+
+    // When collapsed (default state on mobile), hide sidebar
+    &.collapsed {
+      transform: translateX(-100%);
+      width: 280px !important;
+    }
+
+    // When NOT collapsed (opened state), show sidebar
+    &:not(.collapsed) {
+      transform: translateX(0);
+
+      // Always show text labels on mobile when sidebar is open
+      .logo-text,
+      .nav-label {
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+      }
+    }
+  }
+
+  // Hide collapse button on mobile - use hamburger instead
+  .collapse-btn {
+    display: none;
   }
 }

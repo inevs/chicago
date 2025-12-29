@@ -12,3 +12,18 @@
     transform: translateY(0);
   }
 }
+
+// Responsive chart sizing
+@media (max-width: 768px) {
+  .chart-container {
+    min-height: 250px;
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 640px) {
+  .chart-container {
+    min-height: 200px;
+    max-height: 250px;
+  }
+}

@@ -1,3 +1,33 @@
 .modal-input {
   @apply w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors;
 }
+
+// Mobile responsive styles
+@media (max-width: 640px) {
+  // Make modal nearly full-width on mobile
+  .bg-white.dark\:bg-slate-800 {
+    max-width: calc(100vw - 2rem);
+    padding: 1.25rem;
+  }
+
+  // Stack form grid on mobile
+  .grid.grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  // Make modal title smaller on mobile
+  h2.text-xl {
+    font-size: 1.125rem;
+  }
+
+  // Stack buttons on very small screens
+  @media (max-width: 400px) {
+    .flex.justify-end {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

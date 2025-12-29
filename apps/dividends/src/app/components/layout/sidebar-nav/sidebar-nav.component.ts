@@ -41,4 +41,11 @@ export class SidebarNavComponent {
   toggleSidebar() {
     this.appState.toggleSidebar();
   }
+
+  onNavItemClick() {
+    // Close sidebar on mobile/tablet when nav item is clicked
+    if (window.innerWidth <= 1024 && !this.appState.sidebarCollapsed()) {
+      this.appState.toggleSidebar();
+    }
+  }
 }

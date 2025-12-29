@@ -1,2 +1,56 @@
-// Component-specific styles (if needed)
-// Most styling is handled by Tailwind CSS classes
+// Security transaction table responsive styles
+
+// Tablet and mobile
+@media (max-width: 1024px) {
+  table {
+    font-size: 0.8125rem;
+
+    th,
+    td {
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  // Hide less critical columns on medium screens
+  @media (max-width: 768px) {
+    thead tr th:nth-child(3),
+    tbody tr td:nth-child(3) {
+      display: none;
+    }
+  }
+
+  // Hide even more columns on small screens
+  @media (max-width: 640px) {
+    th,
+    td {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .text-lg {
+      font-size: 1rem;
+    }
+  }
+}
+
+// Ensure table is always scrollable on mobile
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+
+  :host-context(.dark) &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}

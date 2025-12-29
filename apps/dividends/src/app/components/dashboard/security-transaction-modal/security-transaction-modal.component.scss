@@ -1,2 +1,29 @@
-// Component-specific styles (if needed)
-// Most styling is handled by Tailwind CSS classes
+// Mobile responsive styles
+@media (max-width: 640px) {
+  // Make modal nearly full-width on mobile
+  .bg-white.dark\:bg-slate-800 {
+    max-width: calc(100vw - 2rem);
+    padding: 1.25rem;
+  }
+
+  // Stack form grid on mobile
+  .grid.grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  // Make modal title smaller on mobile
+  h2.text-xl {
+    font-size: 1.125rem;
+  }
+
+  // Stack buttons on very small screens
+  @media (max-width: 400px) {
+    .flex.justify-end {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

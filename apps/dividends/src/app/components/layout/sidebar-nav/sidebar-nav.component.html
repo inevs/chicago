@@ -1,3 +1,11 @@
+<!-- Mobile backdrop overlay -->
+<div
+  class="sidebar-backdrop"
+  [class.active]="!appState.sidebarCollapsed()"
+  (click)="toggleSidebar()"
+  aria-hidden="true"
+></div>
+
 <aside
   class="sidebar"
   [class.collapsed]="appState.sidebarCollapsed()"
@@ -35,6 +43,7 @@
         [routerLinkActiveOptions]="{ exact: item.path === '/uebersicht' }"
         class="nav-item"
         [title]="item.label"
+        (click)="onNavItemClick()"
       >
         <lucide-icon [img]="item.icon" class="nav-icon" />
         <span class="nav-label" *ngIf="!appState.sidebarCollapsed()">{{ item.label }}</span>

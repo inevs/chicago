@@ -26,8 +26,8 @@
   width: 100%;
 }
 
-// Responsive - Mobile
-@media (max-width: 768px) {
+// Responsive - Mobile and Tablet
+@media (max-width: 1024px) {
   .main-content-wrapper {
     margin-left: 0; // No sidebar margin on mobile
 

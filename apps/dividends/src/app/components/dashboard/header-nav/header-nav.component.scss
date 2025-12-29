@@ -1,1 +1,48 @@
-// Header navigation styles can be added here if needed
+// Header navigation responsive styles
+
+// Tablet responsive
+@media (max-width: 1024px) {
+  nav button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+// Make dropdown menu full-width on mobile
+@media (max-width: 640px) {
+  .absolute.right-0.mt-2 {
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+  }
+
+  // Increase touch targets on mobile
+  nav button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  // Compact time range buttons
+  .bg-slate-100 {
+    padding: 0.25rem;
+    gap: 0.25rem;
+  }
+
+  .bg-slate-100 button {
+    padding: 0.5rem 0.625rem;
+    font-size: 0.75rem;
+    min-width: auto;
+  }
+
+  // Hide the "Neu" text on very small screens, keep only icon
+  .flex.items-center.gap-2 span {
+    display: none;
+  }
+}
+
+// Show "Neu" text on slightly larger screens
+@media (min-width: 400px) {
+  .flex.items-center.gap-2 span {
+    display: inline;
+  }
+}

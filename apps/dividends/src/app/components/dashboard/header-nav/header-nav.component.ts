@@ -51,4 +51,8 @@ export class HeaderNavComponent {
   onFileSelected(event: Event) {
     this.appState.onFileSelected(event);
   }
+
+  onMobileSidebarToggle() {
+    this.appState.toggleSidebar();
+  }
 }
