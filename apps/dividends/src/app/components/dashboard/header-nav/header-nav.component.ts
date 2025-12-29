@@ -19,6 +19,8 @@ export class HeaderNavComponent {
   newTransactionClick = output<void>();
   newSecurityClick = output<void>();
   newSecurityTransactionClick = output<void>();
+  exportDataClick = output<void>();
+  importDataClick = output<void>();
 
   onRangeChange(range: TimeRange) {
     this.rangeChange.emit(range);
@@ -42,5 +44,13 @@ export class HeaderNavComponent {
 
   onNewSecurityTransactionClick() {
     this.newSecurityTransactionClick.emit();
+  }
+
+  onExportDataClick() {
+    this.exportDataClick.emit();
+  }
+
+  onImportDataClick() {
+    this.importDataClick.emit();
   }
 }

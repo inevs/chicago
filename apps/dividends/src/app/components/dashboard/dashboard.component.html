@@ -8,7 +8,18 @@
   (newTransactionClick)="toggleModal()"
   (newSecurityClick)="toggleSecurityModal()"
   (newSecurityTransactionClick)="toggleSecurityTransactionModal()"
+  (exportDataClick)="handleExportData()"
+  (importDataClick)="handleImportData()"
 ></app-header-nav>
+
+<!-- Hidden file input for import -->
+<input
+  #fileInput
+  type="file"
+  accept=".json"
+  (change)="onFileSelected($event)"
+  class="hidden"
+/>
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <app-kpi-cards [kpis]="kpis()"></app-kpi-cards>

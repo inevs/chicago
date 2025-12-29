@@ -1,10 +1,11 @@
-import { Component, OnInit, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { SecurityService } from '../../services/security.service';
 import { DividendPaymentService } from '../../services/dividend-payment.service';
 import { SecurityTransactionService } from '../../services/security-transaction.service';
 import { PaginationStateService } from '../../services/pagination-state.service';
+import { DataService } from '../../services/data.service';
 import { CreateDividendPaymentDto, UpdateDividendPaymentDto, SecurityTransactionWithSecurity, CreateSecurityTransactionDto, UpdateSecurityTransactionDto } from '@dividends/shared';
 import { TimeRange, DividendTransaction } from '../../models/dividend.model';
 import { HeaderNavComponent } from './header-nav/header-nav.component';
@@ -40,6 +41,9 @@ export class DashboardComponent implements OnInit {
   private readonly dividendPaymentService = inject(DividendPaymentService);
   private readonly securityTransactionService = inject(SecurityTransactionService);
   private readonly paginationStateService = inject(PaginationStateService);
+  private readonly exportImportService = inject(DataService);
+
+  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   currentRange = signal<TimeRange>('ALL');
   searchTerm = signal('');
@@ -484,5 +488,64 @@ export class DashboardComponent implements OnInit {
   onSecurityTransactionPageSizeChange(pageSize: 5 | 10 | 20) {
     this.securityTransactionPageSize.set(pageSize);
     this.securityTransactionPage.set(1); // Reset to first page
+  }
+
+  // Export/Import Methods
+  handleExportData() {
+    this.showMenu.set(false);
+    this.exportImportService.exportData().subscribe({
+      next: (blob) => {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const filename = `dividends-backup-${timestamp}.json`;
+        this.exportImportService.downloadExport(blob, filename);
+        console.log('Data exported successfully');
+      },
+      error: (error) => {
+        console.error('Error exporting data:', error);
+        alert(`Fehler beim Exportieren: ${error.message}`);
+      },
+    });
+  }
+
+  handleImportData() {
+    this.showMenu.set(false);
+    this.fileInput?.nativeElement.click();
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+
+    const confirmImport = confirm(
+      'Möchten Sie die bestehenden Daten durch die importierten Daten ersetzen?\n\n' +
+      'Ja = Alle bestehenden Daten werden gelöscht\n' +
+      'Nein = Daten werden zusammengeführt (bestehende Einträge werden aktualisiert)'
+    );
+
+    this.exportImportService.importData(file, confirmImport).subscribe({
+      next: (result) => {
+        console.log('Data imported successfully:', result);
+        alert(
+          `Import erfolgreich!\n\n` +
+          `Wertpapiere: ${result.securitiesImported}\n` +
+          `Dividenden: ${result.dividendPaymentsImported}\n` +
+          `Transaktionen: ${result.securityTransactionsImported}`
+        );
+
+        // Reload all data
+        this.dataService.loadTransactionsFromBackend();
+        this.loadSecurityTransactions();
+
+        // Reset file input
+        input.value = '';
+      },
+      error: (error) => {
+        console.error('Error importing data:', error);
+        alert(`Fehler beim Importieren: ${error.message}`);
+        input.value = '';
+      },
+    });
   }
 }

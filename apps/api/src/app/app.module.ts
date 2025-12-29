@@ -5,9 +5,10 @@ import { PrismaService } from '../prisma.service';
 import { SecuritiesModule } from './securities/securities.module';
 import { DividendPaymentsModule } from './dividend-payments/dividend-payments.module';
 import { SecurityTransactionsModule } from './security-transactions/security-transactions.module';
+import { DataModule } from './data/data.module';
 
 @Module({
-  imports: [SecuritiesModule, DividendPaymentsModule, SecurityTransactionsModule],
+  imports: [SecuritiesModule, DividendPaymentsModule, SecurityTransactionsModule, DataModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],
