@@ -1,0 +1,16 @@
+<div class="page-container">
+  <h1 class="page-title">Dividenden-Zahlungen</h1>
+
+  <section>
+    <app-transaction-table
+      [transactions]="paginatedTransactions()"
+      [paginationMetadata]="paginationMetadata()"
+      [currentPageSize]="currentPageSize()"
+      (searchChange)="searchTerm.set($event)"
+      (editTransaction)="appState.setEditingTransaction($event)"
+      (deleteTransaction)="appState.setDeletingTransaction($event)"
+      (pageChange)="paginationStateService.setCurrentPage($event)"
+      (pageSizeChange)="paginationStateService.setPageSize($event)"
+    />
+  </section>
+</div>
