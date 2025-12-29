@@ -1,0 +1,42 @@
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  transition: background-color 0.2s ease;
+}
+
+.main-content-wrapper {
+  flex: 1;
+  margin-left: 280px; // Sidebar width when expanded
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+  &.sidebar-collapsed {
+    margin-left: 72px; // Sidebar width when collapsed
+  }
+}
+
+.page-content {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+// Responsive - Mobile
+@media (max-width: 768px) {
+  .main-content-wrapper {
+    margin-left: 0; // No sidebar margin on mobile
+
+    &.sidebar-collapsed {
+      margin-left: 0;
+    }
+  }
+
+  .page-content {
+    padding: 1rem;
+  }
+}

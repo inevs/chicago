@@ -1,0 +1,101 @@
+<div class="app-container" [class.dark]="appState.isDarkMode()">
+  <!-- Sidebar Navigation -->
+  <app-sidebar-nav />
+
+  <!-- Main Content Wrapper -->
+  <div
+    class="main-content-wrapper"
+    [class.sidebar-collapsed]="appState.sidebarCollapsed()"
+  >
+    <!-- Header stays at top of content area -->
+    <app-header-nav />
+
+    <!-- Page content via router outlet -->
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+<!-- Global Modals -->
+<app-transaction-modal
+  [show]="appState.showTransactionModal()"
+  [editTransaction]="appState.editingTransaction()"
+  (transactionSubmit)="appState.handleTransactionSubmit($event)"
+  (closeModal)="appState.toggleTransactionModal()"
+/>
+
+<app-security-modal
+  [show]="appState.showSecurityModal()"
+  (securitySubmit)="appState.handleSecuritySubmit($event)"
+  (closeModal)="appState.toggleSecurityModal()"
+/>
+
+<app-security-transaction-modal
+  [show]="appState.showSecurityTransactionModal()"
+  [editTransaction]="appState.editingSecurityTransaction()"
+  (transactionSubmit)="appState.handleSecurityTransactionSubmit($event)"
+  (closeModal)="appState.toggleSecurityTransactionModal()"
+/>
+
+<!-- Delete Confirmation Dialog - Dividend Transaction -->
+@if (appState.deletingTransaction()) {
+  <div class="modal-backdrop">
+    <div class="modal-content max-w-md">
+      <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+        Transaktion löschen?
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">
+        Möchten Sie diese Dividenden-Zahlung wirklich löschen? Diese Aktion kann
+        nicht rückgängig gemacht werden.
+      </p>
+      <div class="flex gap-3 justify-end">
+        <button
+          type="button"
+          (click)="appState.cancelDeleteTransaction()"
+          class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          (click)="appState.confirmDeleteTransaction()"
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+        >
+          Löschen
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Confirmation Dialog - Security Transaction -->
+@if (appState.deletingSecurityTransaction()) {
+  <div class="modal-backdrop">
+    <div class="modal-content max-w-md">
+      <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+        Wertpapier-Transaktion löschen?
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">
+        Möchten Sie diese Wertpapier-Transaktion wirklich löschen? Diese Aktion
+        kann nicht rückgängig gemacht werden.
+      </p>
+      <div class="flex gap-3 justify-end">
+        <button
+          type="button"
+          (click)="appState.cancelDeleteSecurityTransaction()"
+          class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          (click)="appState.confirmDeleteSecurityTransaction()"
+          class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+        >
+          Löschen
+        </button>
+      </div>
+    </div>
+  </div>
+}

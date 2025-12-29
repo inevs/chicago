@@ -1,0 +1,57 @@
+<aside
+  class="sidebar"
+  [class.collapsed]="appState.sidebarCollapsed()"
+  aria-label="Hauptnavigation"
+>
+  <!-- App Branding -->
+  <div class="sidebar-header">
+    <div class="app-logo">
+      <div class="logo-icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+      <span class="logo-text" *ngIf="!appState.sidebarCollapsed()">DiviTrack</span>
+    </div>
+  </div>
+
+  <!-- Navigation Links -->
+  <nav class="nav-menu">
+    @for (item of navItems; track item.path) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.path === '/uebersicht' }"
+        class="nav-item"
+        [title]="item.label"
+      >
+        <lucide-icon [img]="item.icon" class="nav-icon" />
+        <span class="nav-label" *ngIf="!appState.sidebarCollapsed()">{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+
+  <!-- Collapse Toggle Button -->
+  <button
+    class="collapse-btn"
+    (click)="toggleSidebar()"
+    [title]="appState.sidebarCollapsed() ? 'Sidebar erweitern' : 'Sidebar einklappen'"
+    aria-label="Sidebar ein-/ausklappen"
+  >
+    <lucide-icon
+      [img]="appState.sidebarCollapsed() ? ChevronRight : ChevronLeft"
+      class="collapse-icon"
+    />
+  </button>
+</aside>

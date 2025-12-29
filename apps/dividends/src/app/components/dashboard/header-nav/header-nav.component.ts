@@ -1,5 +1,6 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AppStateService } from '../../../services/app-state.service';
 import { TimeRange } from '../../../models/dividend.model';
 
 @Component({
@@ -9,48 +10,45 @@ import { TimeRange } from '../../../models/dividend.model';
   styleUrls: ['./header-nav.component.scss'],
 })
 export class HeaderNavComponent {
-  currentRange = input.required<TimeRange>();
-  isDarkMode = input.required<boolean>();
-  showMenu = input.required<boolean>();
+  protected readonly appState = inject(AppStateService);
 
-  rangeChange = output<TimeRange>();
-  themeToggle = output<void>();
-  menuToggle = output<void>();
-  newTransactionClick = output<void>();
-  newSecurityClick = output<void>();
-  newSecurityTransactionClick = output<void>();
-  exportDataClick = output<void>();
-  importDataClick = output<void>();
+  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   onRangeChange(range: TimeRange) {
-    this.rangeChange.emit(range);
+    this.appState.setTimeRange(range);
   }
 
   onThemeToggle() {
-    this.themeToggle.emit();
+    this.appState.toggleTheme();
   }
 
   onMenuToggle() {
-    this.menuToggle.emit();
+    this.appState.toggleMenu();
   }
 
   onNewTransactionClick() {
-    this.newTransactionClick.emit();
+    this.appState.toggleTransactionModal();
   }
 
   onNewSecurityClick() {
-    this.newSecurityClick.emit();
+    this.appState.toggleSecurityModal();
   }
 
   onNewSecurityTransactionClick() {
-    this.newSecurityTransactionClick.emit();
+    this.appState.toggleSecurityTransactionModal();
   }
 
   onExportDataClick() {
-    this.exportDataClick.emit();
+    this.appState.handleExportData();
   }
 
   onImportDataClick() {
-    this.importDataClick.emit();
+    if (this.fileInput) {
+      this.appState.handleImportData(this.fileInput);
+    }
+  }
+
+  onFileSelected(event: Event) {
+    this.appState.onFileSelected(event);
   }
 }

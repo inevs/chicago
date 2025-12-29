@@ -1,0 +1,20 @@
+<div class="page-container">
+  <h1 class="page-title">Portfolio</h1>
+  <p class="page-subtitle">Ihre Wertpapiere und Dividenden-Allokation</p>
+
+  <section class="chart-section mb-8">
+    <h2 class="section-header">Allocation nach Unternehmen</h2>
+    <app-allocation-chart
+      [transactions]="appState.filteredDividends()"
+      [isDarkMode]="appState.isDarkMode()"
+    />
+  </section>
+
+  <section class="table-section">
+    <h2 class="section-header">Wertpapier-Übersicht</h2>
+    <app-securities-summary
+      [filteredTransactions]="appState.filteredDividends()"
+      [securityTransactions]="appState.securityTransactions()"
+    />
+  </section>
+</div>

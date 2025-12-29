@@ -1,0 +1,31 @@
+<div class="page-container">
+  <h1 class="page-title">Transaktionen</h1>
+
+  <section class="mb-8">
+    <h2 class="section-header">Dividenden-Zahlungen</h2>
+    <app-transaction-table
+      [transactions]="paginatedTransactions()"
+      [paginationMetadata]="paginationMetadata()"
+      [currentPageSize]="currentPageSize()"
+      (searchChange)="searchTerm.set($event)"
+      (editTransaction)="appState.setEditingTransaction($event)"
+      (deleteTransaction)="appState.setDeletingTransaction($event)"
+      (pageChange)="paginationStateService.setCurrentPage($event)"
+      (pageSizeChange)="paginationStateService.setPageSize($event)"
+    />
+  </section>
+
+  <section>
+    <h2 class="section-header">Käufe & Verkäufe</h2>
+    <app-security-transaction-table
+      [transactions]="paginatedSecurityTransactions()"
+      [paginationMetadata]="securityTransactionPaginationMetadata()"
+      [currentPageSize]="securityTransactionPageSize()"
+      (searchChange)="securityTransactionSearchTerm.set($event)"
+      (editTransaction)="appState.setEditingSecurityTransaction($event)"
+      (deleteTransaction)="appState.setDeletingSecurityTransaction($event)"
+      (pageChange)="securityTransactionPage.set($event)"
+      (pageSizeChange)="securityTransactionPageSize.set($event)"
+    />
+  </section>
+</div>

@@ -3,89 +3,63 @@
 >
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div
-      class="flex flex-col sm:flex-row justify-between h-auto sm:h-16 py-3 sm:py-0 items-center gap-4 sm:gap-0"
+      class="flex justify-end h-16 items-center gap-4"
     >
-      <div class="flex items-center gap-3 self-start sm:self-center">
-        <div class="bg-blue-600 text-white p-2 rounded-lg">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </div>
-        <span
-          class="font-bold text-xl text-slate-900 dark:text-white tracking-tight"
-          >DiviTrack</span
-        >
-      </div>
-
       <div
-        class="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end"
+        class="bg-slate-100 dark:bg-slate-700 p-1 rounded-lg flex text-sm font-medium transition-colors"
       >
-        <div
-          class="bg-slate-100 dark:bg-slate-700 p-1 rounded-lg flex text-sm font-medium transition-colors"
-        >
           <button
             (click)="onRangeChange('M')"
-            [class.bg-white]="currentRange() === 'M'"
-            [class.dark:bg-slate-600]="currentRange() === 'M'"
-            [class.text-slate-900]="currentRange() === 'M'"
-            [class.dark:text-white]="currentRange() === 'M'"
-            [class.shadow-sm]="currentRange() === 'M'"
-            [class.font-semibold]="currentRange() === 'M'"
-            [class.text-slate-500]="currentRange() !== 'M'"
-            [class.dark:text-slate-300]="currentRange() !== 'M'"
+            [class.bg-white]="appState.selectedTimeRange() === 'M'"
+            [class.dark:bg-slate-600]="appState.selectedTimeRange() === 'M'"
+            [class.text-slate-900]="appState.selectedTimeRange() === 'M'"
+            [class.dark:text-white]="appState.selectedTimeRange() === 'M'"
+            [class.shadow-sm]="appState.selectedTimeRange() === 'M'"
+            [class.font-semibold]="appState.selectedTimeRange() === 'M'"
+            [class.text-slate-500]="appState.selectedTimeRange() !== 'M'"
+            [class.dark:text-slate-300]="appState.selectedTimeRange() !== 'M'"
             class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
           >
             1M
           </button>
           <button
             (click)="onRangeChange('Y')"
-            [class.bg-white]="currentRange() === 'Y'"
-            [class.dark:bg-slate-600]="currentRange() === 'Y'"
-            [class.text-slate-900]="currentRange() === 'Y'"
-            [class.dark:text-white]="currentRange() === 'Y'"
-            [class.shadow-sm]="currentRange() === 'Y'"
-            [class.font-semibold]="currentRange() === 'Y'"
-            [class.text-slate-500]="currentRange() !== 'Y'"
-            [class.dark:text-slate-300]="currentRange() !== 'Y'"
+            [class.bg-white]="appState.selectedTimeRange() === 'Y'"
+            [class.dark:bg-slate-600]="appState.selectedTimeRange() === 'Y'"
+            [class.text-slate-900]="appState.selectedTimeRange() === 'Y'"
+            [class.dark:text-white]="appState.selectedTimeRange() === 'Y'"
+            [class.shadow-sm]="appState.selectedTimeRange() === 'Y'"
+            [class.font-semibold]="appState.selectedTimeRange() === 'Y'"
+            [class.text-slate-500]="appState.selectedTimeRange() !== 'Y'"
+            [class.dark:text-slate-300]="appState.selectedTimeRange() !== 'Y'"
             class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
           >
             1J
           </button>
           <button
             (click)="onRangeChange('5Y')"
-            [class.bg-white]="currentRange() === '5Y'"
-            [class.dark:bg-slate-600]="currentRange() === '5Y'"
-            [class.text-slate-900]="currentRange() === '5Y'"
-            [class.dark:text-white]="currentRange() === '5Y'"
-            [class.shadow-sm]="currentRange() === '5Y'"
-            [class.font-semibold]="currentRange() === '5Y'"
-            [class.text-slate-500]="currentRange() !== '5Y'"
-            [class.dark:text-slate-300]="currentRange() !== '5Y'"
+            [class.bg-white]="appState.selectedTimeRange() === '5Y'"
+            [class.dark:bg-slate-600]="appState.selectedTimeRange() === '5Y'"
+            [class.text-slate-900]="appState.selectedTimeRange() === '5Y'"
+            [class.dark:text-white]="appState.selectedTimeRange() === '5Y'"
+            [class.shadow-sm]="appState.selectedTimeRange() === '5Y'"
+            [class.font-semibold]="appState.selectedTimeRange() === '5Y'"
+            [class.text-slate-500]="appState.selectedTimeRange() !== '5Y'"
+            [class.dark:text-slate-300]="appState.selectedTimeRange() !== '5Y'"
             class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
           >
             5J
           </button>
           <button
             (click)="onRangeChange('ALL')"
-            [class.bg-white]="currentRange() === 'ALL'"
-            [class.dark:bg-slate-600]="currentRange() === 'ALL'"
-            [class.text-slate-900]="currentRange() === 'ALL'"
-            [class.dark:text-white]="currentRange() === 'ALL'"
-            [class.shadow-sm]="currentRange() === 'ALL'"
-            [class.font-semibold]="currentRange() === 'ALL'"
-            [class.text-slate-500]="currentRange() !== 'ALL'"
-            [class.dark:text-slate-300]="currentRange() !== 'ALL'"
+            [class.bg-white]="appState.selectedTimeRange() === 'ALL'"
+            [class.dark:bg-slate-600]="appState.selectedTimeRange() === 'ALL'"
+            [class.text-slate-900]="appState.selectedTimeRange() === 'ALL'"
+            [class.dark:text-white]="appState.selectedTimeRange() === 'ALL'"
+            [class.shadow-sm]="appState.selectedTimeRange() === 'ALL'"
+            [class.font-semibold]="appState.selectedTimeRange() === 'ALL'"
+            [class.text-slate-500]="appState.selectedTimeRange() !== 'ALL'"
+            [class.dark:text-slate-300]="appState.selectedTimeRange() !== 'ALL'"
             class="px-3 py-1.5 rounded-md transition hover:text-slate-900 dark:hover:text-white"
           >
             Max
@@ -96,7 +70,7 @@
           (click)="onThemeToggle()"
           class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
         >
-          @if (isDarkMode()) {
+          @if (appState.isDarkMode()) {
           <svg
             xmlns="http://www.w3.org/2000/svg"
             class="h-5 w-5"
@@ -152,7 +126,7 @@
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-4 w-4 transition-transform"
-              [class.rotate-180]="showMenu()"
+              [class.rotate-180]="appState.showMenu()"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -166,7 +140,7 @@
             </svg>
           </button>
 
-          @if (showMenu()) {
+          @if (appState.showMenu()) {
           <div
             class="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50"
           >
@@ -279,5 +253,13 @@
         </div>
       </div>
     </div>
-  </div>
+
+  <!-- Hidden file input for data import -->
+  <input
+    #fileInput
+    type="file"
+    accept=".json"
+    (change)="onFileSelected($event)"
+    class="hidden"
+  />
 </nav>
