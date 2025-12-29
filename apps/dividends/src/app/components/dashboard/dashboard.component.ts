@@ -67,7 +67,10 @@ export class DashboardComponent implements OnInit {
   });
 
   kpis = computed(() => {
-    return this.dataService.calculateKPIs(this.filteredTransactions());
+    return this.dataService.calculateKPIs(
+      this.filteredTransactions(),
+      this.securityTransactions()
+    );
   });
 
   sortedTransactions = computed(() => {

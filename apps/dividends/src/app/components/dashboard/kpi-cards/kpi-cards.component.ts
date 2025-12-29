@@ -6,6 +6,8 @@ export interface KPIData {
   totalTaxes: number;
   avgYield: number;
   count: number;
+  personalReturn: number;
+  totalInvestment: number;
 }
 
 @Component({

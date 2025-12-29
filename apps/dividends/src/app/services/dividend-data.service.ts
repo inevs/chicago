@@ -1,7 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { DividendTransaction, TimeRange, DashboardKPIs } from '../models/dividend.model';
 import { DividendPaymentService } from './dividend-payment.service';
-import { DividendPayment, UpdateDividendPaymentDto } from '@dividends/shared';
+import { DividendPayment, UpdateDividendPaymentDto, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -273,7 +273,10 @@ export class DividendDataService {
     return filtered;
   }
 
-  calculateKPIs(transactions: DividendTransaction[]): DashboardKPIs {
+  calculateKPIs(
+    transactions: DividendTransaction[],
+    securityTransactions: SecurityTransactionWithSecurity[] = []
+  ): DashboardKPIs {
     let totalNet = 0;
     let totalTaxesEur = 0;
     let yieldSum = 0;
@@ -294,11 +297,27 @@ export class DividendDataService {
 
     const avgYield = yieldCount > 0 ? yieldSum / yieldCount : 0;
 
+    // Calculate total investment from security transactions
+    let totalInvestment = 0;
+    securityTransactions.forEach((tx) => {
+      if (tx.type === TransactionType.BUY) {
+        const quantity = Number(tx.quantity) || 0;
+        const pricePerShare = Number(tx.pricePerShare) || 0;
+        const fees = Number(tx.fees) || 0;
+        totalInvestment += quantity * pricePerShare + fees;
+      }
+    });
+
+    // Calculate personal return as percentage
+    const personalReturn = totalInvestment > 0 ? (totalNet / totalInvestment) * 100 : 0;
+
     return {
       totalNet,
       totalTaxes: totalTaxesEur,
       avgYield,
       count: transactions.length,
+      personalReturn,
+      totalInvestment,
     };
   }
 }

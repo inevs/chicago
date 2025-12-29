@@ -18,6 +18,8 @@ export interface DashboardKPIs {
   totalTaxes: number;
   avgYield: number;
   count: number;
+  personalReturn: number;
+  totalInvestment: number;
 }
 
 export interface SecuritySummary {

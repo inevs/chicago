@@ -1,4 +1,4 @@
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
   <div
     class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors"
   >
@@ -19,7 +19,7 @@
     class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors"
   >
     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
-      Gezahlte Steuern (Est.)
+      Gezahlte Steuern
     </p>
     <h3 class="text-3xl font-bold text-slate-900 dark:text-white transition-all">
       {{ formatCurrency(kpis().totalTaxes) }}
@@ -33,14 +33,20 @@
     class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors"
   >
     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
-      Persönliche Rendite (YoC)
+      Persönliche Rendite
     </p>
     <h3 class="text-3xl font-bold text-slate-900 dark:text-white transition-all">
-      {{ formatNumber(kpis().avgYield) }} %
+      {{ formatNumber(kpis().personalReturn) }} %
     </h3>
-    <p class="text-xs text-slate-400 dark:text-slate-500 mt-2">
-      Ø Rendite auf Kaufkurs
-    </p>
+    <div
+      class="mt-2 text-xs font-medium inline-block px-2 py-1 rounded"
+      [ngClass]="{
+        'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30': kpis().personalReturn >= 0,
+        'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30': kpis().personalReturn < 0
+      }"
+    >
+      Dividenden / Investment
+    </div>
   </div>
 
   <div
