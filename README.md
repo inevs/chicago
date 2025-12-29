@@ -2,8 +2,6 @@
 
 A full-stack dividends tracking application built with NestJS, Angular, and PostgreSQL in an Nx monorepo.
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
-
 ## Tech Stack
 
 - **Backend**: NestJS 11 with Prisma ORM 7
