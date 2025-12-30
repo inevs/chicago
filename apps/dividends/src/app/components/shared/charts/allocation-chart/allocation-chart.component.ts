@@ -1,7 +1,7 @@
 import { Component, OnDestroy, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { DividendTransaction } from '../../../../models/dividend.model';
+import { SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
 
 Chart.register(...registerables);
 
@@ -12,14 +12,14 @@ Chart.register(...registerables);
   styleUrls: ['./allocation-chart.component.scss'],
 })
 export class AllocationChartComponent implements OnDestroy {
-  transactions = input.required<DividendTransaction[]>();
+  securityTransactions = input.required<SecurityTransactionWithSecurity[]>();
   isDarkMode = input.required<boolean>();
 
   private chart: Chart | null = null;
 
   constructor() {
     effect(() => {
-      const data = this.transactions();
+      const data = this.securityTransactions();
       const isDark = this.isDarkMode();
       if (data.length >= 0) {
         setTimeout(() => this.renderChart(data, isDark), 0);
@@ -38,12 +38,55 @@ export class AllocationChartComponent implements OnDestroy {
     }
   }
 
-  private renderChart(data: DividendTransaction[], isDark: boolean) {
-    const companies: Record<string, number> = {};
+  private renderChart(data: SecurityTransactionWithSecurity[], isDark: boolean) {
     const textColor = isDark ? '#cbd5e1' : '#64748b';
 
-    data.forEach((t) => {
-      companies[t.name] = (companies[t.name] || 0) + t.finalPayment;
+    // Calculate holdings value per security
+    const securitiesMap = new Map<string, {
+      quantity: number;
+      totalBuyValue: number;
+      buyCount: number;
+    }>();
+
+    // Aggregate security transactions (BUY/SELL)
+    data.forEach(tx => {
+      const securityName = tx.security?.name;
+      if (!securityName) return;
+
+      const current = securitiesMap.get(securityName) || {
+        quantity: 0,
+        totalBuyValue: 0,
+        buyCount: 0
+      };
+
+      const quantity = Number(tx.quantity) || 0;
+      const pricePerShare = Number(tx.pricePerShare) || 0;
+
+      if (tx.type === TransactionType.BUY) {
+        current.quantity += quantity;
+        current.totalBuyValue += pricePerShare * quantity;
+        current.buyCount += quantity;
+      } else if (tx.type === TransactionType.SELL) {
+        current.quantity -= quantity;
+      }
+
+      securitiesMap.set(securityName, current);
+    });
+
+    // Convert to holdings value (only securities with holdings > 0)
+    const EPSILON = 0.0001;
+    const companies: Record<string, number> = {};
+
+    securitiesMap.forEach((data, name) => {
+      if (data.quantity > EPSILON) {
+        // Calculate average buy price
+        const avgPrice = data.buyCount > 0 ? data.totalBuyValue / data.buyCount : 0;
+        // Holdings value = current quantity × average buy price
+        const holdingsValue = data.quantity * avgPrice;
+        if (holdingsValue > 0) {
+          companies[name] = holdingsValue;
+        }
+      }
     });
 
     this.renderAllocationChart(companies, isDark, textColor);
