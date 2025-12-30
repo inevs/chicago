@@ -1,8 +1,9 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
 import { Security, SecurityTransactionWithSecurity, TransactionType, Currency } from '@dividends/shared';
+import { ToastService } from '../../../services/toast.service';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
@@ -38,6 +39,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
   // Make TransactionType accessible in template
   readonly TransactionType = TransactionType;
 
+  private readonly toastService = inject(ToastService);
   private readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
   );
@@ -109,19 +111,19 @@ export class SecurityTransactionModalComponent implements OnChanges {
     // Validation
     const data = this.formData();
     if (!data.securityId) {
-      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
       return;
     }
     if (!data.date) {
-      alert('Bitte geben Sie ein Datum ein');
+      this.toastService.warning('Bitte geben Sie ein Datum ein');
       return;
     }
     if (data.quantity <= 0) {
-      alert('Anzahl muss größer als 0 sein');
+      this.toastService.warning('Anzahl muss größer als 0 sein');
       return;
     }
     if (data.pricePerShare <= 0) {
-      alert('Preis pro Anteil muss größer als 0 sein');
+      this.toastService.warning('Preis pro Anteil muss größer als 0 sein');
       return;
     }
 

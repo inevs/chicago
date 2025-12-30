@@ -1,9 +1,10 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
 import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
+import { ToastService } from '../../../services/toast.service';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
@@ -35,6 +36,7 @@ export class TransactionModalComponent implements OnChanges {
   closeModal = output<void>();
   transactionSubmit = output<TransactionForm>();
 
+  private readonly toastService = inject(ToastService);
   private readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
   );
@@ -96,19 +98,19 @@ export class TransactionModalComponent implements OnChanges {
     // Validation
     const data = this.formData();
     if (!data.securityId) {
-      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
       return;
     }
     if (!data.exDate) {
-      alert('Bitte geben Sie ein Ex-Datum ein');
+      this.toastService.warning('Bitte geben Sie ein Ex-Datum ein');
       return;
     }
     if (!data.payoutDate) {
-      alert('Bitte geben Sie ein Auszahlungsdatum ein');
+      this.toastService.warning('Bitte geben Sie ein Auszahlungsdatum ein');
       return;
     }
     if (data.amount <= 0) {
-      alert('Anzahl der Aktien muss größer als 0 sein');
+      this.toastService.warning('Anzahl der Aktien muss größer als 0 sein');
       return;
     }
 

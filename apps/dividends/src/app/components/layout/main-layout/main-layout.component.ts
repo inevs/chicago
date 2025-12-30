@@ -9,6 +9,7 @@ import { SecurityModalComponent } from '../../dashboard/security-modal/security-
 import { SecurityTransactionModalComponent } from '../../dashboard/security-transaction-modal/security-transaction-modal.component';
 import { ImportConfirmModalComponent } from '../../dashboard/import-confirm-modal/import-confirm-modal.component';
 import { CurrencyModalComponent, CurrencyForm } from '../../dashboard/currency-modal/currency-modal.component';
+import { ToastContainerComponent } from '../../shared/toast-container/toast-container.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -22,6 +23,7 @@ import { CurrencyModalComponent, CurrencyForm } from '../../dashboard/currency-m
     SecurityTransactionModalComponent,
     ImportConfirmModalComponent,
     CurrencyModalComponent,
+    ToastContainerComponent,
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
