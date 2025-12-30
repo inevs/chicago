@@ -4,8 +4,9 @@ import { SecurityTransactionService } from './security-transaction.service';
 import { DividendPaymentService } from './dividend-payment.service';
 import { SecurityService } from './security.service';
 import { DataService } from './data.service';
+import { CurrencyService } from './currency.service';
 import { TimeRange, DividendTransaction } from '../models/dividend.model';
-import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto } from '@dividends/shared';
+import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto } from '@dividends/shared';
 import { TransactionForm } from '../components/dashboard/transaction-modal/transaction-modal.component';
 import { SecurityForm } from '../components/dashboard/security-modal/security-modal.component';
 import { SecurityTransactionForm } from '../components/dashboard/security-transaction-modal/security-transaction-modal.component';
@@ -20,6 +21,7 @@ export class AppStateService {
   private readonly dividendPaymentService = inject(DividendPaymentService);
   private readonly securityService = inject(SecurityService);
   private readonly dataService = inject(DataService);
+  private readonly currencyService = inject(CurrencyService);
 
   // UI State
   isDarkMode = signal(false);
@@ -30,6 +32,7 @@ export class AppStateService {
   showTransactionModal = signal(false);
   showSecurityModal = signal(false);
   showSecurityTransactionModal = signal(false);
+  showCurrencyModal = signal(false);
   showImportConfirmModal = signal(false);
   showMenu = signal(false);
 
@@ -41,6 +44,8 @@ export class AppStateService {
 
   // Data State
   securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
+  currencies = signal<Currency[]>([]);
+  defaultCurrency = signal<Currency | null>(null);
 
   // Computed State
   filteredDividends = computed(() => {
@@ -121,6 +126,7 @@ export class AppStateService {
   loadAllData() {
     this.dividendDataService.loadTransactionsFromBackend();
     this.loadSecurityTransactions();
+    this.loadCurrencies();
   }
 
   private loadSecurityTransactions() {
@@ -130,6 +136,39 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error loading security transactions:', error);
+      },
+    });
+  }
+
+  private loadCurrencies() {
+    this.currencyService.getCurrencies().subscribe({
+      next: (currencies) => {
+        this.currencies.set(currencies);
+      },
+      error: (error) => {
+        console.error('Error loading currencies:', error);
+      },
+    });
+
+    this.currencyService.getDefaultCurrency().subscribe({
+      next: (currency) => {
+        this.defaultCurrency.set(currency);
+      },
+      error: (error) => {
+        console.error('Error loading default currency:', error);
+      },
+    });
+  }
+
+  addCurrency(dto: CreateCurrencyDto) {
+    this.currencyService.createCurrency(dto).subscribe({
+      next: (currency) => {
+        this.currencies.update((list) => [...list, currency]);
+        console.log('Currency added successfully:', currency);
+      },
+      error: (error) => {
+        console.error('Error adding currency:', error);
+        alert(`Fehler beim Hinzufügen der Währung: ${error.error?.message || error.message}`);
       },
     });
   }
@@ -155,6 +194,11 @@ export class AppStateService {
       this.editingSecurityTransaction.set(null);
     }
     this.showSecurityTransactionModal.update(show => !show);
+    this.showMenu.set(false);
+  }
+
+  toggleCurrencyModal() {
+    this.showCurrencyModal.update(show => !show);
     this.showMenu.set(false);
   }
 

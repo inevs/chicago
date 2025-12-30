@@ -8,6 +8,7 @@ import { TransactionModalComponent } from '../../dashboard/transaction-modal/tra
 import { SecurityModalComponent } from '../../dashboard/security-modal/security-modal.component';
 import { SecurityTransactionModalComponent } from '../../dashboard/security-transaction-modal/security-transaction-modal.component';
 import { ImportConfirmModalComponent } from '../../dashboard/import-confirm-modal/import-confirm-modal.component';
+import { CurrencyModalComponent, CurrencyForm } from '../../dashboard/currency-modal/currency-modal.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -20,6 +21,7 @@ import { ImportConfirmModalComponent } from '../../dashboard/import-confirm-moda
     SecurityModalComponent,
     SecurityTransactionModalComponent,
     ImportConfirmModalComponent,
+    CurrencyModalComponent,
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],
@@ -30,5 +32,9 @@ export class MainLayoutComponent implements OnInit {
   ngOnInit() {
     // Load all data on app initialization
     this.appState.loadAllData();
+  }
+
+  onCurrencySubmit(form: CurrencyForm) {
+    this.appState.addCurrency(form);
   }
 }

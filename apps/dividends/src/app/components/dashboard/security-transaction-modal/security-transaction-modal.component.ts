@@ -2,7 +2,7 @@ import { Component, input, output, signal, OnChanges, SimpleChanges, computed } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
-import { Security, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
+import { Security, SecurityTransactionWithSecurity, TransactionType, Currency } from '@dividends/shared';
 
 export interface SecurityTransactionForm {
   id?: string;
@@ -13,7 +13,7 @@ export interface SecurityTransactionForm {
   quantity: number;
   pricePerShare: number;
   fees: number;
-  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
+  currency: string;
   exchangeRate: number;
   totalValue: number;
   note: string;
@@ -28,6 +28,8 @@ export interface SecurityTransactionForm {
 export class SecurityTransactionModalComponent implements OnChanges {
   show = input.required<boolean>();
   editTransaction = input<SecurityTransactionWithSecurity | null>(null);
+  currencies = input.required<Currency[]>();
+  defaultCurrency = input.required<Currency | null>();
   closeModal = output<void>();
   transactionSubmit = output<SecurityTransactionForm>();
 
@@ -117,6 +119,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
   }
 
   resetForm() {
+    const defaultCode = this.defaultCurrency()?.code || 'EUR';
     this.formData.set({
       date: new Date().toISOString().split('T')[0],
       type: TransactionType.BUY,
@@ -125,7 +128,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
       quantity: 0,
       pricePerShare: 0,
       fees: 0,
-      currency: 'EUR',
+      currency: defaultCode,
       exchangeRate: 1.0,
       totalValue: 0,
       note: '',
@@ -146,23 +149,25 @@ export class SecurityTransactionModalComponent implements OnChanges {
   }
 
   onSecuritySelected(security: Security) {
-    const newCurrency = security.currency as 'EUR' | 'USD' | 'NOK' | 'GBP';
+    const newCurrency = security.currency;
+    const defaultCode = this.defaultCurrency()?.code || 'EUR';
     this.formData.update(data => ({
       ...data,
       securityName: security.name,
       securityId: security.id,
       currency: newCurrency,
-      // Set exchange rate to 1 if currency is EUR
-      exchangeRate: newCurrency === 'EUR' ? 1.0 : data.exchangeRate,
+      // Set exchange rate to 1 if currency is default currency
+      exchangeRate: newCurrency === defaultCode ? 1.0 : data.exchangeRate,
     }));
   }
 
   onCurrencyChange(currency: string) {
+    const defaultCode = this.defaultCurrency()?.code || 'EUR';
     this.formData.update(data => ({
       ...data,
-      currency: currency as 'EUR' | 'USD' | 'NOK' | 'GBP',
-      // Automatically set exchange rate to 1 when EUR is selected
-      exchangeRate: currency === 'EUR' ? 1.0 : data.exchangeRate,
+      currency: currency,
+      // Automatically set exchange rate to 1 when default currency is selected
+      exchangeRate: currency === defaultCode ? 1.0 : data.exchangeRate,
     }));
   }
 

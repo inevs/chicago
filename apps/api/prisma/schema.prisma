@@ -123,3 +123,13 @@ model SecurityTransaction {
   @@index([securityId, date]) // Compound index for filtering by security and date
   @@map("security_transactions") // Plural table name convention
 }
+
+// Currency model - represents available currencies for transactions
+model Currency {
+  id        String   @id @default(uuid())
+  code      String   @unique // ISO 4217 code (EUR, USD, etc.)
+  name      String   // Display name (Euro, US Dollar, etc.)
+  createdAt DateTime @default(now())
+
+  @@map("currencies")
+}

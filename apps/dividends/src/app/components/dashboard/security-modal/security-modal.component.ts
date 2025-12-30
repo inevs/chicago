@@ -1,6 +1,7 @@
 import { Component, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Currency } from '@dividends/shared';
 
 export interface SecurityForm {
   name: string;
@@ -9,7 +10,7 @@ export interface SecurityForm {
   symbol: string;
   type: 'STOCK' | 'ETF' | 'BOND';
   exchange: string;
-  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
+  currency: string;
 }
 
 @Component({
@@ -20,6 +21,8 @@ export interface SecurityForm {
 })
 export class SecurityModalComponent {
   show = input.required<boolean>();
+  currencies = input.required<Currency[]>();
+  defaultCurrency = input.required<Currency | null>();
   closeModal = output<void>();
   securitySubmit = output<SecurityForm>();
 
@@ -50,7 +53,7 @@ export class SecurityModalComponent {
       symbol: '',
       type: 'STOCK',
       exchange: '',
-      currency: 'EUR',
+      currency: this.defaultCurrency()?.code || 'EUR',
     });
   }
 

@@ -1,3 +1,17 @@
+// Currency interface (matches Prisma model)
+export interface Currency {
+  id: string;
+  code: string; // ISO 4217 code (EUR, USD, etc.)
+  name: string; // Display name (Euro, US Dollar, etc.)
+  createdAt: Date;
+}
+
+// DTO for creating a new currency
+export interface CreateCurrencyDto {
+  code: string; // 3-letter ISO 4217 code
+  name: string; // Display name
+}
+
 // Enum for security types (matches Prisma schema)
 export enum SecurityType {
   STOCK = 'STOCK',

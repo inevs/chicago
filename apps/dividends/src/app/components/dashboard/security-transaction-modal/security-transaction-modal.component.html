@@ -161,15 +161,14 @@
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="NOK">NOK</option>
+                  @for (currency of currencies(); track currency.id) {
+                    <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
+                  }
                 </select>
               </div>
 
-              <!-- Exchange Rate (only visible for non-EUR currencies) -->
-              @if (formData().currency !== 'EUR') {
+              <!-- Exchange Rate (only visible for non-default currencies) -->
+              @if (formData().currency !== (defaultCurrency()?.code || 'EUR')) {
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Kurs zu EUR *

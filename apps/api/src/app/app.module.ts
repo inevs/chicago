@@ -6,9 +6,10 @@ import { SecuritiesModule } from './securities/securities.module';
 import { DividendPaymentsModule } from './dividend-payments/dividend-payments.module';
 import { SecurityTransactionsModule } from './security-transactions/security-transactions.module';
 import { DataModule } from './data/data.module';
+import { CurrenciesModule } from './currencies/currencies.module';
 
 @Module({
-  imports: [SecuritiesModule, DividendPaymentsModule, SecurityTransactionsModule, DataModule],
+  imports: [SecuritiesModule, DividendPaymentsModule, SecurityTransactionsModule, DataModule, CurrenciesModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

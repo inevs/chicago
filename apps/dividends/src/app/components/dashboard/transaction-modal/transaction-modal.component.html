@@ -77,10 +77,9 @@
             >Währung</label
           >
           <select id="currency" [(ngModel)]="formData().currency" name="currency" class="modal-input">
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-            <option value="GBP">GBP</option>
-            <option value="NOK">NOK</option>
+            @for (currency of currencies(); track currency.id) {
+              <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
+            }
           </select>
         </div>
 

@@ -2,7 +2,7 @@ import { Component, input, output, signal, OnChanges, SimpleChanges } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
-import { Security } from '@dividends/shared';
+import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
 
 export interface TransactionForm {
@@ -13,7 +13,7 @@ export interface TransactionForm {
   payoutDate: string;
   amount: number;
   dividend: number;
-  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
+  currency: string;
   rate: number;
   taxes: number;
   finalPayment: number;
@@ -28,6 +28,8 @@ export interface TransactionForm {
 export class TransactionModalComponent implements OnChanges {
   show = input.required<boolean>();
   editTransaction = input<DividendTransaction | null>(null);
+  currencies = input.required<Currency[]>();
+  defaultCurrency = input.required<Currency | null>();
   closeModal = output<void>();
   transactionSubmit = output<TransactionForm>();
 
@@ -105,7 +107,7 @@ export class TransactionModalComponent implements OnChanges {
       payoutDate: '',
       amount: 0,
       dividend: 0,
-      currency: 'EUR',
+      currency: this.defaultCurrency()?.code || 'EUR',
       rate: 1.0,
       taxes: 0,
       finalPayment: 0,
