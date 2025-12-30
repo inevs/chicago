@@ -1,7 +1,9 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Currency } from '@dividends/shared';
+
+const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
 export interface SecurityForm {
   name: string;
@@ -26,6 +28,10 @@ export class SecurityModalComponent {
   closeModal = output<void>();
   securitySubmit = output<SecurityForm>();
 
+  private readonly defaultCurrencyCode = computed(() =>
+    this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
+  );
+
   formData = signal<SecurityForm>({
     name: '',
     isin: '',
@@ -33,8 +39,16 @@ export class SecurityModalComponent {
     symbol: '',
     type: 'STOCK',
     exchange: '',
-    currency: 'EUR',
+    currency: DEFAULT_FALLBACK_CURRENCY,
   });
+
+  constructor() {
+    // Update currency in formData when defaultCurrency changes
+    effect(() => {
+      const currencyCode = this.defaultCurrencyCode();
+      this.formData.update(data => ({ ...data, currency: currencyCode }));
+    });
+  }
 
   onClose() {
     this.closeModal.emit();
@@ -53,7 +67,7 @@ export class SecurityModalComponent {
       symbol: '',
       type: 'STOCK',
       exchange: '',
-      currency: this.defaultCurrency()?.code || 'EUR',
+      currency: this.defaultCurrencyCode(),
     });
   }
 

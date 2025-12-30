@@ -1,9 +1,11 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
 import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
+
+const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
 export interface TransactionForm {
   id?: string;
@@ -33,6 +35,10 @@ export class TransactionModalComponent implements OnChanges {
   closeModal = output<void>();
   transactionSubmit = output<TransactionForm>();
 
+  private readonly defaultCurrencyCode = computed(() =>
+    this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
+  );
+
   formData = signal<TransactionForm>({
     name: '',
     securityId: '',
@@ -40,11 +46,22 @@ export class TransactionModalComponent implements OnChanges {
     payoutDate: '',
     amount: 0,
     dividend: 0,
-    currency: 'EUR',
+    currency: DEFAULT_FALLBACK_CURRENCY,
     rate: 1.0,
     taxes: 0,
     finalPayment: 0,
   });
+
+  constructor() {
+    // Update currency in formData when defaultCurrency changes
+    effect(() => {
+      const currencyCode = this.defaultCurrencyCode();
+      this.formData.update(data => ({
+        ...data,
+        currency: data.currency === DEFAULT_FALLBACK_CURRENCY ? currencyCode : data.currency
+      }));
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     // Populate form when editTransaction is provided
@@ -107,7 +124,7 @@ export class TransactionModalComponent implements OnChanges {
       payoutDate: '',
       amount: 0,
       dividend: 0,
-      currency: this.defaultCurrency()?.code || 'EUR',
+      currency: this.defaultCurrencyCode(),
       rate: 1.0,
       taxes: 0,
       finalPayment: 0,

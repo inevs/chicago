@@ -1,8 +1,10 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges, computed } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
 import { Security, SecurityTransactionWithSecurity, TransactionType, Currency } from '@dividends/shared';
+
+const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
 export interface SecurityTransactionForm {
   id?: string;
@@ -36,6 +38,10 @@ export class SecurityTransactionModalComponent implements OnChanges {
   // Make TransactionType accessible in template
   readonly TransactionType = TransactionType;
 
+  private readonly defaultCurrencyCode = computed(() =>
+    this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
+  );
+
   formData = signal<SecurityTransactionForm>({
     date: new Date().toISOString().split('T')[0],
     type: TransactionType.BUY,
@@ -44,11 +50,22 @@ export class SecurityTransactionModalComponent implements OnChanges {
     quantity: 0,
     pricePerShare: 0,
     fees: 0,
-    currency: 'EUR',
+    currency: DEFAULT_FALLBACK_CURRENCY,
     exchangeRate: 1.0,
     totalValue: 0,
     note: '',
   });
+
+  constructor() {
+    // Update currency in formData when defaultCurrency changes
+    effect(() => {
+      const currencyCode = this.defaultCurrencyCode();
+      this.formData.update(data => ({
+        ...data,
+        currency: data.currency === DEFAULT_FALLBACK_CURRENCY ? currencyCode : data.currency
+      }));
+    });
+  }
 
   // Auto-calculate total value when inputs change
   calculatedTotal = computed(() => {
@@ -119,7 +136,6 @@ export class SecurityTransactionModalComponent implements OnChanges {
   }
 
   resetForm() {
-    const defaultCode = this.defaultCurrency()?.code || 'EUR';
     this.formData.set({
       date: new Date().toISOString().split('T')[0],
       type: TransactionType.BUY,
@@ -128,7 +144,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
       quantity: 0,
       pricePerShare: 0,
       fees: 0,
-      currency: defaultCode,
+      currency: this.defaultCurrencyCode(),
       exchangeRate: 1.0,
       totalValue: 0,
       note: '',
@@ -150,7 +166,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
 
   onSecuritySelected(security: Security) {
     const newCurrency = security.currency;
-    const defaultCode = this.defaultCurrency()?.code || 'EUR';
+    const defaultCode = this.defaultCurrencyCode();
     this.formData.update(data => ({
       ...data,
       securityName: security.name,
@@ -162,7 +178,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
   }
 
   onCurrencyChange(currency: string) {
-    const defaultCode = this.defaultCurrency()?.code || 'EUR';
+    const defaultCode = this.defaultCurrencyCode();
     this.formData.update(data => ({
       ...data,
       currency: currency,
