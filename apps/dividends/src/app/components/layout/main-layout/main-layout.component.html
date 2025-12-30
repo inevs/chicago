@@ -38,6 +38,11 @@
   (closeModal)="appState.toggleSecurityTransactionModal()"
 />
 
+<app-import-confirm-modal
+  [show]="appState.showImportConfirmModal()"
+  (confirm)="appState.handleImportConfirm($event)"
+/>
+
 <!-- Delete Confirmation Dialog - Dividend Transaction -->
 @if (appState.deletingTransaction()) {
   <div class="modal-backdrop">

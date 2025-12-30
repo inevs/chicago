@@ -7,6 +7,7 @@ import { HeaderNavComponent } from '../../dashboard/header-nav/header-nav.compon
 import { TransactionModalComponent } from '../../dashboard/transaction-modal/transaction-modal.component';
 import { SecurityModalComponent } from '../../dashboard/security-modal/security-modal.component';
 import { SecurityTransactionModalComponent } from '../../dashboard/security-transaction-modal/security-transaction-modal.component';
+import { ImportConfirmModalComponent } from '../../dashboard/import-confirm-modal/import-confirm-modal.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -18,6 +19,7 @@ import { SecurityTransactionModalComponent } from '../../dashboard/security-tran
     TransactionModalComponent,
     SecurityModalComponent,
     SecurityTransactionModalComponent,
+    ImportConfirmModalComponent,
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.scss'],

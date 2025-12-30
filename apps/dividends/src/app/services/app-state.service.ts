@@ -9,6 +9,7 @@ import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDivide
 import { TransactionForm } from '../components/dashboard/transaction-modal/transaction-modal.component';
 import { SecurityForm } from '../components/dashboard/security-modal/security-modal.component';
 import { SecurityTransactionForm } from '../components/dashboard/security-transaction-modal/security-transaction-modal.component';
+import { ImportMode } from '../components/dashboard/import-confirm-modal/import-confirm-modal.component';
 
 @Injectable({
   providedIn: 'root',
@@ -29,12 +30,14 @@ export class AppStateService {
   showTransactionModal = signal(false);
   showSecurityModal = signal(false);
   showSecurityTransactionModal = signal(false);
+  showImportConfirmModal = signal(false);
   showMenu = signal(false);
 
   editingTransaction = signal<DividendTransaction | null>(null);
   deletingTransaction = signal<DividendTransaction | null>(null);
   editingSecurityTransaction = signal<SecurityTransactionWithSecurity | null>(null);
   deletingSecurityTransaction = signal<SecurityTransactionWithSecurity | null>(null);
+  pendingImportFile = signal<File | null>(null);
 
   // Data State
   securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
@@ -208,14 +211,27 @@ export class AppStateService {
     if (!input.files || input.files.length === 0) return;
 
     const file = input.files[0];
+    this.pendingImportFile.set(file);
+    this.showImportConfirmModal.set(true);
 
-    const confirmImport = confirm(
-      'Möchten Sie die bestehenden Daten durch die importierten Daten ersetzen?\n\n' +
-      'Ja = Alle bestehenden Daten werden gelöscht\n' +
-      'Nein = Daten werden zusammengeführt (bestehende Einträge werden aktualisiert)'
-    );
+    // Reset file input
+    input.value = '';
+  }
 
-    this.dataService.importData(file, confirmImport).subscribe({
+  handleImportConfirm(mode: ImportMode) {
+    this.showImportConfirmModal.set(false);
+
+    if (mode === 'cancel') {
+      this.pendingImportFile.set(null);
+      return;
+    }
+
+    const file = this.pendingImportFile();
+    if (!file) return;
+
+    const shouldReplace = mode === 'replace';
+
+    this.dataService.importData(file, shouldReplace).subscribe({
       next: (result) => {
         console.log('Data imported successfully:', result);
         alert(
@@ -228,13 +244,13 @@ export class AppStateService {
         // Reload all data
         this.loadAllData();
 
-        // Reset file input
-        input.value = '';
+        // Reset pending file
+        this.pendingImportFile.set(null);
       },
       error: (error) => {
         console.error('Error importing data:', error);
         alert(`Fehler beim Importieren: ${error.message}`);
-        input.value = '';
+        this.pendingImportFile.set(null);
       },
     });
   }

@@ -1,0 +1,63 @@
+@if (show()) {
+<div
+  class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity"
+  (click)="onCancel()"
+  (keydown.escape)="onCancel()"
+  tabindex="-1"
+>
+  <div
+    class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full p-6 m-4 border dark:border-slate-700 transition-colors"
+    (click)="$event.stopPropagation()"
+    (keydown)="$event.stopPropagation()"
+    tabindex="0"
+  >
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+        Datenimport
+      </h2>
+      <button
+        (click)="onCancel()"
+        class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <p class="text-slate-600 dark:text-slate-300 mb-6">
+      Wie möchten Sie die importierten Daten behandeln?
+    </p>
+
+    <div class="space-y-3">
+      <button
+        (click)="onReplace()"
+        class="w-full px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm text-left"
+      >
+        <div class="font-semibold">Ersetzen</div>
+        <div class="text-sm text-red-100">Alle bestehenden Daten werden gelöscht und durch die importierten Daten ersetzt</div>
+      </button>
+
+      <button
+        (click)="onMerge()"
+        class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-sm text-left"
+      >
+        <div class="font-semibold">Zusammenführen</div>
+        <div class="text-sm text-blue-100">Daten werden zusammengeführt, bestehende Einträge werden aktualisiert</div>
+      </button>
+
+      <button
+        (click)="onCancel()"
+        class="w-full px-4 py-3 text-slate-600 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition border border-slate-300 dark:border-slate-600"
+      >
+        Abbrechen
+      </button>
+    </div>
+  </div>
+</div>
+}
