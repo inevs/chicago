@@ -163,12 +163,28 @@ export class AppStateService {
   addCurrency(dto: CreateCurrencyDto) {
     this.currencyService.createCurrency(dto).subscribe({
       next: (currency) => {
-        this.currencies.update((list) => [...list, currency]);
+        this.currencies.update((list) => [...list, currency].sort((a, b) => a.code.localeCompare(b.code)));
         console.log('Currency added successfully:', currency);
+        this.toggleCurrencyModal(); // Close modal on success
+        // Show success message
+        alert(`Währung ${currency.code} (${currency.name}) wurde erfolgreich hinzugefügt!`);
       },
       error: (error) => {
         console.error('Error adding currency:', error);
-        alert(`Fehler beim Hinzufügen der Währung: ${error.error?.message || error.message}`);
+        // Extract validation errors from backend
+        let errorMessage = 'Fehler beim Hinzufügen der Währung.';
+
+        if (error.error?.message) {
+          if (Array.isArray(error.error.message)) {
+            errorMessage = error.error.message.join(', ');
+          } else {
+            errorMessage = error.error.message;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        alert(errorMessage);
       },
     });
   }

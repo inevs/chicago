@@ -23,6 +23,8 @@ export class CurrencyModalComponent {
     name: '',
   });
 
+  validationError = signal<string>('');
+
   onClose() {
     this.closeModal.emit();
     this.resetForm();
@@ -30,19 +32,25 @@ export class CurrencyModalComponent {
 
   onSubmit() {
     const data = this.formData();
+    this.validationError.set('');
 
-    // Validation
+    // Client-side validation
     if (!data.code || data.code.length !== 3) {
-      alert('ISO-Code muss genau 3 Buchstaben lang sein (z.B. CHF, SEK)');
+      this.validationError.set('ISO-Code muss genau 3 Buchstaben lang sein (z.B. CHF, SEK, JPY)');
+      return;
+    }
+
+    if (!/^[A-Za-z]{3}$/.test(data.code)) {
+      this.validationError.set('ISO-Code darf nur Buchstaben enthalten');
       return;
     }
 
     if (!data.name.trim()) {
-      alert('Bitte geben Sie einen Namen ein (z.B. Schweizer Franken)');
+      this.validationError.set('Bitte geben Sie einen Namen ein (z.B. Schweizer Franken, Schwedische Krone)');
       return;
     }
 
-    // Ensure code is uppercase
+    // Ensure code is uppercase and trim name
     const normalizedData = {
       code: data.code.toUpperCase(),
       name: data.name.trim(),
@@ -57,6 +65,7 @@ export class CurrencyModalComponent {
       code: '',
       name: '',
     });
+    this.validationError.set('');
   }
 
   updateFormData(field: keyof CurrencyForm, value: string) {
