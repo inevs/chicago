@@ -14,13 +14,6 @@ export class SecuritiesSummaryComponent {
   filteredTransactions = input.required<DividendTransaction[]>();
   securityTransactions = input.required<SecurityTransactionWithSecurity[]>();
 
-  // Internal pagination signals
-  currentPage = signal<number>(1);
-  pageSize = signal<5 | 10 | 20>(5);
-
-  // Filter signal
-  showOnlyWithHoldings = signal<boolean>(false);
-
   // Aggregate transactions by security name, sum dividends, calculate quantities and avg buy price
   aggregatedSecurities = computed(() => {
     // Map to store aggregated data by security name
@@ -73,8 +66,11 @@ export class SecuritiesSummaryComponent {
       securitiesMap.set(securityName, current);
     });
 
-    // Convert to array and calculate averages
-    const securities = Array.from(securitiesMap.entries())
+    // Convert to array, calculate averages, and filter to only show securities with holdings
+    // Use epsilon to handle floating-point precision issues
+    const EPSILON = 0.0001;
+
+    return Array.from(securitiesMap.entries())
       .map(([name, data]) => {
         const avgPrice = data.buyCount > 0 && isFinite(data.totalBuyValue / data.buyCount)
           ? data.totalBuyValue / data.buyCount
@@ -95,47 +91,8 @@ export class SecuritiesSummaryComponent {
           dividendYield: isFinite(dividendYield) ? dividendYield : 0
         };
       })
+      .filter(s => s.quantity > EPSILON) // Only show securities with holdings
       .sort((a, b) => a.name.localeCompare(b.name));
-
-    // Apply filter if enabled
-    if (this.showOnlyWithHoldings()) {
-      // Use epsilon to handle floating-point precision issues
-      const EPSILON = 0.0001;
-      const filtered = securities.filter(s => s.quantity > EPSILON);
-      console.log('Filter active - Total securities:', securities.length, 'After filter:', filtered.length);
-      securities.forEach(s => {
-        if (s.quantity <= EPSILON) {
-          console.log('Filtered out:', s.name, 'Quantity:', s.quantity);
-        }
-      });
-      return filtered;
-    }
-
-    return securities;
-  });
-
-  // Paginate aggregated securities
-  paginatedSecurities = computed(() => {
-    const securities = this.aggregatedSecurities();
-    const start = (this.currentPage() - 1) * this.pageSize();
-    const end = start + this.pageSize();
-    return securities.slice(start, end);
-  });
-
-  // Pagination metadata
-  paginationMetadata = computed(() => {
-    const totalItems = this.aggregatedSecurities().length;
-    const totalPages = Math.ceil(totalItems / this.pageSize()) || 1;
-    const page = this.currentPage();
-
-    return {
-      page,
-      pageSize: this.pageSize(),
-      totalItems,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPreviousPage: page > 1,
-    };
   });
 
   // Calculate totals for the summary row
@@ -166,31 +123,5 @@ export class SecuritiesSummaryComponent {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value) + ' %';
-  }
-
-  previousPage() {
-    const metadata = this.paginationMetadata();
-    if (metadata.hasPreviousPage) {
-      this.currentPage.set(metadata.page - 1);
-    }
-  }
-
-  nextPage() {
-    const metadata = this.paginationMetadata();
-    if (metadata.hasNextPage) {
-      this.currentPage.set(metadata.page + 1);
-    }
-  }
-
-  onPageSizeChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    const size = parseInt(select.value, 10) as 5 | 10 | 20;
-    this.pageSize.set(size);
-    this.currentPage.set(1); // Reset to first page when changing page size
-  }
-
-  toggleHoldingsFilter() {
-    this.showOnlyWithHoldings.update(value => !value);
-    this.currentPage.set(1); // Reset to first page when changing filter
   }
 }
