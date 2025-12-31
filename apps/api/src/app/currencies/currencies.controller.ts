@@ -1,24 +1,27 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { CurrenciesService } from './currencies.service';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
-import type { Currency } from '../../../generated/prisma/client';
+import { CurrencyResponseDto } from './dto/currency-response.dto';
 
 @Controller('currencies')
 export class CurrenciesController {
   constructor(private readonly currenciesService: CurrenciesService) {}
 
   @Get()
-  findAll(): Promise<Currency[]> {
-    return this.currenciesService.findAll();
+  async findAll(): Promise<CurrencyResponseDto[]> {
+    const currencies = await this.currenciesService.findAll();
+    return currencies.map(currency => CurrencyResponseDto.fromEntity(currency));
   }
 
   @Post()
-  create(@Body() createCurrencyDto: CreateCurrencyDto): Promise<Currency> {
-    return this.currenciesService.create(createCurrencyDto);
+  async create(@Body() createCurrencyDto: CreateCurrencyDto): Promise<CurrencyResponseDto> {
+    const currency = await this.currenciesService.create(createCurrencyDto);
+    return CurrencyResponseDto.fromEntity(currency);
   }
 
   @Get('default')
-  getDefault(): Promise<Currency | null> {
-    return this.currenciesService.getDefaultCurrency();
+  async getDefault(): Promise<CurrencyResponseDto | null> {
+    const currency = await this.currenciesService.getDefaultCurrency();
+    return currency ? CurrencyResponseDto.fromEntity(currency) : null;
   }
 }

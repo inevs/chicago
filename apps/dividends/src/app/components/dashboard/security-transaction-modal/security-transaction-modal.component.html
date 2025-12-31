@@ -161,7 +161,7 @@
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  @for (currency of currencies(); track currency.id) {
+                  @for (currency of currencies(); track currency.code) {
                     <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
                   }
                 </select>

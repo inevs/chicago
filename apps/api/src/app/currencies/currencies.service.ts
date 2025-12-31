@@ -1,6 +1,6 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { CreateCurrencyDto } from './dto/create-currency.dto';
+import { CreateCurrencyDto, CURRENCY_ERRORS } from '@dividends/shared';
 import type { Currency } from '../../../generated/prisma/client';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class CurrenciesService {
 
     if (existing) {
       throw new ConflictException(
-        `Currency with code ${normalizedCode} already exists`
+        CURRENCY_ERRORS.ALREADY_EXISTS(normalizedCode)
       );
     }
 

@@ -121,7 +121,7 @@
             >Handelswährung</label
           >
           <select id="securityCurrency" [(ngModel)]="formData().currency" name="securityCurrency" required class="modal-input">
-            @for (currency of currencies(); track currency.id) {
+            @for (currency of currencies(); track currency.code) {
               <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
             }
           </select>

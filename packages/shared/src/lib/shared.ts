@@ -1,9 +1,7 @@
-// Currency interface (matches Prisma model)
+// Currency DTO (API response - only exposes public fields)
 export interface Currency {
-  id: string;
   code: string; // ISO 4217 code (EUR, USD, etc.)
   name: string; // Display name (Euro, US Dollar, etc.)
-  createdAt: Date;
 }
 
 // DTO for creating a new currency
@@ -11,6 +9,11 @@ export interface CreateCurrencyDto {
   code: string; // 3-letter ISO 4217 code
   name: string; // Display name
 }
+
+// Error message constants
+export const CURRENCY_ERRORS = {
+  ALREADY_EXISTS: (code: string) => `Currency with code ${code} already exists`,
+} as const;
 
 // Enum for security types (matches Prisma schema)
 export enum SecurityType {
