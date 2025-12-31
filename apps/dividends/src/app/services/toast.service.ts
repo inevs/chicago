@@ -15,6 +15,7 @@ export interface Toast {
 export class ToastService {
   toasts = signal<Toast[]>([]);
   private nextId = 0;
+  private timeouts = new Map<string, number>();
 
   /**
    * Show a success toast notification
@@ -55,9 +56,12 @@ export class ToastService {
 
     // Auto-remove toast after duration
     if (duration > 0) {
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         this.remove(id);
       }, duration);
+
+      // Track timeout for cleanup
+      this.timeouts.set(id, timeoutId);
     }
   }
 
@@ -65,6 +69,14 @@ export class ToastService {
    * Remove a specific toast by ID
    */
   remove(id: string) {
+    // Clear any pending timeout for this toast
+    const timeoutId = this.timeouts.get(id);
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+      this.timeouts.delete(id);
+    }
+
+    // Remove toast from the list
     this.toasts.update(toasts => toasts.filter(t => t.id !== id));
   }
 
@@ -72,6 +84,11 @@ export class ToastService {
    * Clear all toasts
    */
   clear() {
+    // Clear all pending timeouts
+    this.timeouts.forEach(timeoutId => window.clearTimeout(timeoutId));
+    this.timeouts.clear();
+
+    // Clear all toasts
     this.toasts.set([]);
   }
 }
