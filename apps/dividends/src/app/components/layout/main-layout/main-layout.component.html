@@ -17,16 +17,23 @@
   </div>
 </div>
 
+<!-- Toast Notifications -->
+<app-toast-container />
+
 <!-- Global Modals -->
 <app-transaction-modal
   [show]="appState.showTransactionModal()"
   [editTransaction]="appState.editingTransaction()"
+  [currencies]="appState.currencies()"
+  [defaultCurrency]="appState.defaultCurrency()"
   (transactionSubmit)="appState.handleTransactionSubmit($event)"
   (closeModal)="appState.toggleTransactionModal()"
 />
 
 <app-security-modal
   [show]="appState.showSecurityModal()"
+  [currencies]="appState.currencies()"
+  [defaultCurrency]="appState.defaultCurrency()"
   (securitySubmit)="appState.handleSecuritySubmit($event)"
   (closeModal)="appState.toggleSecurityModal()"
 />
@@ -34,8 +41,16 @@
 <app-security-transaction-modal
   [show]="appState.showSecurityTransactionModal()"
   [editTransaction]="appState.editingSecurityTransaction()"
+  [currencies]="appState.currencies()"
+  [defaultCurrency]="appState.defaultCurrency()"
   (transactionSubmit)="appState.handleSecurityTransactionSubmit($event)"
   (closeModal)="appState.toggleSecurityTransactionModal()"
+/>
+
+<app-currency-modal
+  [show]="appState.showCurrencyModal()"
+  (currencySubmit)="onCurrencySubmit($event)"
+  (closeModal)="appState.toggleCurrencyModal()"
 />
 
 <app-import-confirm-modal

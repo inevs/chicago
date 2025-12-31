@@ -4,8 +4,10 @@ import { SecurityTransactionService } from './security-transaction.service';
 import { DividendPaymentService } from './dividend-payment.service';
 import { SecurityService } from './security.service';
 import { DataService } from './data.service';
+import { CurrencyService } from './currency.service';
+import { ToastService } from './toast.service';
 import { TimeRange, DividendTransaction } from '../models/dividend.model';
-import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto } from '@dividends/shared';
+import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto } from '@dividends/shared';
 import { TransactionForm } from '../components/dashboard/transaction-modal/transaction-modal.component';
 import { SecurityForm } from '../components/dashboard/security-modal/security-modal.component';
 import { SecurityTransactionForm } from '../components/dashboard/security-transaction-modal/security-transaction-modal.component';
@@ -20,6 +22,8 @@ export class AppStateService {
   private readonly dividendPaymentService = inject(DividendPaymentService);
   private readonly securityService = inject(SecurityService);
   private readonly dataService = inject(DataService);
+  private readonly currencyService = inject(CurrencyService);
+  private readonly toastService = inject(ToastService);
 
   // UI State
   isDarkMode = signal(false);
@@ -30,6 +34,7 @@ export class AppStateService {
   showTransactionModal = signal(false);
   showSecurityModal = signal(false);
   showSecurityTransactionModal = signal(false);
+  showCurrencyModal = signal(false);
   showImportConfirmModal = signal(false);
   showMenu = signal(false);
 
@@ -41,6 +46,8 @@ export class AppStateService {
 
   // Data State
   securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
+  currencies = signal<Currency[]>([]);
+  defaultCurrency = signal<Currency | null>(null);
 
   // Computed State
   filteredDividends = computed(() => {
@@ -121,6 +128,7 @@ export class AppStateService {
   loadAllData() {
     this.dividendDataService.loadTransactionsFromBackend();
     this.loadSecurityTransactions();
+    this.loadCurrencies();
   }
 
   private loadSecurityTransactions() {
@@ -130,6 +138,55 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error loading security transactions:', error);
+      },
+    });
+  }
+
+  private loadCurrencies() {
+    this.currencyService.getCurrencies().subscribe({
+      next: (currencies) => {
+        this.currencies.set(currencies);
+      },
+      error: (error) => {
+        console.error('Error loading currencies:', error);
+      },
+    });
+
+    this.currencyService.getDefaultCurrency().subscribe({
+      next: (currency) => {
+        this.defaultCurrency.set(currency);
+      },
+      error: (error) => {
+        console.error('Error loading default currency:', error);
+      },
+    });
+  }
+
+  addCurrency(dto: CreateCurrencyDto) {
+    this.currencyService.createCurrency(dto).subscribe({
+      next: (currency) => {
+        this.currencies.update((list) => [...list, currency].sort((a, b) => a.code.localeCompare(b.code)));
+        console.log('Currency added successfully:', currency);
+        this.toggleCurrencyModal(); // Close modal on success
+        // Show success message
+        this.toastService.success(`Währung ${currency.code} (${currency.name}) wurde erfolgreich hinzugefügt!`);
+      },
+      error: (error) => {
+        console.error('Error adding currency:', error);
+        // Extract validation errors from backend
+        let errorMessage = 'Fehler beim Hinzufügen der Währung.';
+
+        if (error.error?.message) {
+          if (Array.isArray(error.error.message)) {
+            errorMessage = error.error.message.join(', ');
+          } else {
+            errorMessage = error.error.message;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        this.toastService.error(errorMessage);
       },
     });
   }
@@ -155,6 +212,11 @@ export class AppStateService {
       this.editingSecurityTransaction.set(null);
     }
     this.showSecurityTransactionModal.update(show => !show);
+    this.showMenu.set(false);
+  }
+
+  toggleCurrencyModal() {
+    this.showCurrencyModal.update(show => !show);
     this.showMenu.set(false);
   }
 
@@ -196,7 +258,7 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error exporting data:', error);
-        alert(`Fehler beim Exportieren: ${error.message}`);
+        this.toastService.error(`Fehler beim Exportieren: ${error.message}`);
       },
     });
   }
@@ -234,11 +296,11 @@ export class AppStateService {
     this.dataService.importData(file, shouldReplace).subscribe({
       next: (result) => {
         console.log('Data imported successfully:', result);
-        alert(
-          `Import erfolgreich!\n\n` +
-          `Wertpapiere: ${result.securitiesImported}\n` +
-          `Dividenden: ${result.dividendPaymentsImported}\n` +
-          `Transaktionen: ${result.securityTransactionsImported}`
+        this.toastService.success(
+          `Import erfolgreich! Wertpapiere: ${result.securitiesImported}, ` +
+          `Dividenden: ${result.dividendPaymentsImported}, ` +
+          `Transaktionen: ${result.securityTransactionsImported}`,
+          8000
         );
 
         // Reload all data
@@ -249,7 +311,7 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error importing data:', error);
-        alert(`Fehler beim Importieren: ${error.message}`);
+        this.toastService.error(`Fehler beim Importieren: ${error.message}`);
         this.pendingImportFile.set(null);
       },
     });
@@ -259,7 +321,7 @@ export class AppStateService {
   handleTransactionSubmit(transaction: TransactionForm) {
     // Validation
     if (!transaction.securityId) {
-      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
       return;
     }
 
@@ -290,7 +352,7 @@ export class AppStateService {
         },
         error: (error) => {
           console.error('Error updating dividend payment:', error);
-          alert(`Failed to update dividend payment: ${error.message}`);
+          this.toastService.error(`Fehler beim Aktualisieren der Dividendenzahlung: ${error.message}`);
         },
       });
     } else {
@@ -317,7 +379,7 @@ export class AppStateService {
         },
         error: (error) => {
           console.error('Error creating dividend payment:', error);
-          alert(`Failed to create dividend payment: ${error.message}`);
+          this.toastService.error(`Fehler beim Erstellen der Dividendenzahlung: ${error.message}`);
         },
       });
     }
@@ -341,7 +403,7 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error creating security:', error);
-        alert(`Failed to create security: ${error.message}`);
+        this.toastService.error(`Fehler beim Erstellen des Wertpapiers: ${error.message}`);
       },
     });
   }
@@ -349,7 +411,7 @@ export class AppStateService {
   handleSecurityTransactionSubmit(transaction: SecurityTransactionForm) {
     // Validation
     if (!transaction.securityId) {
-      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
       return;
     }
 
@@ -379,7 +441,7 @@ export class AppStateService {
         },
         error: (error) => {
           console.error('Error updating security transaction:', error);
-          alert(`Failed to update security transaction: ${error.message}`);
+          this.toastService.error(`Fehler beim Aktualisieren der Wertpapier-Transaktion: ${error.message}`);
         },
       });
     } else {
@@ -405,7 +467,7 @@ export class AppStateService {
         },
         error: (error) => {
           console.error('Error creating security transaction:', error);
-          alert(`Failed to create security transaction: ${error.message}`);
+          this.toastService.error(`Fehler beim Erstellen der Wertpapier-Transaktion: ${error.message}`);
         },
       });
     }
@@ -425,7 +487,7 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error deleting dividend payment:', error);
-        alert(`Failed to delete dividend payment: ${error.message}`);
+        this.toastService.error(`Fehler beim Löschen der Dividendenzahlung: ${error.message}`);
       },
     });
   }
@@ -446,7 +508,7 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error deleting security transaction:', error);
-        alert(`Failed to delete security transaction: ${error.message}`);
+        this.toastService.error(`Fehler beim Löschen der Wertpapier-Transaktion: ${error.message}`);
       },
     });
   }

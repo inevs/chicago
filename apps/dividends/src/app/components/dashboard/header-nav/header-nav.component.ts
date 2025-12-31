@@ -38,6 +38,10 @@ export class HeaderNavComponent {
     this.appState.toggleSecurityTransactionModal();
   }
 
+  onNewCurrencyClick() {
+    this.appState.toggleCurrencyModal();
+  }
+
   onExportDataClick() {
     this.appState.handleExportData();
   }

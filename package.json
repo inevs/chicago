@@ -11,7 +11,7 @@
     "db:migrate:reset": "prisma migrate reset --config=apps/api/prisma.config.ts",
     "db:migrate:status": "prisma migrate status --config=apps/api/prisma.config.ts",
     "db:studio": "prisma studio --config=apps/api/prisma.config.ts",
-    "db:seed": "ts-node apps/api/prisma/seed.ts",
+    "db:seed": "tsx apps/api/prisma/seed.ts",
     "db:reset": "prisma migrate reset --config=apps/api/prisma.config.ts --skip-seed",
     "db:format": "prisma format --config=apps/api/prisma.config.ts",
     "db:validate": "prisma validate --config=apps/api/prisma.config.ts"
@@ -69,6 +69,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@angular/animations": "~20.3.0",
     "@angular/common": "~20.3.0",
     "@angular/compiler": "~20.3.0",
     "@angular/core": "~20.3.0",

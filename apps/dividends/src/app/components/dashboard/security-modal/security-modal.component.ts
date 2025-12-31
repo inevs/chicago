@@ -1,6 +1,9 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Currency } from '@dividends/shared';
+
+const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
 export interface SecurityForm {
   name: string;
@@ -9,7 +12,7 @@ export interface SecurityForm {
   symbol: string;
   type: 'STOCK' | 'ETF' | 'BOND';
   exchange: string;
-  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
+  currency: string;
 }
 
 @Component({
@@ -20,8 +23,14 @@ export interface SecurityForm {
 })
 export class SecurityModalComponent {
   show = input.required<boolean>();
+  currencies = input.required<Currency[]>();
+  defaultCurrency = input.required<Currency | null>();
   closeModal = output<void>();
   securitySubmit = output<SecurityForm>();
+
+  private readonly defaultCurrencyCode = computed(() =>
+    this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
+  );
 
   formData = signal<SecurityForm>({
     name: '',
@@ -30,8 +39,16 @@ export class SecurityModalComponent {
     symbol: '',
     type: 'STOCK',
     exchange: '',
-    currency: 'EUR',
+    currency: DEFAULT_FALLBACK_CURRENCY,
   });
+
+  constructor() {
+    // Update currency in formData when defaultCurrency changes
+    effect(() => {
+      const currencyCode = this.defaultCurrencyCode();
+      this.formData.update(data => ({ ...data, currency: currencyCode }));
+    });
+  }
 
   onClose() {
     this.closeModal.emit();
@@ -50,7 +67,7 @@ export class SecurityModalComponent {
       symbol: '',
       type: 'STOCK',
       exchange: '',
-      currency: 'EUR',
+      currency: this.defaultCurrencyCode(),
     });
   }
 

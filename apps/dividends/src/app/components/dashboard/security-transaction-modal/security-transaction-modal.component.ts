@@ -1,8 +1,11 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges, computed } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
-import { Security, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
+import { Security, SecurityTransactionWithSecurity, TransactionType, Currency } from '@dividends/shared';
+import { ToastService } from '../../../services/toast.service';
+
+const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
 export interface SecurityTransactionForm {
   id?: string;
@@ -13,7 +16,7 @@ export interface SecurityTransactionForm {
   quantity: number;
   pricePerShare: number;
   fees: number;
-  currency: 'EUR' | 'USD' | 'NOK' | 'GBP';
+  currency: string;
   exchangeRate: number;
   totalValue: number;
   note: string;
@@ -28,11 +31,18 @@ export interface SecurityTransactionForm {
 export class SecurityTransactionModalComponent implements OnChanges {
   show = input.required<boolean>();
   editTransaction = input<SecurityTransactionWithSecurity | null>(null);
+  currencies = input.required<Currency[]>();
+  defaultCurrency = input.required<Currency | null>();
   closeModal = output<void>();
   transactionSubmit = output<SecurityTransactionForm>();
 
   // Make TransactionType accessible in template
   readonly TransactionType = TransactionType;
+
+  private readonly toastService = inject(ToastService);
+  private readonly defaultCurrencyCode = computed(() =>
+    this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
+  );
 
   formData = signal<SecurityTransactionForm>({
     date: new Date().toISOString().split('T')[0],
@@ -42,11 +52,22 @@ export class SecurityTransactionModalComponent implements OnChanges {
     quantity: 0,
     pricePerShare: 0,
     fees: 0,
-    currency: 'EUR',
+    currency: DEFAULT_FALLBACK_CURRENCY,
     exchangeRate: 1.0,
     totalValue: 0,
     note: '',
   });
+
+  constructor() {
+    // Update currency in formData when defaultCurrency changes
+    effect(() => {
+      const currencyCode = this.defaultCurrencyCode();
+      this.formData.update(data => ({
+        ...data,
+        currency: data.currency === DEFAULT_FALLBACK_CURRENCY ? currencyCode : data.currency
+      }));
+    });
+  }
 
   // Auto-calculate total value when inputs change
   calculatedTotal = computed(() => {
@@ -90,19 +111,19 @@ export class SecurityTransactionModalComponent implements OnChanges {
     // Validation
     const data = this.formData();
     if (!data.securityId) {
-      alert('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
       return;
     }
     if (!data.date) {
-      alert('Bitte geben Sie ein Datum ein');
+      this.toastService.warning('Bitte geben Sie ein Datum ein');
       return;
     }
     if (data.quantity <= 0) {
-      alert('Anzahl muss größer als 0 sein');
+      this.toastService.warning('Anzahl muss größer als 0 sein');
       return;
     }
     if (data.pricePerShare <= 0) {
-      alert('Preis pro Anteil muss größer als 0 sein');
+      this.toastService.warning('Preis pro Anteil muss größer als 0 sein');
       return;
     }
 
@@ -125,7 +146,7 @@ export class SecurityTransactionModalComponent implements OnChanges {
       quantity: 0,
       pricePerShare: 0,
       fees: 0,
-      currency: 'EUR',
+      currency: this.defaultCurrencyCode(),
       exchangeRate: 1.0,
       totalValue: 0,
       note: '',
@@ -146,23 +167,25 @@ export class SecurityTransactionModalComponent implements OnChanges {
   }
 
   onSecuritySelected(security: Security) {
-    const newCurrency = security.currency as 'EUR' | 'USD' | 'NOK' | 'GBP';
+    const newCurrency = security.currency;
+    const defaultCode = this.defaultCurrencyCode();
     this.formData.update(data => ({
       ...data,
       securityName: security.name,
       securityId: security.id,
       currency: newCurrency,
-      // Set exchange rate to 1 if currency is EUR
-      exchangeRate: newCurrency === 'EUR' ? 1.0 : data.exchangeRate,
+      // Set exchange rate to 1 if currency is default currency
+      exchangeRate: newCurrency === defaultCode ? 1.0 : data.exchangeRate,
     }));
   }
 
   onCurrencyChange(currency: string) {
+    const defaultCode = this.defaultCurrencyCode();
     this.formData.update(data => ({
       ...data,
-      currency: currency as 'EUR' | 'USD' | 'NOK' | 'GBP',
-      // Automatically set exchange rate to 1 when EUR is selected
-      exchangeRate: currency === 'EUR' ? 1.0 : data.exchangeRate,
+      currency: currency,
+      // Automatically set exchange rate to 1 when default currency is selected
+      exchangeRate: currency === defaultCode ? 1.0 : data.exchangeRate,
     }));
   }
 
