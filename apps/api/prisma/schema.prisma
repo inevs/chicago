@@ -40,6 +40,7 @@ model Security {
   updatedAt DateTime @updatedAt
 
   // Relations
+  currencyRef          Currency            @relation("SecurityCurrency", fields: [currency], references: [code])
   dividendPayments      DividendPayment[]
   securityTransactions  SecurityTransaction[]
 
@@ -60,6 +61,8 @@ model DividendPayment {
   // Security relationship
   securityId      String
   security        Security @relation(fields: [securityId], references: [id], onDelete: Cascade)
+  originCurrencyRef Currency @relation("DividendOriginCurrency", fields: [originCurrency], references: [code])
+  destCurrencyRef   Currency @relation("DividendDestCurrency", fields: [destCurrency], references: [code])
 
   // Fundamental amounts (other amounts can be computed)
   shares          Decimal  @db.Decimal(19, 8) // Number of shares held at ex-date
@@ -98,6 +101,7 @@ model SecurityTransaction {
   // Security relationship
   securityId      String
   security        Security        @relation(fields: [securityId], references: [id], onDelete: Cascade)
+  currencyRef     Currency        @relation("SecurityTransactionCurrency", fields: [currency], references: [code])
 
   // Transaction details
   quantity        Decimal         @db.Decimal(19, 8) // Number of shares/units
@@ -130,6 +134,11 @@ model Currency {
   code      String   @unique // ISO 4217 code (EUR, USD, etc.)
   name      String   // Display name (Euro, US Dollar, etc.)
   createdAt DateTime @default(now())
+
+  securities             Security[]           @relation("SecurityCurrency")
+  dividendPaymentsOrigin DividendPayment[]    @relation("DividendOriginCurrency")
+  dividendPaymentsDest   DividendPayment[]    @relation("DividendDestCurrency")
+  securityTransactions   SecurityTransaction[] @relation("SecurityTransactionCurrency")
 
   @@map("currencies")
 }

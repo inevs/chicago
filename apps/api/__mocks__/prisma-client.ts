@@ -18,6 +18,14 @@ export class PrismaClient {
     delete: jest.fn(),
     deleteMany: jest.fn(),
   };
+  currency = {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  };
 }
 
 export enum SecurityType {

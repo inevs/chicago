@@ -14,6 +14,9 @@ describe('SecuritiesService', () => {
       findMany: jest.fn(),
       create: jest.fn(),
     },
+    currency: {
+      findUnique: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -55,6 +58,7 @@ describe('SecuritiesService', () => {
       };
 
       mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'USD' });
       mockPrismaService.security.create.mockResolvedValue(createdSecurity);
 
       const result = await service.createSecurity(dto);
@@ -62,6 +66,9 @@ describe('SecuritiesService', () => {
       expect(result).toEqual(createdSecurity);
       expect(prisma.security.findUnique).toHaveBeenCalledWith({
         where: { symbol: 'AAPL' },
+      });
+      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
+        where: { code: 'USD' },
       });
       expect(prisma.security.create).toHaveBeenCalledWith({ data: dto });
     });
@@ -82,6 +89,7 @@ describe('SecuritiesService', () => {
       await expect(service.createSecurity(dto)).rejects.toThrow(
         ConflictException
       );
+      expect(prisma.currency.findUnique).not.toHaveBeenCalled();
       expect(prisma.security.create).not.toHaveBeenCalled();
     });
 
@@ -104,11 +112,30 @@ describe('SecuritiesService', () => {
       };
 
       mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'USD' });
       mockPrismaService.security.create.mockResolvedValue(createdSecurity);
 
       const result = await service.createSecurity(dto);
 
       expect(result).toEqual(createdSecurity);
+    });
+
+    it('should throw NotFoundException when currency does not exist', async () => {
+      const dto = {
+        name: 'Example Corp.',
+        symbol: 'EXM',
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+      };
+
+      mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockPrismaService.currency.findUnique.mockResolvedValue(null);
+
+      await expect(service.createSecurity(dto)).rejects.toThrow(
+        NotFoundException
+      );
+      expect(prisma.security.create).not.toHaveBeenCalled();
     });
   });
 

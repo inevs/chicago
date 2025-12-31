@@ -25,6 +25,8 @@ export class SecurityTransactionsService {
       );
     }
 
+    await this.ensureCurrencyExists(dto.currency);
+
     // Create security transaction
     const transaction = await this.prisma.securityTransaction.create({
       data: {
@@ -147,6 +149,10 @@ export class SecurityTransactionsService {
       }
     }
 
+    if (dto.currency && dto.currency !== existing.currency) {
+      await this.ensureCurrencyExists(dto.currency);
+    }
+
     // Update security transaction
     const transaction = await this.prisma.securityTransaction.update({
       where: { id },
@@ -184,5 +190,15 @@ export class SecurityTransactionsService {
     await this.prisma.securityTransaction.delete({
       where: { id },
     });
+  }
+
+  private async ensureCurrencyExists(code: string): Promise<void> {
+    const currency = await this.prisma.currency.findUnique({
+      where: { code },
+    });
+
+    if (!currency) {
+      throw new NotFoundException(`Currency with code ${code} not found`);
+    }
   }
 }
