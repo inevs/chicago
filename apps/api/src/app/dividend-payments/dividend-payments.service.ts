@@ -25,6 +25,9 @@ export class DividendPaymentsService {
       );
     }
 
+    await this.ensureCurrencyExists(dto.originCurrency);
+    await this.ensureCurrencyExists(dto.destCurrency);
+
     // Create dividend payment
     const payment = await this.prisma.dividendPayment.create({
       data: {
@@ -134,6 +137,14 @@ export class DividendPaymentsService {
       }
     }
 
+    if (dto.originCurrency && dto.originCurrency !== existing.originCurrency) {
+      await this.ensureCurrencyExists(dto.originCurrency);
+    }
+
+    if (dto.destCurrency && dto.destCurrency !== existing.destCurrency) {
+      await this.ensureCurrencyExists(dto.destCurrency);
+    }
+
     // Update dividend payment
     const payment = await this.prisma.dividendPayment.update({
       where: { id },
@@ -172,5 +183,15 @@ export class DividendPaymentsService {
     await this.prisma.dividendPayment.delete({
       where: { id },
     });
+  }
+
+  private async ensureCurrencyExists(code: string): Promise<void> {
+    const currency = await this.prisma.currency.findUnique({
+      where: { code },
+    });
+
+    if (!currency) {
+      throw new NotFoundException(`Currency with code ${code} not found`);
+    }
   }
 }

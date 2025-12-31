@@ -23,6 +23,16 @@ export class SecuritiesService {
       );
     }
 
+    const currency = await this.prisma.currency.findUnique({
+      where: { code: dto.currency },
+    });
+
+    if (!currency) {
+      throw new NotFoundException(
+        `Currency with code ${dto.currency} not found`
+      );
+    }
+
     // Create security
     const security = await this.prisma.security.create({
       data: dto,
