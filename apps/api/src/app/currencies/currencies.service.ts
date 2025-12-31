@@ -1,6 +1,7 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
-import { CreateCurrencyDto, CURRENCY_ERRORS } from '@dividends/shared';
+import { CURRENCY_ERRORS } from '@dividends/shared';
+import { CreateCurrencyDto } from './dto/create-currency.dto';
 import type { Currency } from '../../../generated/prisma/client';
 
 @Injectable()
