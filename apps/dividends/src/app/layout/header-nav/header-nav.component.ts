@@ -1,7 +1,7 @@
 import { Component, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStateService } from '../../../services/app-state.service';
-import { TimeRange } from '../../../models/dividend.model';
+import { AppStateService } from '../../services/app-state.service';
+import { TimeRange } from '../../models/dividend.model';
 
 @Component({
   selector: 'app-header-nav',

@@ -1,14 +1,14 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { AppStateService } from '../../../services/app-state.service';
+import { AppStateService } from '../../services/app-state.service';
 import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
-import { HeaderNavComponent } from '../../dashboard/header-nav/header-nav.component';
-import { TransactionModalComponent } from '../../dashboard/transaction-modal/transaction-modal.component';
-import { SecurityModalComponent } from '../../dashboard/security-modal/security-modal.component';
-import { SecurityTransactionModalComponent } from '../../dashboard/security-transaction-modal/security-transaction-modal.component';
-import { ImportConfirmModalComponent } from '../../dashboard/import-confirm-modal/import-confirm-modal.component';
-import { CurrencyModalComponent, CurrencyForm } from '../../dashboard/currency-modal/currency-modal.component';
+import { HeaderNavComponent } from '../header-nav/header-nav.component';
+import { TransactionModalComponent } from '../../shared/modals/transaction-modal/transaction-modal.component';
+import { SecurityModalComponent } from '../../shared/modals/security-modal/security-modal.component';
+import { SecurityTransactionModalComponent } from '../../shared/modals/security-transaction-modal/security-transaction-modal.component';
+import { ImportConfirmModalComponent } from '../../shared/modals/import-confirm-modal/import-confirm-modal.component';
+import { CurrencyModalComponent, CurrencyForm } from '../../shared/modals/currency-modal/currency-modal.component';
 import { ToastContainerComponent } from '../../shared/toast-container/toast-container.component';
 
 @Component({
