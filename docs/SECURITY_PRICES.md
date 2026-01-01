@@ -9,8 +9,8 @@ This repository stores end-of-day (EOD) price history for all securities and exp
 3. The frontend requests the latest price per security and renders it in the securities summary table.
 
 ## Provider Strategy
-- Provider selection is driven by `MARKET_DATA_PROVIDER` (default: `yahoo`).
-- Current implementation uses Yahoo Finance chart data via `query1.finance.yahoo.com`.
+- The application uses Yahoo Finance as the market data provider.
+- Yahoo Finance chart data is accessed via `query1.finance.yahoo.com`.
 - The sync skips duplicates and logs warnings when a specific symbol fails.
 
 ## Sync Endpoint
@@ -24,8 +24,7 @@ This repository stores end-of-day (EOD) price history for all securities and exp
   - Returns one price per security (latest date).
 
 ## Environment Variables
-- `MARKET_DATA_PROVIDER=yahoo`
-- `SECURITY_PRICE_HISTORY_START=2017-01-01`
+- `SECURITY_PRICE_HISTORY_START=2017-01-01` - Starting date for historical price sync (default: 2017-01-01)
 
 ## Notes
 - Yahoo symbols must match the expected Yahoo format. If your listings need exchange suffixes (e.g. `BMW.DE`), ensure the `symbol` field is stored accordingly.

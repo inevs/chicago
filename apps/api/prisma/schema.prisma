@@ -143,6 +143,7 @@ model SecurityPrice {
   currency   String   // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
   provider   String   // Data provider identifier
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([securityId, date])
   @@index([securityId])

@@ -141,94 +141,7 @@ export class SecurityPricesService {
     from: Date,
     to: Date
   ): Promise<ProviderPrice[]> {
-    const provider = this.getProviderName();
-
-    if (provider === 'twelvedata') {
-      return this.fetchFromTwelveData(security, from, to);
-    }
-
-    if (provider === 'yahoo') {
-      return this.fetchFromYahoo(security, from, to);
-    }
-
-    throw new Error(`Unsupported market data provider: ${provider}`);
-  }
-
-  private async fetchFromTwelveData(
-    security: Security,
-    from: Date,
-    to: Date
-  ): Promise<ProviderPrice[]> {
-    const apiKey = process.env.TWELVEDATA_API_KEY;
-    if (!apiKey) {
-      throw new Error('TWELVEDATA_API_KEY is not configured');
-    }
-
-    const params: Record<string, string> = {
-      symbol: security.symbol,
-      interval: '1day',
-      outputsize: '5000',
-      start_date: this.formatDate(from),
-      end_date: this.formatDate(to),
-      apikey: apiKey,
-      format: 'JSON',
-    };
-
-    if (security.exchange) {
-      params.exchange = security.exchange;
-    }
-
-    const response = await axios.get('https://api.twelvedata.com/time_series', {
-      params,
-      timeout: 30000, // 30 second timeout
-      validateStatus: (status) => status < 500, // Don't throw on 4xx errors
-    });
-
-    // Handle rate limiting
-    if (response.status === 429) {
-      const retryAfter = response.headers['retry-after'] || 'unknown';
-      this.logger.warn(`Rate limited by TwelveData, retry after ${retryAfter}s`);
-      throw new Error('Rate limit exceeded');
-    }
-
-    // Handle other client errors
-    if (response.status >= 400) {
-      this.logger.warn(`TwelveData returned status ${response.status} for ${security.symbol}`);
-      return [];
-    }
-
-    if (response.data?.status === 'error') {
-      const message = response.data?.message || 'Unknown provider error';
-      this.logger.warn(
-        `Twelve Data error for ${security.symbol}: ${message}`
-      );
-      return [];
-    }
-
-    const values = response.data?.values;
-    if (!Array.isArray(values)) {
-      return [];
-    }
-
-    const currency = response.data?.meta?.currency || security.currency;
-
-    return values
-      .map((value: Record<string, string>) => ({
-        date: this.parseDate(value.datetime),
-        open: Number(value.open),
-        high: Number(value.high),
-        low: Number(value.low),
-        close: Number(value.close),
-        volume: value.volume ? Number(value.volume) : null,
-        currency,
-      }))
-      .filter((price) =>
-        Number.isFinite(price.open) &&
-        Number.isFinite(price.high) &&
-        Number.isFinite(price.low) &&
-        Number.isFinite(price.close) &&
-        !Number.isNaN(price.date.getTime())
-      );
+    return this.fetchFromYahoo(security, from, to);
   }
 
   private async fetchFromYahoo(
@@ -313,7 +226,7 @@ export class SecurityPricesService {
   }
 
   private getProviderName(): string {
-    return (process.env.MARKET_DATA_PROVIDER || 'yahoo').toLowerCase();
+    return 'yahoo';
   }
 
   private getDefaultStartDate(): Date {
@@ -331,21 +244,8 @@ export class SecurityPricesService {
     return date.toISOString().slice(0, 10);
   }
 
-  private parseDate(value: string): Date {
-    const datePart = value.includes(' ') ? value.split(' ')[0] : value;
-    const date = new Date(`${datePart}T00:00:00.000Z`);
-
-    if (Number.isNaN(date.getTime())) {
-      throw new Error(`Invalid date format: ${value}`);
-    }
-
-    return date;
-  }
-
   private ensureProviderConfigured(provider: string): void {
-    if (provider === 'twelvedata' && !process.env.TWELVEDATA_API_KEY) {
-      throw new Error('TWELVEDATA_API_KEY is not configured');
-    }
+    // Yahoo Finance doesn't require API key configuration
   }
 
   private buildYahooSymbol(security: Security): string {
