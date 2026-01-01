@@ -24,8 +24,23 @@ export class SecuritiesSummaryComponent {
 
   // Aggregate transactions by security name, sum dividends, calculate quantities and avg buy price
   aggregatedSecurities = computed(() => {
-    // Map to store aggregated data by security id (fallback to name)
-    const securitiesMap = new Map<string, {
+    const securitiesMap = this.buildSecuritiesMap();
+    const latestPriceMap = this.buildPriceMap(this.latestPrices());
+    const securities = this.convertToSecuritiesArray(securitiesMap, latestPriceMap);
+    return this.applySorting(securities);
+  });
+
+  private buildPriceMap(prices: SecurityPrice[]): Map<string, SecurityPrice> {
+    const map = new Map<string, SecurityPrice>();
+    prices.forEach((price) => {
+      map.set(price.securityId, price);
+    });
+    return map;
+  }
+
+  private buildSecuritiesMap(): Map<
+    string,
+    {
       securityId?: string;
       name: string;
       totalDividends: number;
@@ -33,15 +48,42 @@ export class SecuritiesSummaryComponent {
       totalBuyValue: number;
       buyCount: number;
       currency?: string;
-    }>();
+    }
+  > {
+    const securitiesMap = new Map<
+      string,
+      {
+        securityId?: string;
+        name: string;
+        totalDividends: number;
+        quantity: number;
+        totalBuyValue: number;
+        buyCount: number;
+        currency?: string;
+      }
+    >();
 
-    const latestPriceMap = new Map<string, SecurityPrice>();
-    this.latestPrices().forEach(price => {
-      latestPriceMap.set(price.securityId, price);
-    });
+    this.aggregateDividends(securitiesMap);
+    this.aggregateTransactions(securitiesMap);
 
-    // Aggregate dividend transactions
-    this.filteredTransactions().forEach(tx => {
+    return securitiesMap;
+  }
+
+  private aggregateDividends(
+    securitiesMap: Map<
+      string,
+      {
+        securityId?: string;
+        name: string;
+        totalDividends: number;
+        quantity: number;
+        totalBuyValue: number;
+        buyCount: number;
+        currency?: string;
+      }
+    >
+  ): void {
+    this.filteredTransactions().forEach((tx) => {
       if (!tx.name) return;
 
       const key = tx.securityId || tx.name;
@@ -60,9 +102,23 @@ export class SecuritiesSummaryComponent {
       current.securityId = tx.securityId || current.securityId;
       securitiesMap.set(key, current);
     });
+  }
 
-    // Aggregate security transactions (BUY/SELL)
-    this.securityTransactions().forEach(tx => {
+  private aggregateTransactions(
+    securitiesMap: Map<
+      string,
+      {
+        securityId?: string;
+        name: string;
+        totalDividends: number;
+        quantity: number;
+        totalBuyValue: number;
+        buyCount: number;
+        currency?: string;
+      }
+    >
+  ): void {
+    this.securityTransactions().forEach((tx) => {
       const securityName = tx.security?.name;
       const securityId = tx.security?.id;
       if (!securityName && !securityId) return;
@@ -97,27 +153,61 @@ export class SecuritiesSummaryComponent {
 
       securitiesMap.set(key, current);
     });
+  }
 
-    // Convert to array, calculate averages, and filter to only show securities with holdings
+  private convertToSecuritiesArray(
+    securitiesMap: Map<
+      string,
+      {
+        securityId?: string;
+        name: string;
+        totalDividends: number;
+        quantity: number;
+        totalBuyValue: number;
+        buyCount: number;
+        currency?: string;
+      }
+    >,
+    latestPriceMap: Map<string, SecurityPrice>
+  ): Array<{
+    securityId?: string;
+    name: string;
+    totalDividends: number;
+    quantity: number;
+    averageBuyPrice: number;
+    dividendYield: number;
+    latestPrice: number | null;
+    latestPriceDate: Date | null;
+    latestPriceCurrency: string;
+  }> {
     // Use epsilon to handle floating-point precision issues
     const EPSILON = 0.0001;
 
-    const securities = Array.from(securitiesMap.entries())
+    return Array.from(securitiesMap.entries())
       .map(([key, data]) => {
-        const price = data.securityId ? latestPriceMap.get(data.securityId) : undefined;
-        const avgPrice = data.buyCount > 0 && isFinite(data.totalBuyValue / data.buyCount)
-          ? data.totalBuyValue / data.buyCount
-          : 0;
+        const price = data.securityId
+          ? latestPriceMap.get(data.securityId)
+          : undefined;
+        const avgPrice =
+          data.buyCount > 0 && isFinite(data.totalBuyValue / data.buyCount)
+            ? data.totalBuyValue / data.buyCount
+            : 0;
 
-        const totalDividends = isFinite(data.totalDividends) ? data.totalDividends : 0;
+        const totalDividends = isFinite(data.totalDividends)
+          ? data.totalDividends
+          : 0;
         const quantity = isFinite(data.quantity) ? data.quantity : 0;
 
         // Calculate dividend yield: total dividends / original total investment
         // Use totalBuyValue (all historical purchases) instead of current holding value
-        const dividendYield = data.totalBuyValue > 0 ? (totalDividends / data.totalBuyValue) * 100 : 0;
+        const dividendYield =
+          data.totalBuyValue > 0
+            ? (totalDividends / data.totalBuyValue) * 100
+            : 0;
         const latestPrice = price ? Number(price.close) : null;
         const latestPriceDate = price?.date || null;
-        const latestPriceCurrency = price?.currency || data.currency || 'EUR';
+        const latestPriceCurrency =
+          price?.currency || data.currency || 'EUR';
 
         return {
           securityId: data.securityId || (key || undefined),
@@ -131,9 +221,32 @@ export class SecuritiesSummaryComponent {
           latestPriceCurrency,
         };
       })
-      .filter(s => s.quantity > EPSILON); // Only show securities with holdings
+      .filter((s) => s.quantity > EPSILON); // Only show securities with holdings
+  }
 
-    // Apply sorting
+  private applySorting(
+    securities: Array<{
+      securityId?: string;
+      name: string;
+      totalDividends: number;
+      quantity: number;
+      averageBuyPrice: number;
+      dividendYield: number;
+      latestPrice: number | null;
+      latestPriceDate: Date | null;
+      latestPriceCurrency: string;
+    }>
+  ): Array<{
+    securityId?: string;
+    name: string;
+    totalDividends: number;
+    quantity: number;
+    averageBuyPrice: number;
+    dividendYield: number;
+    latestPrice: number | null;
+    latestPriceDate: Date | null;
+    latestPriceCurrency: string;
+  }> {
     const column = this.sortColumn();
     const direction = this.sortDirection();
 
@@ -142,15 +255,20 @@ export class SecuritiesSummaryComponent {
 
       if (column === 'name') {
         comparison = a.name.localeCompare(b.name);
+      } else if (column === 'latestPrice') {
+        // Handle null values for latestPrice
+        const left = a.latestPrice ?? -Infinity;
+        const right = b.latestPrice ?? -Infinity;
+        comparison = left - right;
       } else {
-        const left = a[column] ?? 0;
-        const right = b[column] ?? 0;
+        const left = (a[column] as number) ?? 0;
+        const right = (b[column] as number) ?? 0;
         comparison = left - right;
       }
 
       return direction === 'asc' ? comparison : -comparison;
     });
-  });
+  }
 
   // Calculate totals for the summary row
   totals = computed(() => {

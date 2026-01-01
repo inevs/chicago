@@ -23,7 +23,22 @@ export class SecurityPricesService {
   async getLatestPrices(): Promise<SecurityPrice[]> {
     // Use a more efficient query with DISTINCT ON to avoid N+1 problem
     // This PostgreSQL-specific query gets the latest price for each security in a single query
-    const latestPrices = await this.prisma.$queryRaw<SecurityPrice[]>`
+    const latestPrices = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        securityId: string;
+        date: Date;
+        open: { toNumber: () => number } | number;
+        high: { toNumber: () => number } | number;
+        low: { toNumber: () => number } | number;
+        close: { toNumber: () => number } | number;
+        volume: { toNumber: () => number } | number | null;
+        currency: string;
+        provider: string;
+        createdAt: Date;
+        updatedAt: Date;
+      }>
+    >`
       SELECT DISTINCT ON ("securityId")
         id,
         "securityId",
@@ -41,7 +56,26 @@ export class SecurityPricesService {
       ORDER BY "securityId", date DESC
     `;
 
-    return latestPrices;
+    // Convert Decimal types to numbers for the interface
+    return latestPrices.map((price) => ({
+      id: price.id,
+      securityId: price.securityId,
+      date: price.date,
+      open: typeof price.open === 'object' ? price.open.toNumber() : price.open,
+      high: typeof price.high === 'object' ? price.high.toNumber() : price.high,
+      low: typeof price.low === 'object' ? price.low.toNumber() : price.low,
+      close: typeof price.close === 'object' ? price.close.toNumber() : price.close,
+      volume:
+        price.volume === null
+          ? null
+          : typeof price.volume === 'object'
+            ? price.volume.toNumber()
+            : price.volume,
+      currency: price.currency,
+      provider: price.provider,
+      createdAt: price.createdAt,
+      updatedAt: price.updatedAt,
+    }));
   }
 
   async syncHistoricalPrices(options: {
@@ -54,6 +88,7 @@ export class SecurityPricesService {
     to: string;
     securitiesProcessed: number;
     pricesInserted: number;
+    failures: Array<{ symbol: string; error: string }>;
   }> {
     const provider = this.getProviderName();
     const fromDate = options.from || this.getDefaultStartDate();
@@ -66,10 +101,18 @@ export class SecurityPricesService {
     });
 
     let totalInserted = 0;
+    const failures: Array<{ symbol: string; error: string }> = [];
 
     for (const security of securities) {
       try {
-        const prices = await this.fetchHistoricalPrices(security, fromDate, toDate);
+        // Add a 1-second delay between requests to avoid rate limiting
+        await this.delay(1000);
+
+        const prices = await this.fetchHistoricalPricesWithRetry(
+          security,
+          fromDate,
+          toDate
+        );
         if (prices.length === 0) {
           continue;
         }
@@ -92,6 +135,7 @@ export class SecurityPricesService {
         this.logger.warn(
           `Failed to sync prices for ${security.symbol}: ${message}`
         );
+        failures.push({ symbol: security.symbol, error: message });
       }
     }
 
@@ -101,6 +145,7 @@ export class SecurityPricesService {
       to: this.formatDate(toDate),
       securitiesProcessed: securities.length,
       pricesInserted: totalInserted,
+      failures,
     };
   }
 
@@ -136,12 +181,47 @@ export class SecurityPricesService {
     return inserted;
   }
 
+  private async fetchHistoricalPricesWithRetry(
+    security: Security,
+    from: Date,
+    to: Date,
+    maxRetries = 3
+  ): Promise<ProviderPrice[]> {
+    let lastError: Error | undefined;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await this.fetchHistoricalPrices(security, from, to);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // If it's a rate limit error, use exponential backoff
+        if (lastError.message.includes('Rate limit exceeded')) {
+          const backoffMs = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+          this.logger.warn(
+            `Rate limited for ${security.symbol}, retrying in ${backoffMs}ms (attempt ${attempt + 1}/${maxRetries})`
+          );
+          await this.delay(backoffMs);
+        } else {
+          // For other errors, don't retry
+          throw lastError;
+        }
+      }
+    }
+
+    throw lastError || new Error('Max retries exceeded');
+  }
+
   private async fetchHistoricalPrices(
     security: Security,
     from: Date,
     to: Date
   ): Promise<ProviderPrice[]> {
     return this.fetchFromYahoo(security, from, to);
+  }
+
+  private async delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async fetchFromYahoo(

@@ -40,6 +40,7 @@ export class SecurityPricesController {
     to: string;
     securitiesProcessed: number;
     pricesInserted: number;
+    failures: Array<{ symbol: string; error: string }>;
   }> {
     const fromDate = from ? new Date(from) : undefined;
     const toDate = to ? new Date(to) : undefined;
@@ -50,6 +51,27 @@ export class SecurityPricesController {
 
     if (to && Number.isNaN(toDate?.getTime())) {
       throw new BadRequestException('Invalid to date');
+    }
+
+    // Validate date ranges
+    if (fromDate && toDate && fromDate > toDate) {
+      throw new BadRequestException('from date must be before to date');
+    }
+
+    if (fromDate && fromDate > new Date()) {
+      throw new BadRequestException('from date cannot be in the future');
+    }
+
+    // Limit range to prevent abuse (max 10 years)
+    const maxDays = 3650; // 10 years
+    if (fromDate && toDate) {
+      const daysDiff =
+        (toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysDiff > maxDays) {
+        throw new BadRequestException(
+          `Date range cannot exceed ${maxDays} days (approximately 10 years)`
+        );
+      }
     }
 
     return this.securityPricesService.syncHistoricalPrices({

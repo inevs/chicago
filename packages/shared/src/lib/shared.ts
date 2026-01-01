@@ -125,6 +125,7 @@ export interface SecurityPrice {
   currency: string;
   provider: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 // SecurityTransaction with Security details (for API responses with includes)
