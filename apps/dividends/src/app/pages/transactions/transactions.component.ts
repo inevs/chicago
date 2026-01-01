@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AppStateService } from '../../services/app-state.service';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { PaginationStateService } from '../../services/pagination-state.service';
-import { TransactionTableComponent } from '../dividends/transaction-table/transaction-table.component';
-import { SecurityTransactionTableComponent } from '../security-transactions/security-transaction-table/security-transaction-table.component';
+import { TransactionTableComponent } from '../../shared/tables/transaction-table/transaction-table.component';
+import { SecurityTransactionTableComponent } from '../../shared/tables/security-transaction-table/security-transaction-table.component';
 
 @Component({
   selector: 'app-transactions',
