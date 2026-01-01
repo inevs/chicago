@@ -1,7 +1,7 @@
 import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppStateService } from '../../services/app-state.service';
-import { SecurityTransactionTableComponent } from '../../components/dashboard/security-transaction-table/security-transaction-table.component';
+import { SecurityTransactionTableComponent } from './security-transaction-table/security-transaction-table.component';
 
 @Component({
   selector: 'app-security-transactions',

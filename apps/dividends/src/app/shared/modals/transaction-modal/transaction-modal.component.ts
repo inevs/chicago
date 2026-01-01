@@ -1,7 +1,7 @@
 import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SecurityAutocompleteComponent } from '../security-autocomplete/security-autocomplete.component';
+import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
 import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { ToastService } from '../../../services/toast.service';

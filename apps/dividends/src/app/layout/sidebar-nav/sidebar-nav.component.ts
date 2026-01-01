@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AppStateService } from '../../../services/app-state.service';
+import { AppStateService } from '../../services/app-state.service';
 import {
   LucideAngularModule,
   LayoutDashboard,

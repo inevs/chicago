@@ -8,10 +8,10 @@ import { CurrencyService } from './currency.service';
 import { ToastService } from './toast.service';
 import { TimeRange, DividendTransaction } from '../models/dividend.model';
 import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto } from '@dividends/shared';
-import { TransactionForm } from '../components/dashboard/transaction-modal/transaction-modal.component';
-import { SecurityForm } from '../components/dashboard/security-modal/security-modal.component';
-import { SecurityTransactionForm } from '../components/dashboard/security-transaction-modal/security-transaction-modal.component';
-import { ImportMode } from '../components/dashboard/import-confirm-modal/import-confirm-modal.component';
+import { TransactionForm } from '../shared/modals/transaction-modal/transaction-modal.component';
+import { SecurityForm } from '../shared/modals/security-modal/security-modal.component';
+import { SecurityTransactionForm } from '../shared/modals/security-transaction-modal/security-transaction-modal.component';
+import { ImportMode } from '../shared/modals/import-confirm-modal/import-confirm-modal.component';
 
 @Injectable({
   providedIn: 'root',

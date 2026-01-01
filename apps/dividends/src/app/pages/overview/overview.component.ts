@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppStateService } from '../../services/app-state.service';
-import { KpiCardsComponent } from '../../components/dashboard/kpi-cards/kpi-cards.component';
+import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
 
 @Component({
   selector: 'app-overview',
