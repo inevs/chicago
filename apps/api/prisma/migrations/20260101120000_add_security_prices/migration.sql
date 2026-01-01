@@ -11,6 +11,7 @@ CREATE TABLE "security_prices" (
     "currency" TEXT NOT NULL,
     "provider" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "security_prices_pkey" PRIMARY KEY ("id")
 );

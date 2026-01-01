@@ -23,6 +23,13 @@ export class SecurityPricesService {
   async getLatestPrices(): Promise<SecurityPrice[]> {
     // Use a more efficient query with DISTINCT ON to avoid N+1 problem
     // This PostgreSQL-specific query gets the latest price for each security in a single query
+    //
+    // NOTE: Using $queryRaw is safe here because:
+    // 1. The query uses a template literal (not string concatenation)
+    // 2. No user input is interpolated into the query
+    // 3. All column and table names are hardcoded
+    // If you need to add dynamic filtering in the future, use parameterized queries
+    // or Prisma's query builder to maintain type safety and prevent SQL injection
     const latestPrices = await this.prisma.$queryRaw<
       Array<{
         id: string;
