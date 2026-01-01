@@ -3,4 +3,12 @@
   <p class="page-subtitle">Ihre wichtigsten Kennzahlen auf einen Blick</p>
 
   <app-kpi-cards [kpis]="appState.kpis()" />
+
+  <section class="mt-8">
+    <h2 class="section-header">Bestandsallokation nach Unternehmen</h2>
+    <app-allocation-chart
+      [securityTransactions]="appState.securityTransactions()"
+      [isDarkMode]="appState.isDarkMode()"
+    />
+  </section>
 </div>

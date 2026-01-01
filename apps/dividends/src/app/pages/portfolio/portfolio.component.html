@@ -1,17 +1,8 @@
 <div class="page-container">
   <h1 class="page-title">Portfolio</h1>
-  <p class="page-subtitle">Ihre Wertpapiere und Bestandsallokation</p>
-
-  <section class="chart-section mb-8">
-    <h2 class="section-header">Bestandsallokation nach Unternehmen</h2>
-    <app-allocation-chart
-      [securityTransactions]="appState.securityTransactions()"
-      [isDarkMode]="appState.isDarkMode()"
-    />
-  </section>
+  <p class="page-subtitle">Aktuelle Positionen, Renditen und Dividenden</p>
 
   <section class="table-section">
-    <h2 class="section-header">Wertpapier-Übersicht</h2>
     <app-securities-summary
       [filteredTransactions]="appState.filteredDividends()"
       [securityTransactions]="appState.securityTransactions()"
