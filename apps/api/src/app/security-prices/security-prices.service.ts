@@ -21,29 +21,27 @@ export class SecurityPricesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getLatestPrices(): Promise<SecurityPrice[]> {
-    const latestDates = await this.prisma.securityPrice.groupBy({
-      by: ['securityId'],
-      _max: { date: true },
-    });
+    // Use a more efficient query with DISTINCT ON to avoid N+1 problem
+    // This PostgreSQL-specific query gets the latest price for each security in a single query
+    const latestPrices = await this.prisma.$queryRaw<SecurityPrice[]>`
+      SELECT DISTINCT ON ("securityId")
+        id,
+        "securityId",
+        date,
+        open,
+        high,
+        low,
+        close,
+        volume,
+        currency,
+        provider,
+        "createdAt",
+        "updatedAt"
+      FROM security_prices
+      ORDER BY "securityId", date DESC
+    `;
 
-    const filters = latestDates
-      .filter((entry) => entry._max.date)
-      .map((entry) => ({
-        securityId: entry.securityId,
-        date: entry._max.date as Date,
-      }));
-
-    if (filters.length === 0) {
-      return [];
-    }
-
-    const latestPrices = await this.prisma.securityPrice.findMany({
-      where: {
-        OR: filters,
-      },
-    });
-
-    return latestPrices as unknown as SecurityPrice[];
+    return latestPrices;
   }
 
   async syncHistoricalPrices(options: {
@@ -182,7 +180,22 @@ export class SecurityPricesService {
 
     const response = await axios.get('https://api.twelvedata.com/time_series', {
       params,
+      timeout: 30000, // 30 second timeout
+      validateStatus: (status) => status < 500, // Don't throw on 4xx errors
     });
+
+    // Handle rate limiting
+    if (response.status === 429) {
+      const retryAfter = response.headers['retry-after'] || 'unknown';
+      this.logger.warn(`Rate limited by TwelveData, retry after ${retryAfter}s`);
+      throw new Error('Rate limit exceeded');
+    }
+
+    // Handle other client errors
+    if (response.status >= 400) {
+      this.logger.warn(`TwelveData returned status ${response.status} for ${security.symbol}`);
+      return [];
+    }
 
     if (response.data?.status === 'error') {
       const message = response.data?.message || 'Unknown provider error';
@@ -237,8 +250,23 @@ export class SecurityPricesService {
           events: 'div,splits',
           includeAdjustedClose: true,
         },
+        timeout: 30000, // 30 second timeout
+        validateStatus: (status) => status < 500, // Don't throw on 4xx errors
       }
     );
+
+    // Handle rate limiting
+    if (response.status === 429) {
+      const retryAfter = response.headers['retry-after'] || 'unknown';
+      this.logger.warn(`Rate limited by Yahoo Finance, retry after ${retryAfter}s`);
+      throw new Error('Rate limit exceeded');
+    }
+
+    // Handle other client errors
+    if (response.status >= 400) {
+      this.logger.warn(`Yahoo Finance returned status ${response.status} for ${symbol}`);
+      return [];
+    }
 
     const result = response.data?.chart?.result?.[0];
     const timestamps: number[] = result?.timestamp || [];
@@ -305,7 +333,13 @@ export class SecurityPricesService {
 
   private parseDate(value: string): Date {
     const datePart = value.includes(' ') ? value.split(' ')[0] : value;
-    return new Date(`${datePart}T00:00:00.000Z`);
+    const date = new Date(`${datePart}T00:00:00.000Z`);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new Error(`Invalid date format: ${value}`);
+    }
+
+    return date;
   }
 
   private ensureProviderConfigured(provider: string): void {
