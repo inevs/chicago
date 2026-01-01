@@ -1,9 +1,9 @@
 import { Component, computed, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DividendTransaction, SecuritySummary } from '../../../models/dividend.model';
-import { SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
+import { DividendTransaction } from '../../../models/dividend.model';
+import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
 
-type SortColumn = 'name' | 'quantity' | 'averageBuyPrice' | 'dividendYield' | 'totalDividends';
+type SortColumn = 'name' | 'quantity' | 'averageBuyPrice' | 'latestPrice' | 'dividendYield' | 'totalDividends';
 type SortDirection = 'asc' | 'desc';
 
 @Component({
@@ -16,6 +16,7 @@ export class SecuritiesSummaryComponent {
   // Input from parent dashboard
   filteredTransactions = input.required<DividendTransaction[]>();
   securityTransactions = input.required<SecurityTransactionWithSecurity[]>();
+  latestPrices = input.required<SecurityPrice[]>();
 
   // Sorting state
   sortColumn = signal<SortColumn>('name');
@@ -23,40 +24,64 @@ export class SecuritiesSummaryComponent {
 
   // Aggregate transactions by security name, sum dividends, calculate quantities and avg buy price
   aggregatedSecurities = computed(() => {
-    // Map to store aggregated data by security name
+    // Map to store aggregated data by security id (fallback to name)
     const securitiesMap = new Map<string, {
+      securityId?: string;
+      name: string;
       totalDividends: number;
       quantity: number;
       totalBuyValue: number;
       buyCount: number;
+      currency?: string;
     }>();
+
+    const latestPriceMap = new Map<string, SecurityPrice>();
+    this.latestPrices().forEach(price => {
+      latestPriceMap.set(price.securityId, price);
+    });
 
     // Aggregate dividend transactions
     this.filteredTransactions().forEach(tx => {
       if (!tx.name) return;
 
-      const current = securitiesMap.get(tx.name) || {
+      const key = tx.securityId || tx.name;
+      const current = securitiesMap.get(key) || {
+        securityId: tx.securityId,
+        name: tx.name,
         totalDividends: 0,
         quantity: 0,
         totalBuyValue: 0,
-        buyCount: 0
+        buyCount: 0,
+        currency: undefined,
       };
       const payment = Number(tx.finalPayment) || 0;
       current.totalDividends += payment;
-      securitiesMap.set(tx.name, current);
+      current.name = tx.name || current.name;
+      current.securityId = tx.securityId || current.securityId;
+      securitiesMap.set(key, current);
     });
 
     // Aggregate security transactions (BUY/SELL)
     this.securityTransactions().forEach(tx => {
       const securityName = tx.security?.name;
-      if (!securityName) return;
+      const securityId = tx.security?.id;
+      if (!securityName && !securityId) return;
 
-      const current = securitiesMap.get(securityName) || {
+      const key = securityId || securityName || '';
+      if (!key) return;
+
+      const current = securitiesMap.get(key) || {
+        securityId,
+        name: securityName || 'Unknown',
         totalDividends: 0,
         quantity: 0,
         totalBuyValue: 0,
-        buyCount: 0
+        buyCount: 0,
+        currency: undefined,
       };
+      current.securityId = securityId || current.securityId;
+      current.name = securityName || current.name;
+      current.currency = tx.security?.currency || current.currency;
 
       // Explicitly convert to numbers
       const quantity = Number(tx.quantity) || 0;
@@ -70,7 +95,7 @@ export class SecuritiesSummaryComponent {
         current.quantity -= quantity;
       }
 
-      securitiesMap.set(securityName, current);
+      securitiesMap.set(key, current);
     });
 
     // Convert to array, calculate averages, and filter to only show securities with holdings
@@ -78,7 +103,8 @@ export class SecuritiesSummaryComponent {
     const EPSILON = 0.0001;
 
     const securities = Array.from(securitiesMap.entries())
-      .map(([name, data]) => {
+      .map(([key, data]) => {
+        const price = data.securityId ? latestPriceMap.get(data.securityId) : undefined;
         const avgPrice = data.buyCount > 0 && isFinite(data.totalBuyValue / data.buyCount)
           ? data.totalBuyValue / data.buyCount
           : 0;
@@ -89,13 +115,20 @@ export class SecuritiesSummaryComponent {
         // Calculate dividend yield: total dividends / original total investment
         // Use totalBuyValue (all historical purchases) instead of current holding value
         const dividendYield = data.totalBuyValue > 0 ? (totalDividends / data.totalBuyValue) * 100 : 0;
+        const latestPrice = price ? Number(price.close) : null;
+        const latestPriceDate = price?.date || null;
+        const latestPriceCurrency = price?.currency || data.currency || 'EUR';
 
         return {
-          name,
+          securityId: data.securityId || (key || undefined),
+          name: data.name,
           totalDividends,
           quantity,
           averageBuyPrice: avgPrice,
-          dividendYield: isFinite(dividendYield) ? dividendYield : 0
+          dividendYield: isFinite(dividendYield) ? dividendYield : 0,
+          latestPrice,
+          latestPriceDate,
+          latestPriceCurrency,
         };
       })
       .filter(s => s.quantity > EPSILON); // Only show securities with holdings
@@ -110,7 +143,9 @@ export class SecuritiesSummaryComponent {
       if (column === 'name') {
         comparison = a.name.localeCompare(b.name);
       } else {
-        comparison = a[column] - b[column];
+        const left = a[column] ?? 0;
+        const right = b[column] ?? 0;
+        comparison = left - right;
       }
 
       return direction === 'asc' ? comparison : -comparison;
@@ -126,10 +161,10 @@ export class SecuritiesSummaryComponent {
     }), { totalQuantity: 0, totalDividends: 0 });
   });
 
-  formatCurrency(value: number): string {
+  formatCurrency(value: number, currency = 'EUR'): string {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
-      currency: 'EUR',
+      currency,
     }).format(value);
   }
 
@@ -145,6 +180,13 @@ export class SecuritiesSummaryComponent {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value) + ' %';
+  }
+
+  formatDate(value?: string | Date | null): string {
+    if (!value) return '';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('de-DE').format(date);
   }
 
   sort(column: SortColumn): void {

@@ -7,6 +7,7 @@ export interface ExportData {
   securities: unknown[];
   dividendPayments: unknown[];
   securityTransactions: unknown[];
+  securityPrices: unknown[];
   exportedAt: string;
   version: string;
 }
@@ -16,6 +17,7 @@ export interface ImportResult {
   securitiesImported: number;
   dividendPaymentsImported: number;
   securityTransactionsImported: number;
+  securityPricesImported: number;
 }
 
 @Injectable({

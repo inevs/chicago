@@ -112,6 +112,21 @@ export interface SecurityTransaction {
   updatedAt: Date;
 }
 
+// SecurityPrice interface (matches Prisma model)
+export interface SecurityPrice {
+  id: string;
+  securityId: string;
+  date: Date;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number | null;
+  currency: string;
+  provider: string;
+  createdAt: Date;
+}
+
 // SecurityTransaction with Security details (for API responses with includes)
 export interface SecurityTransactionWithSecurity extends SecurityTransaction {
   security: Security;

@@ -43,6 +43,7 @@ model Security {
   currencyRef          Currency            @relation("SecurityCurrency", fields: [currency], references: [code])
   dividendPayments      DividendPayment[]
   securityTransactions  SecurityTransaction[]
+  securityPrices        SecurityPrice[]
 
   // Indexes for common queries
   @@index([isin])
@@ -126,6 +127,28 @@ model SecurityTransaction {
   @@index([type])
   @@index([securityId, date]) // Compound index for filtering by security and date
   @@map("security_transactions") // Plural table name convention
+}
+
+// SecurityPrice model - represents end-of-day price history
+model SecurityPrice {
+  id         String   @id @default(uuid())
+  securityId String
+  security   Security @relation(fields: [securityId], references: [id], onDelete: Cascade)
+  date       DateTime // Trading date (EOD)
+  open       Decimal  @db.Decimal(19, 6)
+  high       Decimal  @db.Decimal(19, 6)
+  low        Decimal  @db.Decimal(19, 6)
+  close      Decimal  @db.Decimal(19, 6)
+  volume     Decimal? @db.Decimal(22, 4)
+  currency   String   // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
+  provider   String   // Data provider identifier
+  createdAt  DateTime @default(now())
+
+  @@unique([securityId, date])
+  @@index([securityId])
+  @@index([date])
+  @@index([securityId, date])
+  @@map("security_prices")
 }
 
 // Currency model - represents available currencies for transactions

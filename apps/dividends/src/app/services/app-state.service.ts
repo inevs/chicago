@@ -3,11 +3,12 @@ import { DividendDataService } from './dividend-data.service';
 import { SecurityTransactionService } from './security-transaction.service';
 import { DividendPaymentService } from './dividend-payment.service';
 import { SecurityService } from './security.service';
+import { SecurityPriceService } from './security-price.service';
 import { DataService } from './data.service';
 import { CurrencyService } from './currency.service';
 import { ToastService } from './toast.service';
 import { TimeRange, DividendTransaction } from '../models/dividend.model';
-import { SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto } from '@dividends/shared';
+import { SecurityPrice, SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto } from '@dividends/shared';
 import { TransactionForm } from '../shared/modals/transaction-modal/transaction-modal.component';
 import { SecurityForm } from '../shared/modals/security-modal/security-modal.component';
 import { SecurityTransactionForm } from '../shared/modals/security-transaction-modal/security-transaction-modal.component';
@@ -21,6 +22,7 @@ export class AppStateService {
   private readonly securityTransactionService = inject(SecurityTransactionService);
   private readonly dividendPaymentService = inject(DividendPaymentService);
   private readonly securityService = inject(SecurityService);
+  private readonly securityPriceService = inject(SecurityPriceService);
   private readonly dataService = inject(DataService);
   private readonly currencyService = inject(CurrencyService);
   private readonly toastService = inject(ToastService);
@@ -46,6 +48,7 @@ export class AppStateService {
 
   // Data State
   securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
+  securityPrices = signal<SecurityPrice[]>([]);
   currencies = signal<Currency[]>([]);
   defaultCurrency = signal<Currency | null>(null);
 
@@ -128,6 +131,7 @@ export class AppStateService {
   loadAllData() {
     this.dividendDataService.loadTransactionsFromBackend();
     this.loadSecurityTransactions();
+    this.loadSecurityPrices();
     this.loadCurrencies();
   }
 
@@ -138,6 +142,17 @@ export class AppStateService {
       },
       error: (error) => {
         console.error('Error loading security transactions:', error);
+      },
+    });
+  }
+
+  private loadSecurityPrices() {
+    this.securityPriceService.getLatestSecurityPrices().subscribe({
+      next: (prices) => {
+        this.securityPrices.set(prices);
+      },
+      error: (error) => {
+        console.error('Error loading security prices:', error);
       },
     });
   }
@@ -299,7 +314,8 @@ export class AppStateService {
         this.toastService.success(
           `Import erfolgreich! Wertpapiere: ${result.securitiesImported}, ` +
           `Dividenden: ${result.dividendPaymentsImported}, ` +
-          `Transaktionen: ${result.securityTransactionsImported}`,
+          `Transaktionen: ${result.securityTransactionsImported}, ` +
+          `Kurse: ${result.securityPricesImported}`,
           8000
         );
 

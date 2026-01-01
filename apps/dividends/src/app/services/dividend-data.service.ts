@@ -234,6 +234,7 @@ export class DividendDataService {
       id: payment.id,
       date: new Date(payment.payoutDate).toISOString().split('T')[0],
       name: payment.security?.name || 'Unknown',
+      securityId: payment.securityId,
       amount: Number(payment.shares),
       dividend: Number(payment.dividendYield),
       taxes: Number(payment.taxAmount),

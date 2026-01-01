@@ -2,6 +2,7 @@ export interface DividendTransaction {
   id: string | number;
   date: string;
   name: string;
+  securityId?: string;
   amount: number;
   dividend: number;
   taxes: number;
