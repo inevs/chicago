@@ -1,7 +1,8 @@
 <div class="page-container">
   <h1 class="page-title">Käufe & Verkäufe</h1>
+  <p class="page-subtitle">Übersicht aller Wertpapier-Transaktionen</p>
 
-  <section>
+  <section class="table-section">
     <app-security-transaction-table
       [transactions]="paginatedSecurityTransactions()"
       [paginationMetadata]="securityTransactionPaginationMetadata()"

@@ -1,7 +1,8 @@
 <div class="page-container">
   <h1 class="page-title">Dividenden-Zahlungen</h1>
+  <p class="page-subtitle">Übersicht aller erhaltenen Dividenden</p>
 
-  <section>
+  <section class="table-section">
     <app-transaction-table
       [transactions]="paginatedTransactions()"
       [paginationMetadata]="paginationMetadata()"

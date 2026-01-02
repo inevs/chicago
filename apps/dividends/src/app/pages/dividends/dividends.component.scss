@@ -1,23 +1,18 @@
 .page-container {
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  animation: fadeIn 0.3s ease-out;
 }
 
-.page-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 2rem;
+.table-section {
+  margin-top: 2rem;
 }
 
-@media (max-width: 768px) {
-  .page-container {
-    padding: 1rem;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-
-  .page-title {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
