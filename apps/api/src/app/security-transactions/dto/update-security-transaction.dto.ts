@@ -8,38 +8,39 @@ import {
   Min,
   Length,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 import { TransactionType } from '@dividends/shared';
 
 export class UpdateSecurityTransactionDto {
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsDateString()
   date?: string;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsEnum(TransactionType)
   type?: TransactionType;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsUUID()
   securityId?: string;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsNumber()
   @Min(0)
   quantity?: number;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsNumber()
   @Min(0)
   pricePerShare?: number;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsNumber()
   @Min(0)
   fees?: number;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @Length(3, 3)
   @Matches(/^[A-Z]{3}$/, {
@@ -47,12 +48,12 @@ export class UpdateSecurityTransactionDto {
   })
   currency?: string;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsNumber()
   @Min(0)
   exchangeRate?: number;
 
-  @IsOptional()
+  @ValidateIf((_, value) => value !== undefined)
   @IsNumber()
   @Min(0)
   totalValue?: number;
