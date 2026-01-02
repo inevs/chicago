@@ -86,6 +86,38 @@ export class SecurityPricesService {
     }));
   }
 
+  /**
+   * Get the last price update date for a specific security or the earliest
+   * last update date across all securities.
+   * @param securityId Optional security ID to check. If not provided, returns the
+   *                   earliest last update date across all securities.
+   * @returns The last update date, or null if no prices exist
+   */
+  async getLastPriceUpdateDate(securityId?: string): Promise<Date | null> {
+    if (securityId) {
+      // Get the latest price date for a specific security
+      const result = await this.prisma.securityPrice.findFirst({
+        where: { securityId },
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      });
+      return result?.date || null;
+    }
+
+    // Get the earliest of the latest dates across all securities
+    // This ensures we update all securities from their respective last update dates
+    const result = await this.prisma.$queryRaw<Array<{ min_date: Date | null }>>`
+      SELECT MIN(max_date) as min_date
+      FROM (
+        SELECT MAX(date) as max_date
+        FROM security_prices
+        GROUP BY "securityId"
+      ) latest_dates
+    `;
+
+    return result[0]?.min_date || null;
+  }
+
   async syncHistoricalPrices(options: {
     securityId?: string;
     from?: Date;
