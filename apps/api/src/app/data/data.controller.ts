@@ -40,6 +40,7 @@ export class DataController {
     securitiesImported: number;
     dividendPaymentsImported: number;
     securityTransactionsImported: number;
+    securityPricesImported: number;
   }> {
     const result = await this.dataService.importAllData(data, {
       clearExisting: clearExisting === 'true',

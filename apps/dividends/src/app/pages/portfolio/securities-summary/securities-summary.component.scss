@@ -37,8 +37,8 @@ th {
   // Hide even more columns on small screens
   @media (max-width: 640px) {
     // Hide dividend yield column as well
-    thead tr th:nth-child(4),
-    tbody tr td:nth-child(4) {
+    thead tr th:nth-child(5),
+    tbody tr td:nth-child(5) {
       display: none;
     }
 

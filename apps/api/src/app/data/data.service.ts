@@ -5,6 +5,7 @@ export interface ExportData {
   securities: unknown[];
   dividendPayments: unknown[];
   securityTransactions: unknown[];
+  securityPrices: unknown[];
   exportedAt: string;
   version: string;
 }
@@ -13,6 +14,7 @@ export interface ImportData {
   securities?: unknown[];
   dividendPayments?: unknown[];
   securityTransactions?: unknown[];
+  securityPrices?: unknown[];
 }
 
 @Injectable()
@@ -21,7 +23,7 @@ export class DataService {
 
   async exportAllData(): Promise<ExportData> {
     // Fetch all data from database
-    const [securities, dividendPayments, securityTransactions] =
+    const [securities, dividendPayments, securityTransactions, securityPrices] =
       await Promise.all([
         this.prisma.security.findMany({
           orderBy: { symbol: 'asc' },
@@ -32,12 +34,16 @@ export class DataService {
         this.prisma.securityTransaction.findMany({
           orderBy: { date: 'asc' },
         }),
+        this.prisma.securityPrice.findMany({
+          orderBy: { date: 'asc' },
+        }),
       ]);
 
     return {
       securities,
       dividendPayments,
       securityTransactions,
+      securityPrices,
       exportedAt: new Date().toISOString(),
       version: '1.0',
     };
@@ -50,18 +56,21 @@ export class DataService {
     securitiesImported: number;
     dividendPaymentsImported: number;
     securityTransactionsImported: number;
+    securityPricesImported: number;
   }> {
     return await this.prisma.$transaction(async (tx) => {
       // Clear existing data if requested
       if (options.clearExisting) {
         await tx.dividendPayment.deleteMany({});
         await tx.securityTransaction.deleteMany({});
+        await tx.securityPrice.deleteMany({});
         await tx.security.deleteMany({});
       }
 
       let securitiesImported = 0;
       let dividendPaymentsImported = 0;
       let securityTransactionsImported = 0;
+      let securityPricesImported = 0;
 
       // Import securities first (they are referenced by other tables)
       if (data.securities && Array.isArray(data.securities)) {
@@ -102,10 +111,23 @@ export class DataService {
         }
       }
 
+      // Import security prices
+      if (data.securityPrices && Array.isArray(data.securityPrices)) {
+        for (const price of data.securityPrices) {
+          await tx.securityPrice.upsert({
+            where: { id: (price as { id: string }).id },
+            create: price as never,
+            update: price as never,
+          });
+          securityPricesImported++;
+        }
+      }
+
       return {
         securitiesImported,
         dividendPaymentsImported,
         securityTransactionsImported,
+        securityPricesImported,
       };
     });
   }
