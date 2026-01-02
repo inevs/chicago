@@ -2,14 +2,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { SecurityPricesController } from './security-prices.controller';
 import { SecurityPricesService } from './security-prices.service';
+import { PriceUpdateSchedulerService } from './price-update-scheduler.service';
 
 describe('SecurityPricesController', () => {
   let controller: SecurityPricesController;
   let service: SecurityPricesService;
+  let scheduler: PriceUpdateSchedulerService;
 
   const mockSecurityPricesService = {
     getLatestPrices: jest.fn(),
     syncHistoricalPrices: jest.fn(),
+  };
+
+  const mockPriceUpdateSchedulerService = {
+    triggerManualUpdate: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -20,6 +26,10 @@ describe('SecurityPricesController', () => {
           provide: SecurityPricesService,
           useValue: mockSecurityPricesService,
         },
+        {
+          provide: PriceUpdateSchedulerService,
+          useValue: mockPriceUpdateSchedulerService,
+        },
       ],
     }).compile();
 
@@ -27,6 +37,7 @@ describe('SecurityPricesController', () => {
       SecurityPricesController
     );
     service = module.get<SecurityPricesService>(SecurityPricesService);
+    scheduler = module.get<PriceUpdateSchedulerService>(PriceUpdateSchedulerService);
   });
 
   afterEach(() => {
@@ -190,6 +201,28 @@ describe('SecurityPricesController', () => {
       ).rejects.toThrow(BadRequestException);
 
       expect(service.syncHistoricalPrices).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('triggerDailyUpdate', () => {
+    it('should trigger manual daily update', async () => {
+      mockPriceUpdateSchedulerService.triggerManualUpdate.mockResolvedValue(
+        undefined
+      );
+
+      const result = await controller.triggerDailyUpdate();
+
+      expect(result).toEqual({ message: 'Daily price update triggered successfully' });
+      expect(scheduler.triggerManualUpdate).toHaveBeenCalled();
+    });
+
+    it('should handle errors from scheduler', async () => {
+      mockPriceUpdateSchedulerService.triggerManualUpdate.mockRejectedValue(
+        new Error('Scheduler error')
+      );
+
+      await expect(controller.triggerDailyUpdate()).rejects.toThrow('Scheduler error');
+      expect(scheduler.triggerManualUpdate).toHaveBeenCalled();
     });
   });
 });

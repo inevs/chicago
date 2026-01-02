@@ -10,6 +10,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { SecurityPricesService } from './security-prices.service';
+import { PriceUpdateSchedulerService } from './price-update-scheduler.service';
 import { SecurityPrice } from '@dividends/shared';
 
 @Controller('security-prices')
@@ -21,7 +22,10 @@ import { SecurityPrice } from '@dividends/shared';
   })
 )
 export class SecurityPricesController {
-  constructor(private readonly securityPricesService: SecurityPricesService) {}
+  constructor(
+    private readonly securityPricesService: SecurityPricesService,
+    private readonly priceUpdateScheduler: PriceUpdateSchedulerService
+  ) {}
 
   @Get('latest')
   async getLatestPrices(): Promise<SecurityPrice[]> {
@@ -79,5 +83,13 @@ export class SecurityPricesController {
       from: fromDate,
       to: toDate,
     });
+  }
+
+  @Post('update-daily')
+  @HttpCode(HttpStatus.OK)
+  async triggerDailyUpdate(): Promise<{ message: string }> {
+    // Trigger the scheduled update manually
+    await this.priceUpdateScheduler.triggerManualUpdate();
+    return { message: 'Daily price update triggered successfully' };
   }
 }

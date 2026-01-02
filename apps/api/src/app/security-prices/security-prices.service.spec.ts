@@ -14,6 +14,7 @@ describe('SecurityPricesService', () => {
     },
     securityPrice: {
       createMany: jest.fn(),
+      findFirst: jest.fn(),
     },
   };
 
@@ -223,6 +224,54 @@ describe('SecurityPricesService', () => {
       expect(result.failures).toHaveLength(1);
       expect(result.failures[0].symbol).toBe('AAPL');
       expect(result.failures[0].error).toBe('API error');
+    });
+  });
+
+  describe('getLastPriceUpdateDate', () => {
+    it('should return the latest price date for a specific security', async () => {
+      const mockDate = new Date('2024-12-31');
+      mockPrismaService.securityPrice.findFirst.mockResolvedValue({
+        date: mockDate,
+      });
+
+      const result = await service.getLastPriceUpdateDate('security-1');
+
+      expect(result).toEqual(mockDate);
+      expect(prisma.securityPrice.findFirst).toHaveBeenCalledWith({
+        where: { securityId: 'security-1' },
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      });
+    });
+
+    it('should return null when no prices exist for a specific security', async () => {
+      mockPrismaService.securityPrice.findFirst.mockResolvedValue(null);
+
+      const result = await service.getLastPriceUpdateDate('security-1');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return the earliest last update date across all securities', async () => {
+      const mockDate = new Date('2024-11-01');
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        { min_date: mockDate },
+      ]);
+
+      const result = await service.getLastPriceUpdateDate();
+
+      expect(result).toEqual(mockDate);
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('should return null when no prices exist for any security', async () => {
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        { min_date: null },
+      ]);
+
+      const result = await service.getLastPriceUpdateDate();
+
+      expect(result).toBeNull();
     });
   });
 });

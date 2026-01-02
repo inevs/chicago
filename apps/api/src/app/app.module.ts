@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from '../prisma.service';
@@ -10,7 +11,15 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { SecurityPricesModule } from './security-prices/security-prices.module';
 
 @Module({
-  imports: [SecuritiesModule, DividendPaymentsModule, SecurityTransactionsModule, DataModule, CurrenciesModule, SecurityPricesModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    SecuritiesModule,
+    DividendPaymentsModule,
+    SecurityTransactionsModule,
+    DataModule,
+    CurrenciesModule,
+    SecurityPricesModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],
