@@ -6,6 +6,7 @@ import {
 import {
   SecurityService,
   CreateSecurityRequest,
+  UpdateSecurityRequest,
 } from './security.service';
 import { Security, SecurityType } from '@dividends/shared';
 
@@ -223,6 +224,158 @@ describe('SecurityService', () => {
       req.flush(
         { message: 'Security not found' },
         { status: 404, statusText: 'Not Found' }
+      );
+    });
+  });
+
+  describe('getSecurity', () => {
+    it('should be an alias for getSecurityById', () => {
+      const mockSecurity: Security = {
+        id: 'uuid-123',
+        name: 'Apple Inc.',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      service.getSecurity('uuid-123').subscribe((security) => {
+        expect(security).toEqual(mockSecurity);
+        expect(security.id).toBe('uuid-123');
+      });
+
+      const req = httpMock.expectOne('/api/securities/uuid-123');
+      expect(req.request.method).toBe('GET');
+      req.flush(mockSecurity);
+    });
+  });
+
+  describe('updateSecurity', () => {
+    it('should make PATCH request with correct data', () => {
+      const updateRequest: UpdateSecurityRequest = {
+        name: 'Apple Inc. Updated',
+        exchange: 'XETRA',
+      };
+
+      const mockResponse: Security = {
+        id: 'uuid-123',
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'XETRA',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      service.updateSecurity('uuid-123', updateRequest).subscribe((security) => {
+        expect(security).toEqual(mockResponse);
+        expect(security.name).toBe('Apple Inc. Updated');
+        expect(security.exchange).toBe('XETRA');
+      });
+
+      const req = httpMock.expectOne('/api/securities/uuid-123');
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(updateRequest);
+      req.flush(mockResponse);
+    });
+
+    it('should update security with all fields', () => {
+      const updateRequest: UpdateSecurityRequest = {
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL2',
+        isin: 'US0378331005',
+        wkn: '865985',
+        type: 'ETF',
+        exchange: 'XETRA',
+        currency: 'EUR',
+      };
+
+      const mockResponse: Security = {
+        id: 'uuid-123',
+        ...updateRequest,
+        type: SecurityType.ETF,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      service.updateSecurity('uuid-123', updateRequest).subscribe((security) => {
+        expect(security).toEqual(mockResponse);
+      });
+
+      const req = httpMock.expectOne('/api/securities/uuid-123');
+      expect(req.request.method).toBe('PATCH');
+      req.flush(mockResponse);
+    });
+
+    it('should handle partial updates', () => {
+      const updateRequest: UpdateSecurityRequest = {
+        name: 'Updated Name Only',
+      };
+
+      const mockResponse: Security = {
+        id: 'uuid-123',
+        name: 'Updated Name Only',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      service.updateSecurity('uuid-123', updateRequest).subscribe((security) => {
+        expect(security.name).toBe('Updated Name Only');
+        expect(security.symbol).toBe('AAPL');
+      });
+
+      const req = httpMock.expectOne('/api/securities/uuid-123');
+      req.flush(mockResponse);
+    });
+
+    it('should handle 404 not found error', () => {
+      const updateRequest: UpdateSecurityRequest = {
+        name: 'Updated',
+      };
+
+      service.updateSecurity('invalid-id', updateRequest).subscribe({
+        next: () => fail('Should have failed with 404'),
+        error: (error) => {
+          expect(error.message).toContain('not found');
+        },
+      });
+
+      const req = httpMock.expectOne('/api/securities/invalid-id');
+      req.flush(
+        { message: 'Security not found' },
+        { status: 404, statusText: 'Not Found' }
+      );
+    });
+
+    it('should handle 409 conflict error when symbol already exists', () => {
+      const updateRequest: UpdateSecurityRequest = {
+        symbol: 'MSFT',
+      };
+
+      service.updateSecurity('uuid-123', updateRequest).subscribe({
+        next: () => fail('Should have failed with 409'),
+        error: (error) => {
+          expect(error.message).toContain('already exists');
+        },
+      });
+
+      const req = httpMock.expectOne('/api/securities/uuid-123');
+      req.flush(
+        { message: 'Security with this symbol already exists' },
+        { status: 409, statusText: 'Conflict' }
       );
     });
   });

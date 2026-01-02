@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
@@ -17,6 +17,9 @@ export class SecuritiesSummaryComponent {
   filteredTransactions = input.required<DividendTransaction[]>();
   securityTransactions = input.required<SecurityTransactionWithSecurity[]>();
   latestPrices = input.required<SecurityPrice[]>();
+
+  // Output event when a row is clicked for editing
+  editSecurity = output<string>();
 
   // Sorting state
   sortColumn = signal<SortColumn>('name');
@@ -315,6 +318,12 @@ export class SecuritiesSummaryComponent {
       // New column, default to ascending
       this.sortColumn.set(column);
       this.sortDirection.set('asc');
+    }
+  }
+
+  onRowClick(securityId?: string): void {
+    if (securityId) {
+      this.editSecurity.emit(securityId);
     }
   }
 }

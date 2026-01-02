@@ -13,6 +13,7 @@ describe('SecuritiesService', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     currency: {
       findUnique: jest.fn(),
@@ -218,6 +219,223 @@ describe('SecuritiesService', () => {
       await expect(service.getSecurityById('invalid-id')).rejects.toThrow(
         NotFoundException
       );
+    });
+  });
+
+  describe('updateSecurity', () => {
+    it('should successfully update a security', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        name: 'Apple Inc.',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const dto = {
+        name: 'Apple Inc. Updated',
+        exchange: 'XETRA',
+      };
+
+      const updatedSecurity = {
+        ...existingSecurity,
+        ...dto,
+        updatedAt: new Date(),
+      };
+
+      mockPrismaService.security.findUnique.mockResolvedValue(existingSecurity);
+      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+
+      const result = await service.updateSecurity('uuid-123', dto);
+
+      expect(result).toEqual(updatedSecurity);
+      expect(prisma.security.findUnique).toHaveBeenCalledWith({
+        where: { id: 'uuid-123' },
+      });
+      expect(prisma.security.update).toHaveBeenCalledWith({
+        where: { id: 'uuid-123' },
+        data: dto,
+      });
+    });
+
+    it('should throw NotFoundException when security does not exist', async () => {
+      const dto = {
+        name: 'Updated',
+      };
+
+      mockPrismaService.security.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateSecurity('invalid-id', dto)).rejects.toThrow(
+        NotFoundException
+      );
+      expect(prisma.security.update).not.toHaveBeenCalled();
+    });
+
+    it('should update symbol when provided and not duplicate', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        symbol: 'AAPL',
+        name: 'Apple Inc.',
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+      };
+
+      const dto = {
+        symbol: 'AAPL2',
+      };
+
+      const updatedSecurity = {
+        ...existingSecurity,
+        symbol: 'AAPL2',
+      };
+
+      mockPrismaService.security.findUnique
+        .mockResolvedValueOnce(existingSecurity) // First call - finding the security
+        .mockResolvedValueOnce(null); // Second call - checking for duplicate symbol
+      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+
+      const result = await service.updateSecurity('uuid-123', dto);
+
+      expect(result.symbol).toBe('AAPL2');
+      expect(prisma.security.findUnique).toHaveBeenCalledTimes(2);
+      expect(prisma.security.findUnique).toHaveBeenNthCalledWith(2, {
+        where: { symbol: 'AAPL2' },
+      });
+    });
+
+    it('should throw ConflictException when new symbol already exists', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        symbol: 'AAPL',
+      };
+
+      const dto = {
+        symbol: 'MSFT',
+      };
+
+      mockPrismaService.security.findUnique
+        .mockResolvedValueOnce(existingSecurity)
+        .mockResolvedValueOnce({ id: 'uuid-456', symbol: 'MSFT' });
+
+      await expect(service.updateSecurity('uuid-123', dto)).rejects.toThrow(
+        ConflictException
+      );
+      expect(prisma.security.update).not.toHaveBeenCalled();
+    });
+
+    it('should not check for duplicate when symbol is the same', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        symbol: 'AAPL',
+        name: 'Apple Inc.',
+      };
+
+      const dto = {
+        symbol: 'AAPL',
+        name: 'Apple Inc. Updated',
+      };
+
+      const updatedSecurity = {
+        ...existingSecurity,
+        name: 'Apple Inc. Updated',
+      };
+
+      mockPrismaService.security.findUnique.mockResolvedValueOnce(
+        existingSecurity
+      );
+      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+
+      await service.updateSecurity('uuid-123', dto);
+
+      expect(prisma.security.findUnique).toHaveBeenCalledTimes(1);
+      expect(prisma.security.update).toHaveBeenCalled();
+    });
+
+    it('should validate currency when provided', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        currency: 'USD',
+      };
+
+      const dto = {
+        currency: 'EUR',
+      };
+
+      mockPrismaService.security.findUnique.mockResolvedValue(existingSecurity);
+      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'EUR' });
+      mockPrismaService.security.update.mockResolvedValue({
+        ...existingSecurity,
+        currency: 'EUR',
+      });
+
+      await service.updateSecurity('uuid-123', dto);
+
+      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
+        where: { code: 'EUR' },
+      });
+    });
+
+    it('should throw NotFoundException when currency does not exist', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        currency: 'USD',
+      };
+
+      const dto = {
+        currency: 'XYZ',
+      };
+
+      mockPrismaService.security.findUnique.mockResolvedValue(existingSecurity);
+      mockPrismaService.currency.findUnique.mockResolvedValue(null);
+
+      await expect(service.updateSecurity('uuid-123', dto)).rejects.toThrow(
+        NotFoundException
+      );
+      expect(prisma.security.update).not.toHaveBeenCalled();
+    });
+
+    it('should update all fields when provided', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        name: 'Apple Inc.',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+      };
+
+      const dto = {
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL2',
+        isin: 'US0378331005',
+        wkn: '865985',
+        type: SecurityType.ETF,
+        exchange: 'XETRA',
+        currency: 'EUR',
+      };
+
+      const updatedSecurity = {
+        ...existingSecurity,
+        ...dto,
+      };
+
+      mockPrismaService.security.findUnique
+        .mockResolvedValueOnce(existingSecurity)
+        .mockResolvedValueOnce(null);
+      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'EUR' });
+      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+
+      const result = await service.updateSecurity('uuid-123', dto);
+
+      expect(result).toMatchObject(dto);
     });
   });
 });

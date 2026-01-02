@@ -14,6 +14,16 @@ export interface CreateSecurityRequest {
   currency: string;
 }
 
+export interface UpdateSecurityRequest {
+  name?: string;
+  symbol?: string;
+  isin?: string;
+  wkn?: string;
+  type?: 'STOCK' | 'ETF' | 'BOND';
+  exchange?: string;
+  currency?: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -35,6 +45,16 @@ export class SecurityService {
 
   getSecurityById(id: string): Observable<Security> {
     return this.http.get<Security>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getSecurity(id: string): Observable<Security> {
+    return this.getSecurityById(id);
+  }
+
+  updateSecurity(id: string, security: UpdateSecurityRequest): Observable<Security> {
+    return this.http.patch<Security>(`${this.apiUrl}/${id}`, security).pipe(
       catchError(this.handleError)
     );
   }

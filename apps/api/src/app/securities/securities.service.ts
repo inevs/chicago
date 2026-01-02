@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
+import { UpdateSecurityDto } from './dto/update-security.dto';
 import { Security } from '@dividends/shared';
 
 @Injectable()
@@ -59,6 +60,51 @@ export class SecuritiesService {
     }
 
     return security as Security;
+  }
+
+  async updateSecurity(id: string, dto: UpdateSecurityDto): Promise<Security> {
+    const security = await this.prisma.security.findUnique({
+      where: { id },
+    });
+
+    if (!security) {
+      throw new NotFoundException('Security not found');
+    }
+
+    // Check for duplicate symbol if symbol is being changed
+    const newSymbol = dto['symbol' as keyof UpdateSecurityDto] as string | undefined;
+    if (newSymbol && newSymbol !== security.symbol) {
+      const existing = await this.prisma.security.findUnique({
+        where: { symbol: newSymbol },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          'Security with this symbol already exists'
+        );
+      }
+    }
+
+    // Validate currency if provided
+    const newCurrency = dto['currency' as keyof UpdateSecurityDto] as string | undefined;
+    if (newCurrency) {
+      const currency = await this.prisma.currency.findUnique({
+        where: { code: newCurrency },
+      });
+
+      if (!currency) {
+        throw new NotFoundException(
+          `Currency with code ${newCurrency} not found`
+        );
+      }
+    }
+
+    const updated = await this.prisma.security.update({
+      where: { id },
+      data: dto,
+    });
+
+    return updated as Security;
   }
 
   async searchSecurities(query: string): Promise<Security[]> {
