@@ -59,15 +59,16 @@
                   Typ *
                 </label>
                 <select
-                  [value]="formData().type"
-                  (change)="updateFormData('type', $any($event.target).value)"
+                  [ngModel]="formData().type"
+                  (ngModelChange)="updateFormData('type', $event)"
+                  name="transactionType"
                   required
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option [value]="TransactionType.BUY">Kauf</option>
-                  <option [value]="TransactionType.SELL">Verkauf</option>
+                  <option [ngValue]="TransactionType.BUY">Kauf</option>
+                  <option [ngValue]="TransactionType.SELL">Verkauf</option>
                 </select>
               </div>
             </div>
