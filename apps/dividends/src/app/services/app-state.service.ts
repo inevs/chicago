@@ -437,6 +437,7 @@ export class AppStateService {
         next: (updatedSecurity) => {
           console.log('Security updated successfully:', updatedSecurity);
           this.toastService.success('Wertpapier erfolgreich aktualisiert');
+          this.loadAllData();
           this.toggleSecurityModal();
         },
         error: (error) => {

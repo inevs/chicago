@@ -72,7 +72,7 @@ export class SecuritiesService {
     }
 
     // Check for duplicate symbol if symbol is being changed
-    const newSymbol = dto['symbol' as keyof UpdateSecurityDto] as string | undefined;
+    const newSymbol = dto.symbol;
     if (newSymbol && newSymbol !== security.symbol) {
       const existing = await this.prisma.security.findUnique({
         where: { symbol: newSymbol },
@@ -86,7 +86,7 @@ export class SecuritiesService {
     }
 
     // Validate currency if provided
-    const newCurrency = dto['currency' as keyof UpdateSecurityDto] as string | undefined;
+    const newCurrency = dto.currency;
     if (newCurrency) {
       const currency = await this.prisma.currency.findUnique({
         where: { code: newCurrency },
