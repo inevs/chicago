@@ -312,7 +312,8 @@ export class AppStateService {
       next: (result) => {
         console.log('Data imported successfully:', result);
         this.toastService.success(
-          `Import erfolgreich! Wertpapiere: ${result.securitiesImported}, ` +
+          `Import erfolgreich! Waehrungen: ${result.currenciesImported}, ` +
+          `Wertpapiere: ${result.securitiesImported}, ` +
           `Dividenden: ${result.dividendPaymentsImported}, ` +
           `Transaktionen: ${result.securityTransactionsImported}, ` +
           `Kurse: ${result.securityPricesImported}`,

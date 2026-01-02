@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 export interface ExportData {
+  currencies: unknown[];
   securities: unknown[];
   dividendPayments: unknown[];
   securityTransactions: unknown[];
@@ -14,6 +15,7 @@ export interface ExportData {
 
 export interface ImportResult {
   success: boolean;
+  currenciesImported: number;
   securitiesImported: number;
   dividendPaymentsImported: number;
   securityTransactionsImported: number;

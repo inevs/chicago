@@ -37,6 +37,7 @@ export class DataController {
     @Query('clearExisting') clearExisting?: string
   ): Promise<{
     success: boolean;
+    currenciesImported: number;
     securitiesImported: number;
     dividendPaymentsImported: number;
     securityTransactionsImported: number;

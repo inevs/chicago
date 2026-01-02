@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 
 export interface ExportData {
+  currencies: unknown[];
   securities: unknown[];
   dividendPayments: unknown[];
   securityTransactions: unknown[];
@@ -11,6 +12,7 @@ export interface ExportData {
 }
 
 export interface ImportData {
+  currencies?: unknown[];
   securities?: unknown[];
   dividendPayments?: unknown[];
   securityTransactions?: unknown[];
@@ -23,23 +25,32 @@ export class DataService {
 
   async exportAllData(): Promise<ExportData> {
     // Fetch all data from database
-    const [securities, dividendPayments, securityTransactions, securityPrices] =
-      await Promise.all([
-        this.prisma.security.findMany({
-          orderBy: { symbol: 'asc' },
-        }),
-        this.prisma.dividendPayment.findMany({
-          orderBy: { exDate: 'asc' },
-        }),
-        this.prisma.securityTransaction.findMany({
-          orderBy: { date: 'asc' },
-        }),
-        this.prisma.securityPrice.findMany({
-          orderBy: { date: 'asc' },
-        }),
-      ]);
+    const [
+      currencies,
+      securities,
+      dividendPayments,
+      securityTransactions,
+      securityPrices,
+    ] = await Promise.all([
+      this.prisma.currency.findMany({
+        orderBy: { code: 'asc' },
+      }),
+      this.prisma.security.findMany({
+        orderBy: { symbol: 'asc' },
+      }),
+      this.prisma.dividendPayment.findMany({
+        orderBy: { exDate: 'asc' },
+      }),
+      this.prisma.securityTransaction.findMany({
+        orderBy: { date: 'asc' },
+      }),
+      this.prisma.securityPrice.findMany({
+        orderBy: { date: 'asc' },
+      }),
+    ]);
 
     return {
+      currencies,
       securities,
       dividendPayments,
       securityTransactions,
@@ -53,6 +64,7 @@ export class DataService {
     data: ImportData,
     options: { clearExisting?: boolean } = {}
   ): Promise<{
+    currenciesImported: number;
     securitiesImported: number;
     dividendPaymentsImported: number;
     securityTransactionsImported: number;
@@ -65,12 +77,27 @@ export class DataService {
         await tx.securityTransaction.deleteMany({});
         await tx.securityPrice.deleteMany({});
         await tx.security.deleteMany({});
+        await tx.currency.deleteMany({});
       }
 
+      let currenciesImported = 0;
       let securitiesImported = 0;
       let dividendPaymentsImported = 0;
       let securityTransactionsImported = 0;
       let securityPricesImported = 0;
+
+      // Import currencies first (they are referenced by other tables)
+      if (data.currencies && Array.isArray(data.currencies)) {
+        for (const currency of data.currencies) {
+          const currencyData = currency as { code: string; name: string };
+          await tx.currency.upsert({
+            where: { code: currencyData.code },
+            create: currency as never,
+            update: { name: currencyData.name },
+          });
+          currenciesImported++;
+        }
+      }
 
       // Import securities first (they are referenced by other tables)
       if (data.securities && Array.isArray(data.securities)) {
@@ -124,6 +151,7 @@ export class DataService {
       }
 
       return {
+        currenciesImported,
         securitiesImported,
         dividendPaymentsImported,
         securityTransactionsImported,
