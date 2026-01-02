@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import axios from 'axios';
 import { PrismaService } from '../../prisma.service';
 import type { SecurityPrice } from '@dividends/shared';
@@ -178,8 +179,15 @@ export class SecurityPricesService {
 
     for (let i = 0; i < data.length; i += chunkSize) {
       const chunk = data.slice(i, i + chunkSize);
+      const now = new Date();
+      const payload = chunk.map((price) => ({
+        ...price,
+        id: randomUUID(),
+        createdAt: now,
+        updatedAt: now,
+      }));
       const result = await this.prisma.securityPrice.createMany({
-        data: chunk,
+        data: payload,
         skipDuplicates: true,
       });
       inserted += result.count;
