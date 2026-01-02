@@ -34,6 +34,7 @@
   [show]="appState.showSecurityModal()"
   [currencies]="appState.currencies()"
   [defaultCurrency]="appState.defaultCurrency()"
+  [security]="appState.editingSecurity()"
   (securitySubmit)="appState.handleSecuritySubmit($event)"
   (closeModal)="appState.toggleSecurityModal()"
 />

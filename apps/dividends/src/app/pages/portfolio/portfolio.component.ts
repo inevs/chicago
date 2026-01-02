@@ -11,4 +11,8 @@ import { SecuritiesSummaryComponent } from './securities-summary/securities-summ
 })
 export class PortfolioComponent {
   protected readonly appState = inject(AppStateService);
+
+  onEditSecurity(securityId: string): void {
+    this.appState.openEditSecurityModal(securityId);
+  }
 }

@@ -411,6 +411,54 @@ describe('SecurityTransactionsService', () => {
 
       expect(prisma.securityTransaction.update).not.toHaveBeenCalled();
     });
+
+    it('should connect security and currency when they change', async () => {
+      const existingTransaction = {
+        id: 'transaction-1',
+        securityId: 'security-1',
+        currency: 'USD',
+      };
+      const updateDto = {
+        securityId: 'security-2',
+        currency: 'EUR',
+      };
+      const updatedTransaction = {
+        ...existingTransaction,
+        ...updateDto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockPrismaService.securityTransaction.findUnique.mockResolvedValue(
+        existingTransaction
+      );
+      mockPrismaService.security.findUnique.mockResolvedValue({
+        id: updateDto.securityId,
+      });
+      mockPrismaService.currency.findUnique.mockResolvedValue({
+        code: updateDto.currency,
+      });
+      mockPrismaService.securityTransaction.update.mockResolvedValue(
+        updatedTransaction
+      );
+
+      const result = await service.updateSecurityTransaction(
+        'transaction-1',
+        updateDto
+      );
+
+      expect(result).toEqual(updatedTransaction);
+      expect(prisma.securityTransaction.update).toHaveBeenCalledWith({
+        where: { id: 'transaction-1' },
+        data: {
+          security: { connect: { id: updateDto.securityId } },
+          currencyRef: { connect: { code: updateDto.currency } },
+        },
+        include: {
+          security: true,
+        },
+      });
+    });
   });
 
   describe('deleteSecurityTransaction', () => {

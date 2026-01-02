@@ -159,11 +159,17 @@ export class SecurityTransactionsService {
       data: {
         ...(dto.date && { date: new Date(dto.date) }),
         ...(dto.type && { type: dto.type }),
-        ...(dto.securityId && { securityId: dto.securityId }),
+        ...(dto.securityId &&
+          dto.securityId !== existing.securityId && {
+            security: { connect: { id: dto.securityId } },
+          }),
         ...(dto.quantity !== undefined && { quantity: dto.quantity }),
         ...(dto.pricePerShare !== undefined && { pricePerShare: dto.pricePerShare }),
         ...(dto.fees !== undefined && { fees: dto.fees }),
-        ...(dto.currency && { currency: dto.currency }),
+        ...(dto.currency &&
+          dto.currency !== existing.currency && {
+            currencyRef: { connect: { code: dto.currency } },
+          }),
         ...(dto.exchangeRate !== undefined && { exchangeRate: dto.exchangeRate }),
         ...(dto.totalValue !== undefined && { totalValue: dto.totalValue }),
         ...(dto.note !== undefined && { note: dto.note }),

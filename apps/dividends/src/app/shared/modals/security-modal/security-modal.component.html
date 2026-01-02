@@ -13,7 +13,7 @@
   >
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-xl font-bold text-slate-900 dark:text-white">
-        Neues Wertpapier anlegen
+        {{ isEditMode() ? 'Wertpapier bearbeiten' : 'Neues Wertpapier anlegen' }}
       </h2>
       <button
         (click)="onClose()"
@@ -140,7 +140,7 @@
           type="submit"
           class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-sm"
         >
-          Speichern
+          {{ isEditMode() ? 'Aktualisieren' : 'Speichern' }}
         </button>
       </div>
     </form>

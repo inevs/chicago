@@ -8,7 +8,7 @@ import { DataService } from './data.service';
 import { CurrencyService } from './currency.service';
 import { ToastService } from './toast.service';
 import { TimeRange, DividendTransaction } from '../models/dividend.model';
-import { SecurityPrice, SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto } from '@dividends/shared';
+import { SecurityPrice, SecurityTransactionWithSecurity, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto, Currency, CreateCurrencyDto, Security } from '@dividends/shared';
 import { TransactionForm } from '../shared/modals/transaction-modal/transaction-modal.component';
 import { SecurityForm } from '../shared/modals/security-modal/security-modal.component';
 import { SecurityTransactionForm } from '../shared/modals/security-transaction-modal/security-transaction-modal.component';
@@ -42,6 +42,7 @@ export class AppStateService {
 
   editingTransaction = signal<DividendTransaction | null>(null);
   deletingTransaction = signal<DividendTransaction | null>(null);
+  editingSecurity = signal<Security | null>(null);
   editingSecurityTransaction = signal<SecurityTransactionWithSecurity | null>(null);
   deletingSecurityTransaction = signal<SecurityTransactionWithSecurity | null>(null);
   pendingImportFile = signal<File | null>(null);
@@ -217,8 +218,25 @@ export class AppStateService {
   }
 
   toggleSecurityModal() {
+    const isClosing = this.showSecurityModal();
+    if (isClosing) {
+      this.editingSecurity.set(null);
+    }
     this.showSecurityModal.update(show => !show);
     this.showMenu.set(false);
+  }
+
+  openEditSecurityModal(securityId: string) {
+    this.securityService.getSecurity(securityId).subscribe({
+      next: (security) => {
+        this.editingSecurity.set(security);
+        this.showSecurityModal.set(true);
+      },
+      error: (error) => {
+        console.error('Error fetching security:', error);
+        this.toastService.error(`Fehler beim Laden des Wertpapiers: ${error.message}`);
+      },
+    });
   }
 
   toggleSecurityTransactionModal() {
@@ -403,26 +421,54 @@ export class AppStateService {
   }
 
   handleSecuritySubmit(security: SecurityForm) {
-    const createRequest = {
-      name: security.name,
-      symbol: security.symbol,
-      isin: security.isin || undefined,
-      wkn: security.wkn || undefined,
-      type: security.type,
-      exchange: security.exchange,
-      currency: security.currency,
-    };
+    if (security.id) {
+      // Update existing security
+      const updateRequest = {
+        name: security.name,
+        symbol: security.symbol,
+        isin: security.isin || undefined,
+        wkn: security.wkn || undefined,
+        type: security.type,
+        exchange: security.exchange,
+        currency: security.currency,
+      };
 
-    this.securityService.createSecurity(createRequest).subscribe({
-      next: (createdSecurity) => {
-        console.log('Security created successfully:', createdSecurity);
-        this.toggleSecurityModal();
-      },
-      error: (error) => {
-        console.error('Error creating security:', error);
-        this.toastService.error(`Fehler beim Erstellen des Wertpapiers: ${error.message}`);
-      },
-    });
+      this.securityService.updateSecurity(security.id, updateRequest).subscribe({
+        next: (updatedSecurity) => {
+          console.log('Security updated successfully:', updatedSecurity);
+          this.toastService.success('Wertpapier erfolgreich aktualisiert');
+          this.loadAllData();
+          this.toggleSecurityModal();
+        },
+        error: (error) => {
+          console.error('Error updating security:', error);
+          this.toastService.error(`Fehler beim Aktualisieren des Wertpapiers: ${error.message}`);
+        },
+      });
+    } else {
+      // Create new security
+      const createRequest = {
+        name: security.name,
+        symbol: security.symbol,
+        isin: security.isin || undefined,
+        wkn: security.wkn || undefined,
+        type: security.type,
+        exchange: security.exchange,
+        currency: security.currency,
+      };
+
+      this.securityService.createSecurity(createRequest).subscribe({
+        next: (createdSecurity) => {
+          console.log('Security created successfully:', createdSecurity);
+          this.toastService.success('Wertpapier erfolgreich angelegt');
+          this.toggleSecurityModal();
+        },
+        error: (error) => {
+          console.error('Error creating security:', error);
+          this.toastService.error(`Fehler beim Erstellen des Wertpapiers: ${error.message}`);
+        },
+      });
+    }
   }
 
   handleSecurityTransactionSubmit(transaction: SecurityTransactionForm) {

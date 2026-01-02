@@ -1,11 +1,12 @@
 import { Component, input, output, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Currency } from '@dividends/shared';
+import { Currency, Security } from '@dividends/shared';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
 export interface SecurityForm {
+  id?: string;
   name: string;
   isin: string;
   wkn: string;
@@ -25,12 +26,15 @@ export class SecurityModalComponent {
   show = input.required<boolean>();
   currencies = input.required<Currency[]>();
   defaultCurrency = input.required<Currency | null>();
+  security = input<Security | null>(null);
   closeModal = output<void>();
   securitySubmit = output<SecurityForm>();
 
   private readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
   );
+
+  isEditMode = computed(() => this.security() !== null);
 
   formData = signal<SecurityForm>({
     name: '',
@@ -43,10 +47,25 @@ export class SecurityModalComponent {
   });
 
   constructor() {
-    // Update currency in formData when defaultCurrency changes
+    // Pre-populate form when editing a security
     effect(() => {
-      const currencyCode = this.defaultCurrencyCode();
-      this.formData.update(data => ({ ...data, currency: currencyCode }));
+      const sec = this.security();
+      if (sec) {
+        this.formData.set({
+          id: sec.id,
+          name: sec.name,
+          isin: sec.isin ?? '',
+          wkn: sec.wkn ?? '',
+          symbol: sec.symbol,
+          type: sec.type,
+          exchange: sec.exchange,
+          currency: sec.currency,
+        });
+      } else {
+        // Update currency in formData when defaultCurrency changes
+        const currencyCode = this.defaultCurrencyCode();
+        this.formData.update(data => ({ ...data, currency: currencyCode }));
+      }
     });
   }
 
@@ -61,6 +80,7 @@ export class SecurityModalComponent {
 
   resetForm() {
     this.formData.set({
+      id: undefined,
       name: '',
       isin: '',
       wkn: '',

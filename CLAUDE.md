@@ -196,7 +196,7 @@ nx graph
 
 ## Environment Setup
 
-1. **Node Version**: This project uses Node.js v25.2.1 (specified in `.nvmrc`)
+1. **Node Version**: This project uses Node.js v24.12.0 (specified in `.nvmrc`)
 2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d`)
 3. **Environment Variables**: Copy `apps/api/.env.example` to create `.env` file in the root or `apps/api/.env`
 
@@ -213,3 +213,6 @@ nx graph
 - If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
 
 <!-- nx configuration end-->
+
+- update the test suites after changes to prevent regressions
+- always run 'nx run-many -t test' to ensure the tests still run successfully

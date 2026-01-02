@@ -11,6 +11,7 @@ describe('SecuritiesController', () => {
     createSecurity: jest.fn(),
     getAllSecurities: jest.fn(),
     getSecurityById: jest.fn(),
+    updateSecurity: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -158,6 +159,91 @@ describe('SecuritiesController', () => {
 
       expect(result).toEqual(security);
       expect(service.getSecurityById).toHaveBeenCalledWith('uuid-123');
+    });
+  });
+
+  describe('update', () => {
+    it('should update and return a security', async () => {
+      const dto = {
+        name: 'Apple Inc. Updated',
+        exchange: 'XETRA',
+      };
+
+      const updatedSecurity = {
+        id: 'uuid-123',
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'XETRA',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockSecuritiesService.updateSecurity.mockResolvedValue(updatedSecurity);
+
+      const result = await controller.update('uuid-123', dto);
+
+      expect(result).toEqual(updatedSecurity);
+      expect(service.updateSecurity).toHaveBeenCalledWith('uuid-123', dto);
+    });
+
+    it('should update security with all fields', async () => {
+      const dto = {
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL2',
+        isin: 'US0378331005',
+        wkn: '865985',
+        type: SecurityType.ETF,
+        exchange: 'XETRA',
+        currency: 'EUR',
+      };
+
+      const updatedSecurity = {
+        id: 'uuid-123',
+        ...dto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockSecuritiesService.updateSecurity.mockResolvedValue(updatedSecurity);
+
+      const result = await controller.update('uuid-123', dto);
+
+      expect(result).toMatchObject({
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL2',
+        type: SecurityType.ETF,
+      });
+      expect(service.updateSecurity).toHaveBeenCalledWith('uuid-123', dto);
+    });
+
+    it('should handle partial updates', async () => {
+      const dto = {
+        name: 'Updated Name Only',
+      };
+
+      const updatedSecurity = {
+        id: 'uuid-123',
+        name: 'Updated Name Only',
+        symbol: 'AAPL',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      mockSecuritiesService.updateSecurity.mockResolvedValue(updatedSecurity);
+
+      const result = await controller.update('uuid-123', dto);
+
+      expect(result.name).toBe('Updated Name Only');
+      expect(result.symbol).toBe('AAPL');
     });
   });
 });
