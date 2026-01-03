@@ -1,5 +1,5 @@
 import { IsDateString, IsOptional, IsString } from 'class-validator';
-import { IsISO4217Code } from '../../currencies/decorators/is-iso4217-code.decorator';
+import { IsISO4217Code } from '../../currencies/validators/is-iso4217-code.validator';
 
 export class SyncExchangeRatesDto {
   @IsISO4217Code()
