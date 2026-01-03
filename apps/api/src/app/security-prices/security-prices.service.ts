@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import axios from 'axios';
 import { PrismaService } from '../../prisma.service';
 import type { SecurityPrice } from '@dividends/shared';
 import type { Security } from '../../../generated/prisma/client';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 interface ProviderPrice {
   date: Date;
@@ -19,7 +20,11 @@ interface ProviderPrice {
 export class SecurityPricesService {
   private readonly logger = new Logger(SecurityPricesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ExchangeRatesService))
+    private readonly exchangeRatesService: ExchangeRatesService
+  ) {}
 
   async getLatestPrices(): Promise<SecurityPrice[]> {
     // Use a more efficient query with DISTINCT ON to avoid N+1 problem
@@ -177,6 +182,18 @@ export class SecurityPricesService {
         );
         failures.push({ symbol: security.symbol, error: message });
       }
+    }
+
+    // Auto-sync exchange rates for all currencies found in securities
+    try {
+      this.logger.log('Auto-syncing exchange rates for security currencies...');
+      await this.exchangeRatesService.syncAllCurrencies(fromDate, toDate);
+      this.logger.log('Exchange rates synced successfully');
+    } catch (error) {
+      this.logger.warn(
+        `Failed to auto-sync exchange rates: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      // Don't fail the whole operation if exchange rate sync fails
     }
 
     return {

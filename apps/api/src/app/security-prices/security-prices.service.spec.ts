@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { SecurityPricesService } from './security-prices.service';
 import { PrismaService } from '../../prisma.service';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 describe('SecurityPricesService', () => {
   let service: SecurityPricesService;
@@ -18,6 +19,10 @@ describe('SecurityPricesService', () => {
     },
   };
 
+  const mockExchangeRatesService = {
+    syncAllCurrencies: jest.fn().mockResolvedValue({}),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -25,6 +30,10 @@ describe('SecurityPricesService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: ExchangeRatesService,
+          useValue: mockExchangeRatesService,
         },
       ],
     }).compile();

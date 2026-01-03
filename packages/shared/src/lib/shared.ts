@@ -160,3 +160,60 @@ export interface UpdateSecurityTransactionDto {
   totalValue?: number;
   note?: string;
 }
+
+// ExchangeRate interface (matches Prisma model)
+export interface ExchangeRate {
+  id: string;
+  baseCurrency: string;
+  targetCurrency: string;
+  date: Date;
+  rate: number;
+  provider: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Currency conversion utilities
+export class CurrencyConverter {
+  /**
+   * Convert an amount from one currency to another using a specific rate
+   * @param amount The amount to convert
+   * @param rate The exchange rate (1 baseCurrency = rate targetCurrency)
+   * @returns The converted amount
+   */
+  static convertAmount(amount: number, rate: number): number {
+    return amount * rate;
+  }
+
+  /**
+   * Convert an amount using an exchange rate object
+   * @param amount The amount in base currency
+   * @param exchangeRate The exchange rate object
+   * @returns The converted amount in target currency
+   */
+  static convertWithRate(amount: number, exchangeRate: ExchangeRate): number {
+    return this.convertAmount(amount, exchangeRate.rate);
+  }
+
+  /**
+   * Calculate the inverse rate (for converting in the opposite direction)
+   * @param rate The exchange rate
+   * @returns The inverse rate
+   */
+  static inverseRate(rate: number): number {
+    if (rate === 0) {
+      throw new Error('Cannot calculate inverse of zero rate');
+    }
+    return 1 / rate;
+  }
+
+  /**
+   * Convert amount from target currency back to base currency
+   * @param amount The amount in target currency
+   * @param rate The exchange rate (1 baseCurrency = rate targetCurrency)
+   * @returns The amount in base currency
+   */
+  static convertBack(amount: number, rate: number): number {
+    return amount * this.inverseRate(rate);
+  }
+}

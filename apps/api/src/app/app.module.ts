@@ -9,6 +9,7 @@ import { SecurityTransactionsModule } from './security-transactions/security-tra
 import { DataModule } from './data/data.module';
 import { CurrenciesModule } from './currencies/currencies.module';
 import { SecurityPricesModule } from './security-prices/security-prices.module';
+import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SecurityPricesModule } from './security-prices/security-prices.module';
     DataModule,
     CurrenciesModule,
     SecurityPricesModule,
+    ExchangeRatesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
