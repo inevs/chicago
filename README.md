@@ -26,7 +26,7 @@ This monorepo contains:
 
 ## Prerequisites
 
-- Node.js v25.2.1 (see `.nvmrc`)
+- Node.js v24.12.0 (see `.nvmrc`)
 - Docker and Docker Compose (for PostgreSQL)
 - npm
 
