@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { PrismaService } from '../prisma.service';
 import { SecuritiesModule } from './securities/securities.module';
 import { DividendPaymentsModule } from './dividend-payments/dividend-payments.module';
@@ -22,8 +20,8 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
     SecurityPricesModule,
     ExchangeRatesModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, PrismaService],
+  controllers: [],
+  providers: [PrismaService],
   exports: [PrismaService],
 })
 export class AppModule {}
