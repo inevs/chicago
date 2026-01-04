@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,14 +20,18 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SecurityTransactionsService } from './security-transactions.service';
 import { CreateSecurityTransactionDto } from './dto/create-security-transaction.dto';
 import { UpdateSecurityTransactionDto } from './dto/update-security-transaction.dto';
 import { SecurityTransaction } from '@dividends/shared';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('security-transactions')
+@ApiBearerAuth()
 @Controller('security-transactions')
+@UseGuards(JwtAuthGuard)
 @UsePipes(
   new ValidationPipe({
     whitelist: true,

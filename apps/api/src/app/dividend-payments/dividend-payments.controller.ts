@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,14 +20,18 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { DividendPaymentsService } from './dividend-payments.service';
 import { CreateDividendPaymentDto } from './dto/create-dividend-payment.dto';
 import { UpdateDividendPaymentDto } from './dto/update-dividend-payment.dto';
 import { DividendPayment } from '@dividends/shared';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('dividend-payments')
+@ApiBearerAuth()
 @Controller('dividend-payments')
+@UseGuards(JwtAuthGuard)
 @UsePipes(
   new ValidationPipe({
     whitelist: true,

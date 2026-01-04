@@ -191,3 +191,15 @@ model ExchangeRate {
   @@index([baseCurrency, targetCurrency, date])
   @@map("exchange_rates")
 }
+
+// User model - represents authenticated users
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique // User email for login
+  password  String   // Hashed password
+  name      String   // Display name
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}

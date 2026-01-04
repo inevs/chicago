@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaService } from '../prisma.service';
+import { AuthModule } from './auth/auth.module';
 import { SecuritiesModule } from './securities/securities.module';
 import { DividendPaymentsModule } from './dividend-payments/dividend-payments.module';
 import { SecurityTransactionsModule } from './security-transactions/security-transactions.module';
@@ -12,6 +13,7 @@ import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    AuthModule,
     SecuritiesModule,
     DividendPaymentsModule,
     SecurityTransactionsModule,
