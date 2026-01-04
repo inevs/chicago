@@ -12,11 +12,20 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SecurityTransactionsService } from './security-transactions.service';
 import { CreateSecurityTransactionDto } from './dto/create-security-transaction.dto';
 import { UpdateSecurityTransactionDto } from './dto/update-security-transaction.dto';
 import { SecurityTransaction } from '@dividends/shared';
 
+@ApiTags('security-transactions')
 @Controller('security-transactions')
 @UsePipes(
   new ValidationPipe({
@@ -32,6 +41,13 @@ export class SecurityTransactionsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a new security transaction' })
+  @ApiBody({ type: CreateSecurityTransactionDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Security transaction created successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   async create(
     @Body() dto: CreateSecurityTransactionDto
   ): Promise<SecurityTransaction> {
@@ -39,6 +55,34 @@ export class SecurityTransactionsController {
   }
 
   @Get()
+  @ApiOperation({
+    summary: 'Get all security transactions with optional filters',
+  })
+  @ApiQuery({
+    name: 'securityId',
+    required: false,
+    description: 'Filter by security UUID',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ['BUY', 'SELL'],
+    description: 'Filter by transaction type',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Filter by start date (ISO format)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Filter by end date (ISO format)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of security transactions',
+  })
   async findAll(
     @Query('securityId') securityId?: string,
     @Query('type') type?: 'BUY' | 'SELL',
@@ -72,11 +116,27 @@ export class SecurityTransactionsController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a security transaction by ID' })
+  @ApiParam({ name: 'id', description: 'Security transaction UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Security transaction found',
+  })
+  @ApiResponse({ status: 404, description: 'Security transaction not found' })
   async findOne(@Param('id') id: string): Promise<SecurityTransaction> {
     return this.securityTransactionsService.getSecurityTransactionById(id);
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update a security transaction' })
+  @ApiParam({ name: 'id', description: 'Security transaction UUID' })
+  @ApiBody({ type: UpdateSecurityTransactionDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Security transaction updated successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Security transaction not found' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateSecurityTransactionDto
@@ -86,6 +146,13 @@ export class SecurityTransactionsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a security transaction' })
+  @ApiParam({ name: 'id', description: 'Security transaction UUID' })
+  @ApiResponse({
+    status: 204,
+    description: 'Security transaction deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Security transaction not found' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.securityTransactionsService.deleteSecurityTransaction(id);
   }

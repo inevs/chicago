@@ -9,10 +9,17 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SecurityPricesService } from './security-prices.service';
 import { PriceUpdateSchedulerService } from './price-update-scheduler.service';
 import { SecurityPrice } from '@dividends/shared';
 
+@ApiTags('security-prices')
 @Controller('security-prices')
 @UsePipes(
   new ValidationPipe({
@@ -28,12 +35,60 @@ export class SecurityPricesController {
   ) {}
 
   @Get('latest')
+  @ApiOperation({ summary: 'Get latest prices for all securities' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of latest security prices',
+  })
   async getLatestPrices(): Promise<SecurityPrice[]> {
     return this.securityPricesService.getLatestPrices();
   }
 
   @Post('sync')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sync historical prices from external provider',
+    description:
+      'Fetch and store historical security prices within a date range. Maximum range is 10 years.',
+  })
+  @ApiQuery({
+    name: 'securityId',
+    required: false,
+    description: 'Security UUID to sync prices for (syncs all if not provided)',
+  })
+  @ApiQuery({
+    name: 'from',
+    required: false,
+    description: 'Start date for price sync (ISO format)',
+  })
+  @ApiQuery({
+    name: 'to',
+    required: false,
+    description: 'End date for price sync (ISO format)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Historical prices synced successfully',
+    schema: {
+      properties: {
+        provider: { type: 'string', example: 'Yahoo Finance' },
+        from: { type: 'string', format: 'date-time' },
+        to: { type: 'string', format: 'date-time' },
+        securitiesProcessed: { type: 'number', example: 10 },
+        pricesInserted: { type: 'number', example: 250 },
+        failures: {
+          type: 'array',
+          items: {
+            properties: {
+              symbol: { type: 'string', example: 'AAPL' },
+              error: { type: 'string', example: 'Symbol not found' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid date range or parameters' })
   async syncHistoricalPrices(
     @Query('securityId') securityId?: string,
     @Query('from') from?: string,
@@ -87,6 +142,19 @@ export class SecurityPricesController {
 
   @Post('update-daily')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Trigger daily price update manually',
+    description: 'Manually trigger the daily scheduled price update for all securities',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Daily price update triggered successfully',
+    schema: {
+      properties: {
+        message: { type: 'string', example: 'Daily price update triggered successfully' },
+      },
+    },
+  })
   async triggerDailyUpdate(): Promise<{ message: string }> {
     // Trigger the scheduled update manually
     await this.priceUpdateScheduler.triggerManualUpdate();

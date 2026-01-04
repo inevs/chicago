@@ -5,6 +5,7 @@
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
@@ -30,10 +31,35 @@ async function bootstrap() {
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+
+  // Swagger configuration
+  const config = new DocumentBuilder()
+    .setTitle('Dividends Tracker API')
+    .setDescription('API for tracking dividend payments, securities, transactions, and exchange rates')
+    .setVersion('1.0')
+    .addTag('securities', 'Manage securities (stocks, ETFs, etc.)')
+    .addTag('dividend-payments', 'Track dividend payments')
+    .addTag('security-transactions', 'Manage buy/sell transactions')
+    .addTag('currencies', 'Manage currencies')
+    .addTag('exchange-rates', 'Manage and sync exchange rates')
+    .addTag('security-prices', 'Manage security prices')
+    .addTag('data', 'Data import/export')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    customSiteTitle: 'Dividends Tracker API Documentation',
+    customfavIcon: 'https://nestjs.com/favicon.ico',
+    customCss: '.swagger-ui .topbar { display: none }',
+  });
+
   const port = process.env.PORT || 3000;
   await app.listen(port);
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+  );
+  Logger.log(
+    `📚 API Documentation available at: http://localhost:${port}/api/docs`
   );
 }
 

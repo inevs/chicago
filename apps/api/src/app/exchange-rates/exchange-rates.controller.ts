@@ -6,10 +6,17 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { ExchangeRatesService } from './exchange-rates.service';
 import { SyncExchangeRatesDto } from './dto/sync-exchange-rates.dto';
 import { GetExchangeRateDto } from './dto/get-exchange-rate.dto';
 
+@ApiTags('exchange-rates')
 @Controller('exchange-rates')
 export class ExchangeRatesController {
   constructor(
@@ -18,6 +25,16 @@ export class ExchangeRatesController {
 
   @Post('sync')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Sync exchange rates from external provider',
+    description:
+      'Sync exchange rates for a specific currency or all currencies within a date range',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Exchange rates synced successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid query parameters' })
   async syncExchangeRates(@Query() dto: SyncExchangeRatesDto) {
     const from = dto.from ? new Date(dto.from) : undefined;
     const to = dto.to ? new Date(dto.to) : undefined;
@@ -37,6 +54,25 @@ export class ExchangeRatesController {
   }
 
   @Get('rate')
+  @ApiOperation({
+    summary: 'Get exchange rate for a specific date',
+    description:
+      'Retrieve the exchange rate between two currencies for a specific date',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Exchange rate retrieved successfully',
+    schema: {
+      properties: {
+        baseCurrency: { type: 'string', example: 'USD' },
+        targetCurrency: { type: 'string', example: 'EUR' },
+        date: { type: 'string', format: 'date-time' },
+        rate: { type: 'number', example: 0.85 },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid query parameters' })
+  @ApiResponse({ status: 404, description: 'Exchange rate not found' })
   async getExchangeRate(@Query() dto: GetExchangeRateDto) {
     const date = new Date(dto.date);
     const rate = await this.exchangeRatesService.getExchangeRate(
