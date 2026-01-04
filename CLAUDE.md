@@ -175,7 +175,7 @@ nx graph
 - Build output: `dist/apps/api`
 - Uses TypeScript compilation via Webpack with the Nx App plugin
 - **Prisma Configuration**: Schema at `apps/api/prisma/schema.prisma`, generated client at `apps/api/generated/prisma`
-- **Environment**: Copy `apps/api/.env.example` to `apps/api/.env` and configure `DATABASE_URL`
+- **Environment**: Copy `.env.example` to `.env` and configure `DATABASE_URL`
 - The API build uses a custom build command (`webpack-cli build`) instead of the standard Nx webpack executor
 
 ### Dividends (Angular)
