@@ -134,6 +134,11 @@ export class SecurityPricesService {
     securitiesProcessed: number;
     pricesInserted: number;
     failures: Array<{ symbol: string; error: string }>;
+    exchangeRates: {
+      synced: boolean;
+      currencies?: Record<string, { synced: number; skipped: number }>;
+      error?: string;
+    };
   }> {
     const provider = this.getProviderName();
     const fromDate = options.from || this.getDefaultStartDate();
@@ -185,14 +190,29 @@ export class SecurityPricesService {
     }
 
     // Auto-sync exchange rates for all currencies found in securities
+    let exchangeRatesResult: {
+      synced: boolean;
+      currencies?: Record<string, { synced: number; skipped: number }>;
+      error?: string;
+    } = { synced: false };
+
     try {
       this.logger.log('Auto-syncing exchange rates for security currencies...');
-      await this.exchangeRatesService.syncAllCurrencies(fromDate, toDate);
+      const currencies =
+        await this.exchangeRatesService.syncAllCurrencies(fromDate, toDate);
       this.logger.log('Exchange rates synced successfully');
+      exchangeRatesResult = {
+        synced: true,
+        currencies,
+      };
     } catch (error) {
       this.logger.warn(
         `Failed to auto-sync exchange rates: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
+      exchangeRatesResult = {
+        synced: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
       // Don't fail the whole operation if exchange rate sync fails
     }
 
@@ -203,6 +223,7 @@ export class SecurityPricesService {
       securitiesProcessed: securities.length,
       pricesInserted: totalInserted,
       failures,
+      exchangeRates: exchangeRatesResult,
     };
   }
 

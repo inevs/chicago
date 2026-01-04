@@ -20,7 +20,9 @@ describe('SecurityPricesService', () => {
   };
 
   const mockExchangeRatesService = {
-    syncAllCurrencies: jest.fn().mockResolvedValue({}),
+    syncAllCurrencies: jest.fn().mockResolvedValue({
+      USD: { synced: 10, skipped: 0 },
+    }),
   };
 
   beforeEach(async () => {
@@ -158,6 +160,10 @@ describe('SecurityPricesService', () => {
       expect(result.securitiesProcessed).toBe(1);
       expect(result.pricesInserted).toBe(0);
       expect(result.failures).toEqual([]);
+      expect(result.exchangeRates.synced).toBe(true);
+      expect(result.exchangeRates.currencies).toEqual({
+        USD: { synced: 10, skipped: 0 },
+      });
       expect(prisma.security.findMany).toHaveBeenCalled();
     });
 
@@ -211,6 +217,7 @@ describe('SecurityPricesService', () => {
 
       expect(result.from).toBe('2024-01-01');
       expect(result.to).toBe('2024-12-31');
+      expect(result.exchangeRates.synced).toBe(true);
     });
 
     it('should track failures when fetching prices fails', async () => {
@@ -233,6 +240,52 @@ describe('SecurityPricesService', () => {
       expect(result.failures).toHaveLength(1);
       expect(result.failures[0].symbol).toBe('AAPL');
       expect(result.failures[0].error).toBe('API error');
+      expect(result.exchangeRates.synced).toBe(true);
+    });
+
+    it('should handle exchange rate sync failures gracefully', async () => {
+      const mockSecurities = [
+        {
+          id: 'security-1',
+          symbol: 'AAPL',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
+      mockPrismaService.securityPrice.createMany.mockResolvedValue({
+        count: 5,
+      });
+
+      jest
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
+        .mockResolvedValue([
+          {
+            date: new Date('2024-01-01'),
+            open: 100,
+            high: 105,
+            low: 99,
+            close: 102,
+            volume: 1000000,
+            currency: 'USD',
+          },
+        ]);
+
+      // Mock exchange rate sync to fail
+      mockExchangeRatesService.syncAllCurrencies.mockRejectedValueOnce(
+        new Error('Exchange rate API error')
+      );
+
+      const result = await service.syncHistoricalPrices();
+
+      // Price sync should succeed
+      expect(result.pricesInserted).toBe(5);
+      expect(result.failures).toEqual([]);
+
+      // Exchange rate sync should be marked as failed with error message
+      expect(result.exchangeRates.synced).toBe(false);
+      expect(result.exchangeRates.error).toBe('Exchange rate API error');
+      expect(result.exchangeRates.currencies).toBeUndefined();
     });
   });
 
