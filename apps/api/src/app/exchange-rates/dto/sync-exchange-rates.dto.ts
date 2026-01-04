@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsOptional } from 'class-validator';
 import { IsISO4217Code } from '../../currencies/validators/is-iso4217-code.validator';
 
 export class SyncExchangeRatesDto {
@@ -14,7 +14,7 @@ export class SyncExchangeRatesDto {
   @IsOptional()
   to?: string;
 
-  @IsString()
+  @IsISO4217Code()
   @IsOptional()
   baseCurrency?: string = 'EUR';
 }
