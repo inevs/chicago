@@ -210,32 +210,63 @@ export class ExchangeRatesService {
 
   /**
    * Parse ECB CSV response to extract rates
+   * Dynamically parses the header to map column names to indices,
+   * making the parser resilient to ECB format changes
    */
   private parseEcbCsv(csv: string): EcbRate[] {
     const rates: EcbRate[] = [];
     const lines = csv.split('\n');
 
-    // Skip header line and process data rows
+    if (lines.length === 0) {
+      this.logger.warn('ECB CSV response is empty');
+      return rates;
+    }
+
+    // Parse header line to map column names to indices
+    const headerLine = lines[0].trim();
+    if (!headerLine) {
+      this.logger.warn('ECB CSV header line is empty');
+      return rates;
+    }
+
+    const headers = headerLine.split(',').map((h) => h.trim());
+    const columnMap = new Map<string, number>();
+    headers.forEach((header, index) => {
+      columnMap.set(header, index);
+    });
+
+    // Validate required columns exist
+    const requiredColumns = ['TIME_PERIOD', 'OBS_VALUE'];
+    const missingColumns = requiredColumns.filter(
+      (col) => !columnMap.has(col)
+    );
+
+    if (missingColumns.length > 0) {
+      this.logger.warn(
+        `ECB CSV format missing required columns: ${missingColumns.join(', ')}`
+      );
+      this.logger.warn(`Available columns: ${headers.join(', ')}`);
+      return rates;
+    }
+
+    const dateIndex = columnMap.get('TIME_PERIOD')!;
+    const rateIndex = columnMap.get('OBS_VALUE')!;
+
+    // Log format validation success
+    this.logger.debug(
+      `ECB CSV format validated. TIME_PERIOD at index ${dateIndex}, OBS_VALUE at index ${rateIndex}`
+    );
+
+    // Process data rows
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
 
       const columns = line.split(',');
 
-      // ECB CSV format:
-      // 0: KEY
-      // 1: FREQ (D for daily)
-      // 2: CURRENCY
-      // 3: CURRENCY_DENOM (EUR)
-      // 4: EXR_TYPE
-      // 5: EXR_SUFFIX
-      // 6: TIME_PERIOD (YYYY-MM-DD)
-      // 7: OBS_VALUE (the rate)
-      // 8+: metadata
-
-      if (columns.length >= 8) {
-        const dateStr = columns[6]?.trim();
-        const rateStr = columns[7]?.trim();
+      if (columns.length > Math.max(dateIndex, rateIndex)) {
+        const dateStr = columns[dateIndex]?.trim();
+        const rateStr = columns[rateIndex]?.trim();
 
         if (dateStr && rateStr) {
           const date = new Date(dateStr);

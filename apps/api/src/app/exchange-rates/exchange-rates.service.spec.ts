@@ -232,6 +232,83 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345
 
       expect(result.synced).toBe(2);
     });
+
+    it('should handle CSV with missing required columns in header', async () => {
+      const csvMissingColumns = `KEY,FREQ,CURRENCY,CURRENCY_DENOM
+EXR.D.USD.EUR.SP00.A,D,USD,EUR`;
+
+      const loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn');
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: csvMissingColumns,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      const result = await service.syncExchangeRates(
+        'USD',
+        new Date('2025-01-01'),
+        new Date('2025-01-03')
+      );
+
+      expect(result.synced).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('missing required columns')
+      );
+    });
+
+    it('should handle CSV with columns in different order', async () => {
+      // Columns in different order: OBS_VALUE before TIME_PERIOD
+      const csvDifferentOrder = `KEY,FREQ,CURRENCY,OBS_VALUE,TIME_PERIOD,CURRENCY_DENOM,EXR_TYPE,EXR_SUFFIX
+EXR.D.USD.EUR.SP00.A,D,USD,1.0234,2025-01-01,EUR,SP00,A
+EXR.D.USD.EUR.SP00.A,D,USD,1.0345,2025-01-02,EUR,SP00,A`;
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: csvDifferentOrder,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+
+      const result = await service.syncExchangeRates(
+        'USD',
+        new Date('2025-01-01'),
+        new Date('2025-01-02')
+      );
+
+      expect(result.synced).toBe(2);
+      expect(mockPrismaService.exchangeRate.upsert).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle completely empty CSV response', async () => {
+      const loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn');
+
+      mockedAxios.get.mockResolvedValueOnce({
+        data: '',
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      const result = await service.syncExchangeRates(
+        'USD',
+        new Date('2025-01-01'),
+        new Date('2025-01-03')
+      );
+
+      expect(result.synced).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'ECB CSV header line is empty'
+      );
+    });
   });
 
   describe('API Error Handling', () => {
