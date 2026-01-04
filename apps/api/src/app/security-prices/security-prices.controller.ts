@@ -8,19 +8,24 @@ import {
   Query,
   UsePipes,
   ValidationPipe,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SecurityPricesService } from './security-prices.service';
 import { PriceUpdateSchedulerService } from './price-update-scheduler.service';
 import { SecurityPrice } from '@dividends/shared';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('security-prices')
+@ApiBearerAuth()
 @Controller('security-prices')
+@UseGuards(JwtAuthGuard)
 @UsePipes(
   new ValidationPipe({
     whitelist: true,

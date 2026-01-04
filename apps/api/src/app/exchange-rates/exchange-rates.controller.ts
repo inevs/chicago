@@ -5,19 +5,24 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ExchangeRatesService } from './exchange-rates.service';
 import { SyncExchangeRatesDto } from './dto/sync-exchange-rates.dto';
 import { GetExchangeRateDto } from './dto/get-exchange-rate.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('exchange-rates')
+@ApiBearerAuth()
 @Controller('exchange-rates')
+@UseGuards(JwtAuthGuard)
 export class ExchangeRatesController {
   constructor(
     private readonly exchangeRatesService: ExchangeRatesService

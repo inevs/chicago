@@ -37,6 +37,7 @@ async function bootstrap() {
     .setTitle('Dividends Tracker API')
     .setDescription('API for tracking dividend payments, securities, transactions, and exchange rates')
     .setVersion('1.0')
+    .addTag('auth', 'Authentication endpoints')
     .addTag('securities', 'Manage securities (stocks, ETFs, etc.)')
     .addTag('dividend-payments', 'Track dividend payments')
     .addTag('security-transactions', 'Manage buy/sell transactions')
@@ -44,6 +45,7 @@ async function bootstrap() {
     .addTag('exchange-rates', 'Manage and sync exchange rates')
     .addTag('security-prices', 'Manage security prices')
     .addTag('data', 'Data import/export')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

@@ -1,6 +1,7 @@
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { config } from 'dotenv';
+import * as bcrypt from 'bcryptjs';
 
 // Load .env from current working directory (workspace root)
 config();
@@ -11,6 +12,34 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Seeding database...');
+
+  // Seed admin user
+  console.log('👤 Seeding admin user...');
+
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const adminName = process.env.ADMIN_NAME || 'Admin User';
+
+  if (!adminPassword) {
+    throw new Error(
+      '❌ ADMIN_PASSWORD environment variable is required for seeding. ' +
+      'Please set it to a strong password in your .env file.'
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+  const admin = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {},
+    create: {
+      email: adminEmail,
+      password: hashedPassword,
+      name: adminName,
+    },
+  });
+
+  console.log(`  ✓ Admin user created: ${admin.email}`);
 
   // Seed currencies
   console.log('📊 Seeding currencies...');
