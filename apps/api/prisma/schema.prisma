@@ -159,10 +159,35 @@ model Currency {
   name      String   // Display name (Euro, US Dollar, etc.)
   createdAt DateTime @default(now())
 
-  securities             Security[]           @relation("SecurityCurrency")
-  dividendPaymentsOrigin DividendPayment[]    @relation("DividendOriginCurrency")
-  dividendPaymentsDest   DividendPayment[]    @relation("DividendDestCurrency")
-  securityTransactions   SecurityTransaction[] @relation("SecurityTransactionCurrency")
+  securities              Security[]           @relation("SecurityCurrency")
+  dividendPaymentsOrigin  DividendPayment[]    @relation("DividendOriginCurrency")
+  dividendPaymentsDest    DividendPayment[]    @relation("DividendDestCurrency")
+  securityTransactions    SecurityTransaction[] @relation("SecurityTransactionCurrency")
+  exchangeRatesBase       ExchangeRate[]       @relation("ExchangeRateBaseCurrency")
+  exchangeRatesTarget     ExchangeRate[]       @relation("ExchangeRateTargetCurrency")
 
   @@map("currencies")
+}
+
+// ExchangeRate model - stores historical currency exchange rates
+model ExchangeRate {
+  id             String   @id @default(uuid())
+  baseCurrency   String   // Base currency (typically "EUR" for ECB data)
+  targetCurrency String   // Target currency to convert to (e.g., "USD", "GBP")
+  date           DateTime // Date of exchange rate
+  rate           Decimal  @db.Decimal(19, 8) // Exchange rate (1 baseCurrency = rate targetCurrency)
+  provider       String   // Data provider identifier (e.g., "ecb")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  baseCurrencyRef   Currency @relation("ExchangeRateBaseCurrency", fields: [baseCurrency], references: [code])
+  targetCurrencyRef Currency @relation("ExchangeRateTargetCurrency", fields: [targetCurrency], references: [code])
+
+  // Unique constraint: one rate per currency pair per date
+  @@unique([baseCurrency, targetCurrency, date])
+  @@index([baseCurrency, targetCurrency])
+  @@index([date])
+  @@index([baseCurrency, targetCurrency, date])
+  @@map("exchange_rates")
 }

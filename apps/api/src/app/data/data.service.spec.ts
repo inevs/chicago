@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataService } from './data.service';
 import { PrismaService } from '../../prisma.service';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 describe('DataService', () => {
   let service: DataService;
@@ -28,7 +29,15 @@ describe('DataService', () => {
       deleteMany: jest.fn(),
       upsert: jest.fn(),
     },
+    exchangeRate: {
+      deleteMany: jest.fn(),
+      upsert: jest.fn(),
+    },
     $transaction: jest.fn(),
+  };
+
+  const mockExchangeRatesService = {
+    getAllExchangeRates: jest.fn().mockResolvedValue([]),
   };
 
   beforeEach(async () => {
@@ -38,6 +47,10 @@ describe('DataService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: ExchangeRatesService,
+          useValue: mockExchangeRatesService,
         },
       ],
     }).compile();
@@ -57,6 +70,7 @@ describe('DataService', () => {
       const mockDividendPayments = [{ id: 'payment-1', shares: 10 }];
       const mockSecurityTransactions = [{ id: 'transaction-1', quantity: 5 }];
       const mockSecurityPrices = [{ id: 'price-1', close: 100 }];
+      const mockExchangeRates = [{ id: 'rate-1', baseCurrency: 'EUR', targetCurrency: 'USD', rate: 1.1 }];
 
       mockPrismaService.currency.findMany.mockResolvedValue(mockCurrencies);
       mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
@@ -69,6 +83,9 @@ describe('DataService', () => {
       mockPrismaService.securityPrice.findMany.mockResolvedValue(
         mockSecurityPrices
       );
+      mockExchangeRatesService.getAllExchangeRates.mockResolvedValue(
+        mockExchangeRates
+      );
 
       const result = await service.exportAllData();
 
@@ -77,6 +94,7 @@ describe('DataService', () => {
       expect(result.dividendPayments).toEqual(mockDividendPayments);
       expect(result.securityTransactions).toEqual(mockSecurityTransactions);
       expect(result.securityPrices).toEqual(mockSecurityPrices);
+      expect(result.exchangeRates).toEqual(mockExchangeRates);
       expect(result.version).toBe('1.0');
       expect(result.exportedAt).toBeDefined();
       expect(typeof result.exportedAt).toBe('string');
@@ -107,6 +125,7 @@ describe('DataService', () => {
         dividendPayments: [{ id: 'payment-1', shares: 10 }],
         securityTransactions: [{ id: 'transaction-1', quantity: 5 }],
         securityPrices: [{ id: 'price-1', close: 100 }],
+        exchangeRates: [{ id: 'rate-1', baseCurrency: 'EUR', targetCurrency: 'USD', rate: 1.1 }],
       };
 
       const mockTx = {
@@ -115,6 +134,7 @@ describe('DataService', () => {
         dividendPayment: { upsert: jest.fn(), deleteMany: jest.fn() },
         securityTransaction: { upsert: jest.fn(), deleteMany: jest.fn() },
         securityPrice: { upsert: jest.fn(), deleteMany: jest.fn() },
+        exchangeRate: { upsert: jest.fn(), deleteMany: jest.fn() },
       };
 
       mockPrismaService.$transaction.mockImplementation((callback) =>
@@ -128,17 +148,20 @@ describe('DataService', () => {
       expect(result.dividendPaymentsImported).toBe(1);
       expect(result.securityTransactionsImported).toBe(1);
       expect(result.securityPricesImported).toBe(1);
+      expect(result.exchangeRatesImported).toBe(1);
 
       expect(mockTx.currency.upsert).toHaveBeenCalled();
       expect(mockTx.security.upsert).toHaveBeenCalled();
       expect(mockTx.dividendPayment.upsert).toHaveBeenCalled();
       expect(mockTx.securityTransaction.upsert).toHaveBeenCalled();
       expect(mockTx.securityPrice.upsert).toHaveBeenCalled();
+      expect(mockTx.exchangeRate.upsert).toHaveBeenCalled();
 
       expect(mockTx.currency.deleteMany).not.toHaveBeenCalled();
       expect(mockTx.dividendPayment.deleteMany).not.toHaveBeenCalled();
       expect(mockTx.securityTransaction.deleteMany).not.toHaveBeenCalled();
       expect(mockTx.securityPrice.deleteMany).not.toHaveBeenCalled();
+      expect(mockTx.exchangeRate.deleteMany).not.toHaveBeenCalled();
     });
 
     it('should clear existing data when requested', async () => {
@@ -151,6 +174,7 @@ describe('DataService', () => {
         dividendPayment: { upsert: jest.fn(), deleteMany: jest.fn() },
         securityTransaction: { upsert: jest.fn(), deleteMany: jest.fn() },
         securityPrice: { upsert: jest.fn(), deleteMany: jest.fn() },
+        exchangeRate: { upsert: jest.fn(), deleteMany: jest.fn() },
         currency: { upsert: jest.fn(), deleteMany: jest.fn() },
       };
 
@@ -164,6 +188,7 @@ describe('DataService', () => {
       expect(mockTx.dividendPayment.deleteMany).toHaveBeenCalled();
       expect(mockTx.securityTransaction.deleteMany).toHaveBeenCalled();
       expect(mockTx.securityPrice.deleteMany).toHaveBeenCalled();
+      expect(mockTx.exchangeRate.deleteMany).toHaveBeenCalled();
       expect(mockTx.security.deleteMany).toHaveBeenCalled();
     });
 
@@ -175,6 +200,7 @@ describe('DataService', () => {
         dividendPayment: { upsert: jest.fn(), deleteMany: jest.fn() },
         securityTransaction: { upsert: jest.fn(), deleteMany: jest.fn() },
         securityPrice: { upsert: jest.fn(), deleteMany: jest.fn() },
+        exchangeRate: { upsert: jest.fn(), deleteMany: jest.fn() },
         currency: { upsert: jest.fn(), deleteMany: jest.fn() },
       };
 
@@ -189,12 +215,14 @@ describe('DataService', () => {
       expect(result.dividendPaymentsImported).toBe(0);
       expect(result.securityTransactionsImported).toBe(0);
       expect(result.securityPricesImported).toBe(0);
+      expect(result.exchangeRatesImported).toBe(0);
 
       expect(mockTx.currency.upsert).not.toHaveBeenCalled();
       expect(mockTx.security.upsert).not.toHaveBeenCalled();
       expect(mockTx.dividendPayment.upsert).not.toHaveBeenCalled();
       expect(mockTx.securityTransaction.upsert).not.toHaveBeenCalled();
       expect(mockTx.securityPrice.upsert).not.toHaveBeenCalled();
+      expect(mockTx.exchangeRate.upsert).not.toHaveBeenCalled();
     });
   });
 });

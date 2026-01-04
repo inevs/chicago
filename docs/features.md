@@ -2,8 +2,7 @@
 
 ## 1. currency conversion
 - convert every currency to default currency (EUR)
-- retrieve historical conversion rates for every currency paired with default currency (i.e. USD-EUR)
-- always show eur prices in the ui
+- retrieve historical conversion rates for every currency paired with default currency (i.e. USD-EUR) back to SECURITY_PRICE_HISTORY_START
 - remember them to export as well
 
 ## 2. current value computed

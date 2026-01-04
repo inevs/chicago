@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import axios from 'axios';
 import { PrismaService } from '../../prisma.service';
 import type { SecurityPrice } from '@dividends/shared';
 import type { Security } from '../../../generated/prisma/client';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 interface ProviderPrice {
   date: Date;
@@ -19,7 +20,11 @@ interface ProviderPrice {
 export class SecurityPricesService {
   private readonly logger = new Logger(SecurityPricesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => ExchangeRatesService))
+    private readonly exchangeRatesService: ExchangeRatesService
+  ) {}
 
   async getLatestPrices(): Promise<SecurityPrice[]> {
     // Use a more efficient query with DISTINCT ON to avoid N+1 problem
@@ -129,6 +134,11 @@ export class SecurityPricesService {
     securitiesProcessed: number;
     pricesInserted: number;
     failures: Array<{ symbol: string; error: string }>;
+    exchangeRates: {
+      synced: boolean;
+      currencies?: Record<string, { synced: number; skipped: number }>;
+      error?: string;
+    };
   }> {
     const provider = this.getProviderName();
     const fromDate = options.from || this.getDefaultStartDate();
@@ -179,6 +189,33 @@ export class SecurityPricesService {
       }
     }
 
+    // Auto-sync exchange rates for all currencies found in securities
+    let exchangeRatesResult: {
+      synced: boolean;
+      currencies?: Record<string, { synced: number; skipped: number }>;
+      error?: string;
+    } = { synced: false };
+
+    try {
+      this.logger.log('Auto-syncing exchange rates for security currencies...');
+      const currencies =
+        await this.exchangeRatesService.syncAllCurrencies(fromDate, toDate);
+      this.logger.log('Exchange rates synced successfully');
+      exchangeRatesResult = {
+        synced: true,
+        currencies,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to auto-sync exchange rates: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      exchangeRatesResult = {
+        synced: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+      // Don't fail the whole operation if exchange rate sync fails
+    }
+
     return {
       provider,
       from: this.formatDate(fromDate),
@@ -186,6 +223,7 @@ export class SecurityPricesService {
       securitiesProcessed: securities.length,
       pricesInserted: totalInserted,
       failures,
+      exchangeRates: exchangeRatesResult,
     };
   }
 

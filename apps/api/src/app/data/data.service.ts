@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 export interface ExportData {
   currencies: unknown[];
@@ -7,6 +8,7 @@ export interface ExportData {
   dividendPayments: unknown[];
   securityTransactions: unknown[];
   securityPrices: unknown[];
+  exchangeRates: unknown[];
   exportedAt: string;
   version: string;
 }
@@ -17,11 +19,15 @@ export interface ImportData {
   dividendPayments?: unknown[];
   securityTransactions?: unknown[];
   securityPrices?: unknown[];
+  exchangeRates?: unknown[];
 }
 
 @Injectable()
 export class DataService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly exchangeRatesService: ExchangeRatesService
+  ) {}
 
   async exportAllData(): Promise<ExportData> {
     // Fetch all data from database
@@ -31,6 +37,7 @@ export class DataService {
       dividendPayments,
       securityTransactions,
       securityPrices,
+      exchangeRates,
     ] = await Promise.all([
       this.prisma.currency.findMany({
         orderBy: { code: 'asc' },
@@ -47,6 +54,7 @@ export class DataService {
       this.prisma.securityPrice.findMany({
         orderBy: { date: 'asc' },
       }),
+      this.exchangeRatesService.getAllExchangeRates(),
     ]);
 
     return {
@@ -55,6 +63,7 @@ export class DataService {
       dividendPayments,
       securityTransactions,
       securityPrices,
+      exchangeRates,
       exportedAt: new Date().toISOString(),
       version: '1.0',
     };
@@ -69,6 +78,7 @@ export class DataService {
     dividendPaymentsImported: number;
     securityTransactionsImported: number;
     securityPricesImported: number;
+    exchangeRatesImported: number;
   }> {
     return await this.prisma.$transaction(async (tx) => {
       // Clear existing data if requested
@@ -76,6 +86,7 @@ export class DataService {
         await tx.dividendPayment.deleteMany({});
         await tx.securityTransaction.deleteMany({});
         await tx.securityPrice.deleteMany({});
+        await tx.exchangeRate.deleteMany({});
         await tx.security.deleteMany({});
         await tx.currency.deleteMany({});
       }
@@ -85,6 +96,7 @@ export class DataService {
       let dividendPaymentsImported = 0;
       let securityTransactionsImported = 0;
       let securityPricesImported = 0;
+      let exchangeRatesImported = 0;
 
       // Import currencies first (they are referenced by other tables)
       if (data.currencies && Array.isArray(data.currencies)) {
@@ -150,12 +162,25 @@ export class DataService {
         }
       }
 
+      // Import exchange rates
+      if (data.exchangeRates && Array.isArray(data.exchangeRates)) {
+        for (const rate of data.exchangeRates) {
+          await tx.exchangeRate.upsert({
+            where: { id: (rate as { id: string }).id },
+            create: rate as never,
+            update: rate as never,
+          });
+          exchangeRatesImported++;
+        }
+      }
+
       return {
         currenciesImported,
         securitiesImported,
         dividendPaymentsImported,
         securityTransactionsImported,
         securityPricesImported,
+        exchangeRatesImported,
       };
     });
   }
