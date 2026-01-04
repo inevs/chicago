@@ -17,8 +17,15 @@ async function main() {
   console.log('👤 Seeding admin user...');
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminPassword = process.env.ADMIN_PASSWORD;
   const adminName = process.env.ADMIN_NAME || 'Admin User';
+
+  if (!adminPassword) {
+    throw new Error(
+      '❌ ADMIN_PASSWORD environment variable is required for seeding. ' +
+      'Please set it to a strong password in your .env file.'
+    );
+  }
 
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
