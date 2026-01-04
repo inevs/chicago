@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ExchangeRatesService } from './exchange-rates.service';
 import { SyncExchangeRatesDto } from './dto/sync-exchange-rates.dto';
+import { GetExchangeRateDto } from './dto/get-exchange-rate.dto';
 
 @Controller('exchange-rates')
 export class ExchangeRatesController {
@@ -37,21 +38,17 @@ export class ExchangeRatesController {
   }
 
   @Get('rate')
-  async getExchangeRate(
-    @Query('baseCurrency') baseCurrency: string,
-    @Query('targetCurrency') targetCurrency: string,
-    @Query('date') dateStr: string
-  ) {
-    const date = new Date(dateStr);
+  async getExchangeRate(@Query() dto: GetExchangeRateDto) {
+    const date = new Date(dto.date);
     const rate = await this.exchangeRatesService.getExchangeRate(
-      baseCurrency,
-      targetCurrency,
+      dto.baseCurrency,
+      dto.targetCurrency,
       date
     );
 
     return {
-      baseCurrency,
-      targetCurrency,
+      baseCurrency: dto.baseCurrency,
+      targetCurrency: dto.targetCurrency,
       date,
       rate,
     };
