@@ -11,7 +11,13 @@ import { PrismaService } from '../../prisma.service';
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env['JWT_SECRET'] || 'your-secret-key-change-this',
+      secret: (() => {
+        const secret = process.env['JWT_SECRET'];
+        if (!secret) {
+          throw new Error('JWT_SECRET environment variable is required');
+        }
+        return secret;
+      })(),
       signOptions: {
         expiresIn: '8h', // Token expires in 8 hours
       },
