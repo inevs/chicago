@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { PortfolioStateService } from './portfolio-state.service';
 import { DividendDataService } from './dividend-data.service';
 import { SecurityTransactionService } from './security-transaction.service';
 import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
+import { UiStateService } from './ui-state.service';
 import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
 
 describe('PortfolioStateService', () => {
@@ -13,6 +15,7 @@ describe('PortfolioStateService', () => {
   let mockSecurityTransactionService: jest.Mocked<Partial<SecurityTransactionService>>;
   let mockSecurityPriceService: jest.Mocked<Partial<SecurityPriceService>>;
   let mockCurrencyService: jest.Mocked<Partial<CurrencyService>>;
+  let mockUiStateService: jest.Mocked<Partial<UiStateService>>;
 
   beforeEach(() => {
     mockDividendDataService = {
@@ -34,6 +37,11 @@ describe('PortfolioStateService', () => {
       getDefaultCurrency: jest.fn().mockReturnValue(of(null)),
     };
 
+    mockUiStateService = {
+      selectedTimeRange: signal('ALL' as const),
+      setTimeRange: jest.fn(),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         PortfolioStateService,
@@ -41,6 +49,7 @@ describe('PortfolioStateService', () => {
         { provide: SecurityTransactionService, useValue: mockSecurityTransactionService },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
         { provide: CurrencyService, useValue: mockCurrencyService },
+        { provide: UiStateService, useValue: mockUiStateService },
       ],
     });
 
@@ -57,10 +66,6 @@ describe('PortfolioStateService', () => {
       expect(service.securityPrices()).toEqual([]);
       expect(service.currencies()).toEqual([]);
       expect(service.defaultCurrency()).toBeNull();
-    });
-
-    it('should initialize with ALL time range', () => {
-      expect(service.selectedTimeRange()).toBe('ALL');
     });
   });
 
@@ -206,22 +211,12 @@ describe('PortfolioStateService', () => {
     });
   });
 
-  describe('Time Range Management', () => {
-    it('should set time range', () => {
-      service.setTimeRange('1M');
-      expect(service.selectedTimeRange()).toBe('1M');
-
-      service.setTimeRange('1Y');
-      expect(service.selectedTimeRange()).toBe('1Y');
-    });
-  });
-
   describe('Computed Values', () => {
     it('should compute filtered dividends', () => {
       const mockFiltered = [{ id: '1' }];
       mockDividendDataService.getFilteredTransactions = jest.fn().mockReturnValue(mockFiltered);
 
-      service.setTimeRange('1M');
+      mockUiStateService.selectedTimeRange!.set('1M');
 
       expect(service.filteredDividends()).toEqual(mockFiltered);
       expect(mockDividendDataService.getFilteredTransactions).toHaveBeenCalledWith('1M', '');

@@ -35,43 +35,6 @@ export class MainLayoutComponent implements OnInit {
   protected readonly portfolioState = inject(PortfolioStateService);
   protected readonly transactionFacade = inject(TransactionFacadeService);
 
-  // Expose combined state for template access
-  protected get appState() {
-    return {
-      // UI State - Signals
-      isDarkMode: this.uiState.isDarkMode,
-      sidebarCollapsed: this.uiState.sidebarCollapsed,
-      selectedTimeRange: this.uiState.selectedTimeRange,
-      showTransactionModal: this.uiState.showTransactionModal,
-      showSecurityModal: this.uiState.showSecurityModal,
-      showSecurityTransactionModal: this.uiState.showSecurityTransactionModal,
-      showCurrencyModal: this.uiState.showCurrencyModal,
-      showImportConfirmModal: this.uiState.showImportConfirmModal,
-      editingTransaction: this.uiState.editingTransaction,
-      deletingTransaction: this.uiState.deletingTransaction,
-      editingSecurity: this.uiState.editingSecurity,
-      editingSecurityTransaction: this.uiState.editingSecurityTransaction,
-      deletingSecurityTransaction: this.uiState.deletingSecurityTransaction,
-      // UI State - Methods
-      toggleTransactionModal: this.uiState.toggleTransactionModal.bind(this.uiState),
-      toggleSecurityModal: this.uiState.toggleSecurityModal.bind(this.uiState),
-      toggleSecurityTransactionModal: this.uiState.toggleSecurityTransactionModal.bind(this.uiState),
-      toggleCurrencyModal: this.uiState.toggleCurrencyModal.bind(this.uiState),
-      // Portfolio State
-      currencies: this.portfolioState.currencies,
-      defaultCurrency: this.portfolioState.defaultCurrency,
-      // Facade Methods
-      handleTransactionSubmit: this.transactionFacade.handleTransactionSubmit.bind(this.transactionFacade),
-      handleSecuritySubmit: this.transactionFacade.handleSecuritySubmit.bind(this.transactionFacade),
-      handleSecurityTransactionSubmit: this.transactionFacade.handleSecurityTransactionSubmit.bind(this.transactionFacade),
-      handleImportConfirm: this.transactionFacade.handleImportConfirm.bind(this.transactionFacade),
-      confirmDeleteTransaction: this.transactionFacade.confirmDeleteTransaction.bind(this.transactionFacade),
-      cancelDeleteTransaction: this.transactionFacade.cancelDeleteTransaction.bind(this.transactionFacade),
-      confirmDeleteSecurityTransaction: this.transactionFacade.confirmDeleteSecurityTransaction.bind(this.transactionFacade),
-      cancelDeleteSecurityTransaction: this.transactionFacade.cancelDeleteSecurityTransaction.bind(this.transactionFacade),
-    };
-  }
-
   ngOnInit() {
     // Load all data on app initialization
     this.portfolioState.loadAllData();

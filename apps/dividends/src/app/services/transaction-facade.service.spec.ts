@@ -97,6 +97,8 @@ describe('TransactionFacadeService', () => {
 
     mockPortfolioState = {
       loadAllData: jest.fn(),
+      loadDividends: jest.fn(),
+      loadSecurityTransactions: jest.fn(),
       currencies: {
         update: jest.fn(),
       },
@@ -155,7 +157,7 @@ describe('TransactionFacadeService', () => {
           dividendYield: 1.5,
         })
       );
-      expect(mockPortfolioState.loadAllData).toHaveBeenCalled();
+      expect(mockPortfolioState.loadDividends).toHaveBeenCalled();
       expect(mockUiState.toggleTransactionModal).toHaveBeenCalled();
     });
 
@@ -193,7 +195,7 @@ describe('TransactionFacadeService', () => {
       service.confirmDeleteTransaction();
 
       expect(mockDividendPaymentService.deleteDividendPayment).toHaveBeenCalledWith('1');
-      expect(mockPortfolioState.loadAllData).toHaveBeenCalled();
+      expect(mockPortfolioState.loadDividends).toHaveBeenCalled();
       expect(mockUiState.setDeletingTransaction).toHaveBeenCalledWith(null);
     });
 
@@ -296,7 +298,7 @@ describe('TransactionFacadeService', () => {
           quantity: 10,
         })
       );
-      expect(mockPortfolioState.loadAllData).toHaveBeenCalled();
+      expect(mockPortfolioState.loadSecurityTransactions).toHaveBeenCalled();
       expect(mockUiState.toggleSecurityTransactionModal).toHaveBeenCalled();
     });
 
@@ -325,7 +327,7 @@ describe('TransactionFacadeService', () => {
       service.confirmDeleteSecurityTransaction();
 
       expect(mockSecurityTransactionService.deleteSecurityTransaction).toHaveBeenCalledWith('1');
-      expect(mockPortfolioState.loadAllData).toHaveBeenCalled();
+      expect(mockPortfolioState.loadSecurityTransactions).toHaveBeenCalled();
       expect(mockUiState.setDeletingSecurityTransaction).toHaveBeenCalledWith(null);
     });
 

@@ -67,7 +67,7 @@ export class TransactionFacadeService {
     this.dividendPaymentService.createDividendPayment(dto).subscribe({
       next: (createdPayment) => {
         console.log('Dividend payment created successfully:', createdPayment);
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadDividends();
         this.uiState.toggleTransactionModal();
       },
       error: (error) => {
@@ -97,7 +97,7 @@ export class TransactionFacadeService {
     this.dividendPaymentService.updateDividendPayment(transaction.id, dto).subscribe({
       next: (updatedPayment) => {
         console.log('Dividend payment updated successfully:', updatedPayment);
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadDividends();
         this.uiState.toggleTransactionModal();
         this.uiState.setEditingTransaction(null);
       },
@@ -117,7 +117,7 @@ export class TransactionFacadeService {
     this.dividendPaymentService.deleteDividendPayment(id).subscribe({
       next: () => {
         console.log('Dividend payment deleted successfully');
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadDividends();
         this.uiState.setDeletingTransaction(null);
       },
       error: (error) => {
@@ -181,7 +181,7 @@ export class TransactionFacadeService {
       next: (updatedSecurity) => {
         console.log('Security updated successfully:', updatedSecurity);
         this.toastService.success('Wertpapier erfolgreich aktualisiert');
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadDividends();
         this.uiState.toggleSecurityModal();
       },
       error: (error) => {
@@ -237,7 +237,7 @@ export class TransactionFacadeService {
     this.securityTransactionService.createSecurityTransaction(dto).subscribe({
       next: (createdTransaction) => {
         console.log('Security transaction created successfully:', createdTransaction);
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadSecurityTransactions();
         this.uiState.toggleSecurityTransactionModal();
       },
       error: (error) => {
@@ -266,7 +266,7 @@ export class TransactionFacadeService {
     this.securityTransactionService.updateSecurityTransaction(transaction.id, dto).subscribe({
       next: (updatedTransaction) => {
         console.log('Security transaction updated successfully:', updatedTransaction);
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadSecurityTransactions();
         this.uiState.toggleSecurityTransactionModal();
         this.uiState.setEditingSecurityTransaction(null);
       },
@@ -284,7 +284,7 @@ export class TransactionFacadeService {
     this.securityTransactionService.deleteSecurityTransaction(transaction.id).subscribe({
       next: () => {
         console.log('Security transaction deleted successfully');
-        this.portfolioState.loadAllData();
+        this.portfolioState.loadSecurityTransactions();
         this.uiState.setDeletingSecurityTransaction(null);
       },
       error: (error) => {

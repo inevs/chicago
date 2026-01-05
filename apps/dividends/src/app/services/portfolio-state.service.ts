@@ -3,8 +3,8 @@ import { DividendDataService } from './dividend-data.service';
 import { SecurityTransactionService } from './security-transaction.service';
 import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
+import { UiStateService } from './ui-state.service';
 import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
-import { TimeRange } from '../models/dividend.model';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +14,7 @@ export class PortfolioStateService {
   private readonly securityTransactionService = inject(SecurityTransactionService);
   private readonly securityPriceService = inject(SecurityPriceService);
   private readonly currencyService = inject(CurrencyService);
+  private readonly uiState = inject(UiStateService);
 
   // Data State
   securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
@@ -21,13 +22,10 @@ export class PortfolioStateService {
   currencies = signal<Currency[]>([]);
   defaultCurrency = signal<Currency | null>(null);
 
-  // Time Range (for filtering)
-  selectedTimeRange = signal<TimeRange>('ALL');
-
   // Computed State
   filteredDividends = computed(() => {
     return this.dividendDataService.getFilteredTransactions(
-      this.selectedTimeRange(),
+      this.uiState.selectedTimeRange(),
       ''
     );
   });
@@ -41,10 +39,14 @@ export class PortfolioStateService {
 
   // Data Loading Methods
   loadAllData() {
-    this.dividendDataService.loadTransactionsFromBackend();
+    this.loadDividends();
     this.loadSecurityTransactions();
     this.loadSecurityPrices();
     this.loadCurrencies();
+  }
+
+  loadDividends() {
+    this.dividendDataService.loadTransactionsFromBackend();
   }
 
   loadSecurityTransactions() {
@@ -87,10 +89,5 @@ export class PortfolioStateService {
         console.error('Error loading default currency:', error);
       },
     });
-  }
-
-  // Time Range Methods
-  setTimeRange(range: TimeRange) {
-    this.selectedTimeRange.set(range);
   }
 }
