@@ -24,7 +24,7 @@ export class HeaderNavComponent {
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   onRangeChange(range: TimeRange) {
-    this.portfolioState.setTimeRange(range);
+    this.uiState.setTimeRange(range);
   }
 
   onThemeToggle() {
