@@ -18,7 +18,7 @@ export const appConfig: ApplicationConfig = {
       appRoutes,
       withInMemoryScrolling({ scrollPositionRestoration: 'top' })
     ),
-    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
+    provideHttpClient(withInterceptors([errorInterceptor,  authInterceptor])),
     provideAnimations(),
   ],
 };
