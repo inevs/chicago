@@ -68,7 +68,7 @@ describe('AuthService', () => {
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       });
-      expect(result.password).toBeUndefined();
+      expect((result as any).password).toBeUndefined();
     });
 
     it('should return null when user is not found', async () => {
@@ -104,6 +104,8 @@ describe('AuthService', () => {
         id: '1',
         email: 'test@example.com',
         name: 'Test User',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       mockJwtService.sign.mockReturnValue('mock-jwt-token');
@@ -112,7 +114,11 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         access_token: 'mock-jwt-token',
-        user: mockUser,
+        user: {
+          id: mockUser.id,
+          email: mockUser.email,
+          name: mockUser.name,
+        },
       });
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: '1',

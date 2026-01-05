@@ -38,8 +38,10 @@ describe('AuthController', () => {
           id: '1',
           email: 'test@example.com',
           name: 'Test User',
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
-      };
+      } as any;
 
       const mockResponse = {
         access_token: 'mock-jwt-token',
