@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Currency, CreateCurrencyDto } from '@dividends/shared';
@@ -7,9 +7,8 @@ import { Currency, CreateCurrencyDto } from '@dividends/shared';
   providedIn: 'root',
 })
 export class CurrencyService {
+  private readonly http = inject(HttpClient);
   private readonly apiUrl = '/api/currencies';
-
-  constructor(private http: HttpClient) {}
 
   getCurrencies(): Observable<Currency[]> {
     return this.http.get<Currency[]>(this.apiUrl);

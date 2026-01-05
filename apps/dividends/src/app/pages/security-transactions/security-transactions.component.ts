@@ -19,7 +19,11 @@ export class SecurityTransactionsComponent {
 
   // Expose for template access
   protected get appState() {
-    return { ...this.portfolioState, ...this.uiState };
+    return {
+      // UI State Methods
+      setEditingSecurityTransaction: this.uiState.setEditingSecurityTransaction.bind(this.uiState),
+      setDeletingSecurityTransaction: this.uiState.setDeletingSecurityTransaction.bind(this.uiState),
+    };
   }
 
   securityTransactionPage = signal(1);

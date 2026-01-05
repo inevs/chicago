@@ -3,12 +3,18 @@
   class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity"
   (click)="onClose()"
   (keydown.escape)="onClose()"
-  tabindex="-1"
+  (keydown.enter)="onClose()"
+  role="button"
+  tabindex="0"
+  aria-label="Close modal"
 >
   <div
     class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-lg w-full p-6 m-4 border dark:border-slate-700 transition-colors"
     (click)="$event.stopPropagation()"
-    (keydown)="$event.stopPropagation()"
+    (keydown.enter)="$event.stopPropagation()"
+    (keydown.escape)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
     tabindex="0"
   >
     <div class="flex justify-between items-center mb-6">

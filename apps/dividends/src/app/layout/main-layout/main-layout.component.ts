@@ -38,8 +38,25 @@ export class MainLayoutComponent implements OnInit {
   // Expose combined state for template access
   protected get appState() {
     return {
-      // UI State
-      ...this.uiState,
+      // UI State - Signals
+      isDarkMode: this.uiState.isDarkMode,
+      sidebarCollapsed: this.uiState.sidebarCollapsed,
+      selectedTimeRange: this.uiState.selectedTimeRange,
+      showTransactionModal: this.uiState.showTransactionModal,
+      showSecurityModal: this.uiState.showSecurityModal,
+      showSecurityTransactionModal: this.uiState.showSecurityTransactionModal,
+      showCurrencyModal: this.uiState.showCurrencyModal,
+      showImportConfirmModal: this.uiState.showImportConfirmModal,
+      editingTransaction: this.uiState.editingTransaction,
+      deletingTransaction: this.uiState.deletingTransaction,
+      editingSecurity: this.uiState.editingSecurity,
+      editingSecurityTransaction: this.uiState.editingSecurityTransaction,
+      deletingSecurityTransaction: this.uiState.deletingSecurityTransaction,
+      // UI State - Methods
+      toggleTransactionModal: this.uiState.toggleTransactionModal.bind(this.uiState),
+      toggleSecurityModal: this.uiState.toggleSecurityModal.bind(this.uiState),
+      toggleSecurityTransactionModal: this.uiState.toggleSecurityTransactionModal.bind(this.uiState),
+      toggleCurrencyModal: this.uiState.toggleCurrencyModal.bind(this.uiState),
       // Portfolio State
       currencies: this.portfolioState.currencies,
       defaultCurrency: this.portfolioState.defaultCurrency,

@@ -23,7 +23,13 @@ export class DividendsComponent {
 
   // Expose for template access
   protected get appState() {
-    return { ...this.portfolioState, ...this.uiState };
+    return {
+      // Portfolio State
+      selectedTimeRange: this.portfolioState.selectedTimeRange,
+      // UI State Methods
+      setEditingTransaction: this.uiState.setEditingTransaction.bind(this.uiState),
+      setDeletingTransaction: this.uiState.setDeletingTransaction.bind(this.uiState),
+    };
   }
 
   searchTerm = signal('');

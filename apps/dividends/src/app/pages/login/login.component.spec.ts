@@ -28,7 +28,9 @@ describe('LoginComponent', () => {
 
   beforeEach(async () => {
     // Suppress console.error during tests
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {
+      // Intentionally empty to suppress console errors during tests
+    });
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent, ReactiveFormsModule],
