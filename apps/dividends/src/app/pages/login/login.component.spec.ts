@@ -87,10 +87,10 @@ describe('LoginComponent', () => {
   it('should validate password minimum length', () => {
     const passwordControl = component.loginForm.get('password');
 
-    passwordControl?.setValue('12345');
+    passwordControl?.setValue('1234567');
     expect(passwordControl?.hasError('minlength')).toBe(true);
 
-    passwordControl?.setValue('123456');
+    passwordControl?.setValue('12345678');
     expect(passwordControl?.hasError('minlength')).toBe(false);
   });
 
