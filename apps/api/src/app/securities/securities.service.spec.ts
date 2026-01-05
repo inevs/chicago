@@ -438,4 +438,201 @@ describe('SecuritiesService', () => {
       expect(result).toMatchObject(dto);
     });
   });
+
+  describe('searchSecurities', () => {
+    it('should return all securities when query is empty', async () => {
+      const securities = [
+        {
+          id: 'uuid-1',
+          name: 'Apple Inc.',
+          symbol: 'AAPL',
+          type: SecurityType.STOCK,
+          exchange: 'NASDAQ',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('');
+
+      expect(result).toEqual(securities);
+      expect(prisma.security.findMany).toHaveBeenCalledWith({
+        orderBy: { symbol: 'asc' },
+      });
+    });
+
+    it('should return all securities when query is only whitespace', async () => {
+      const securities = [
+        {
+          id: 'uuid-1',
+          name: 'Apple Inc.',
+          symbol: 'AAPL',
+          type: SecurityType.STOCK,
+          exchange: 'NASDAQ',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('   ');
+
+      expect(result).toEqual(securities);
+      expect(prisma.security.findMany).toHaveBeenCalledWith({
+        orderBy: { symbol: 'asc' },
+      });
+    });
+
+    it('should search by name case-insensitively', async () => {
+      const securities = [
+        {
+          id: 'uuid-1',
+          name: 'Apple Inc.',
+          symbol: 'AAPL',
+          type: SecurityType.STOCK,
+          exchange: 'NASDAQ',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('apple');
+
+      expect(result).toEqual(securities);
+      expect(prisma.security.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { name: { contains: 'apple', mode: 'insensitive' } },
+            { symbol: { contains: 'apple', mode: 'insensitive' } },
+            { isin: { contains: 'apple', mode: 'insensitive' } },
+            { wkn: { contains: 'apple', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { symbol: 'asc' },
+        take: 10,
+      });
+    });
+
+    it('should search by symbol case-insensitively', async () => {
+      const securities = [
+        {
+          id: 'uuid-1',
+          name: 'Apple Inc.',
+          symbol: 'AAPL',
+          type: SecurityType.STOCK,
+          exchange: 'NASDAQ',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('aapl');
+
+      expect(result).toEqual(securities);
+      expect(prisma.security.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { name: { contains: 'aapl', mode: 'insensitive' } },
+            { symbol: { contains: 'aapl', mode: 'insensitive' } },
+            { isin: { contains: 'aapl', mode: 'insensitive' } },
+            { wkn: { contains: 'aapl', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { symbol: 'asc' },
+        take: 10,
+      });
+    });
+
+    it('should search by ISIN', async () => {
+      const securities = [
+        {
+          id: 'uuid-1',
+          name: 'Apple Inc.',
+          symbol: 'AAPL',
+          isin: 'US0378331005',
+          type: SecurityType.STOCK,
+          exchange: 'NASDAQ',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('US0378331005');
+
+      expect(result).toEqual(securities);
+    });
+
+    it('should search by WKN', async () => {
+      const securities = [
+        {
+          id: 'uuid-1',
+          name: 'Apple Inc.',
+          symbol: 'AAPL',
+          wkn: '865985',
+          type: SecurityType.STOCK,
+          exchange: 'NASDAQ',
+          currency: 'USD',
+        },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('865985');
+
+      expect(result).toEqual(securities);
+    });
+
+    it('should limit results to 10 securities', async () => {
+      const securities = Array.from({ length: 10 }, (_, i) => ({
+        id: `uuid-${i}`,
+        name: `Security ${i}`,
+        symbol: `SYM${i}`,
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+      }));
+
+      mockPrismaService.security.findMany.mockResolvedValue(securities);
+
+      const result = await service.searchSecurities('security');
+
+      expect(result).toEqual(securities);
+      expect(prisma.security.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 10,
+        })
+      );
+    });
+
+    it('should trim whitespace from search query', async () => {
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+
+      await service.searchSecurities('  apple  ');
+
+      expect(prisma.security.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { name: { contains: 'apple', mode: 'insensitive' } },
+            { symbol: { contains: 'apple', mode: 'insensitive' } },
+            { isin: { contains: 'apple', mode: 'insensitive' } },
+            { wkn: { contains: 'apple', mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { symbol: 'asc' },
+        take: 10,
+      });
+    });
+
+    it('should return empty array when no matches found', async () => {
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+
+      const result = await service.searchSecurities('nonexistent');
+
+      expect(result).toEqual([]);
+    });
+  });
 });

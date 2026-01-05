@@ -46,3 +46,7 @@ Thumbs.db
 
 .angular
 .env
+
+# Test databases
+test.db
+test.db-journal
