@@ -2,14 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Logger, BadRequestException } from '@nestjs/common';
 import { ExchangeRatesService } from './exchange-rates.service';
 import { PrismaService } from '../../prisma.service';
-import axios from 'axios';
+import axios, { InternalAxiosRequestConfig } from 'axios';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
+type MockExchangeRate = {
+  id: string;
+  baseCurrency: string;
+  targetCurrency: string;
+  date: Date;
+  rate: number;
+  provider: string;
+};
+
 describe('ExchangeRatesService', () => {
   let service: ExchangeRatesService;
-  let prisma: PrismaService;
 
   const mockPrismaService = {
     exchangeRate: {
@@ -35,7 +43,6 @@ describe('ExchangeRatesService', () => {
     }).compile();
 
     service = module.get<ExchangeRatesService>(ExchangeRatesService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     // Mock logger to avoid console output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -60,7 +67,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
       mockPrismaService.exchangeRate.upsert.mockResolvedValue({
@@ -95,10 +102,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345  `;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -120,10 +127,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -146,10 +153,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -168,7 +175,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
       const result = await service.syncExchangeRates(
@@ -192,10 +199,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -219,10 +226,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -244,7 +251,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
       const result = await service.syncExchangeRates(
@@ -271,10 +278,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,1.0345,2025-01-02,EUR,SP00,A`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -294,7 +301,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,1.0345,2025-01-02,EUR,SP00,A`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
       const result = await service.syncExchangeRates(
@@ -408,7 +415,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,1.0345,2025-01-02,EUR,SP00,A`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
       await expect(
@@ -433,10 +440,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2020-01-01,1.0234`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       await service.syncExchangeRates('USD', undefined, new Date('2020-01-02'));
 
@@ -463,10 +470,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2017-01-01,1.0234`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       await service.syncExchangeRates('USD', undefined, new Date('2017-01-02'));
 
@@ -503,10 +510,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2020-01-01,1.0234`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates('USD', startDate, endDate);
       expect(result).toBeDefined();
@@ -522,10 +529,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -669,10 +676,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-01,1.0234`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
 
       // Mock the delay
       jest.useFakeTimers();
@@ -712,11 +719,11 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-01,1.0234`;
           status: 200,
           statusText: 'OK',
           headers: {},
-          config: {} as any,
+          config: {} as InternalAxiosRequestConfig,
         })
         .mockRejectedValueOnce(new Error('Currency not found'));
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as any);
+      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
       mockedAxios.isAxiosError.mockReturnValue(false);
 
       jest.useFakeTimers();
@@ -791,12 +798,12 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
         status: 200,
         statusText: 'OK',
         headers: {},
-        config: {} as any,
+        config: {} as InternalAxiosRequestConfig,
       });
 
       // First upsert succeeds, second fails
       mockPrismaService.exchangeRate.upsert
-        .mockResolvedValueOnce({} as any)
+        .mockResolvedValueOnce({} as MockExchangeRate)
         .mockRejectedValueOnce(new Error('Database constraint violation'));
 
       const result = await service.syncExchangeRates(

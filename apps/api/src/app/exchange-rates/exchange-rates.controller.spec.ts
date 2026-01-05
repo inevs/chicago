@@ -136,7 +136,7 @@ describe('ExchangeRatesController', () => {
 
       mockExchangeRatesService.syncExchangeRates.mockResolvedValue(mockResult);
 
-      const result = await controller.syncExchangeRates(dto);
+      await controller.syncExchangeRates(dto);
 
       expect(service.syncExchangeRates).toHaveBeenCalledWith(
         'EUR',
@@ -159,7 +159,7 @@ describe('ExchangeRatesController', () => {
 
       mockExchangeRatesService.syncExchangeRates.mockResolvedValue(mockResult);
 
-      const result = await controller.syncExchangeRates(dto);
+      await controller.syncExchangeRates(dto);
 
       expect(service.syncExchangeRates).toHaveBeenCalledWith(
         'EUR',

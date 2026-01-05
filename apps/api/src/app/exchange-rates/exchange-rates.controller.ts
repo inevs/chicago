@@ -11,7 +11,6 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiQuery,
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ExchangeRatesService } from './exchange-rates.service';

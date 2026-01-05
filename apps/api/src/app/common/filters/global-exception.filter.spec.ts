@@ -150,7 +150,7 @@ describe('GlobalExceptionFilter', () => {
     mockRequest = {
       ...mockRequest,
       user: { id: 'user-123' },
-    } as any;
+    } as Request & { user: { id: string } };
 
     mockArgumentsHost.switchToHttp = jest.fn().mockReturnValue({
       getResponse: () => mockResponse,

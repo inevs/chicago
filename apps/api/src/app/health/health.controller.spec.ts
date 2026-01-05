@@ -6,7 +6,6 @@ import { PrismaHealthIndicator } from './prisma.health';
 describe('HealthController', () => {
   let controller: HealthController;
   let healthCheckService: HealthCheckService;
-  let prismaHealthIndicator: PrismaHealthIndicator;
 
   const mockHealthCheckService = {
     check: jest.fn(),
@@ -33,7 +32,6 @@ describe('HealthController', () => {
 
     controller = module.get<HealthController>(HealthController);
     healthCheckService = module.get<HealthCheckService>(HealthCheckService);
-    prismaHealthIndicator = module.get<PrismaHealthIndicator>(PrismaHealthIndicator);
   });
 
   afterEach(() => {

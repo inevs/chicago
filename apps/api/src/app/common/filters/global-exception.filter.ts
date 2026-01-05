@@ -79,7 +79,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       method: request.method,
       path: request.url,
       statusCode: status,
-      userId: (request as any).user?.id, // Include user ID if authenticated
+      userId: (request as Request & { user?: { id: string } }).user?.id, // Include user ID if authenticated
     };
 
     if (status >= 500) {

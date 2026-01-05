@@ -249,8 +249,9 @@ export class ExchangeRatesService {
       return rates;
     }
 
-    const dateIndex = columnMap.get('TIME_PERIOD')!;
-    const rateIndex = columnMap.get('OBS_VALUE')!;
+    // These columns are guaranteed to exist due to the validation above
+    const dateIndex = columnMap.get('TIME_PERIOD') as number;
+    const rateIndex = columnMap.get('OBS_VALUE') as number;
 
     // Log format validation success
     this.logger.debug(
