@@ -88,8 +88,11 @@ describe('GlobalExceptionFilter', () => {
     );
   });
 
-  it('should handle generic Error', () => {
-    const exception = new Error('Something went wrong');
+  it('should handle generic Error in development mode', () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
+    const exception = new Error('Database connection failed: password123');
 
     filter.catch(exception, mockArgumentsHost);
 
@@ -97,11 +100,34 @@ describe('GlobalExceptionFilter', () => {
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: 500,
-        message: 'Something went wrong',
+        message: 'Database connection failed: password123',
         error: 'Error',
         correlationId: expect.any(String),
       })
     );
+
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  it('should sanitize generic Error messages in production mode', () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    const exception = new Error('Database connection failed: password123');
+
+    filter.catch(exception, mockArgumentsHost);
+
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        statusCode: 500,
+        message: 'Internal server error',
+        error: 'Internal Server Error',
+        correlationId: expect.any(String),
+      })
+    );
+
+    process.env.NODE_ENV = originalEnv;
   });
 
   it('should handle unknown exception', () => {

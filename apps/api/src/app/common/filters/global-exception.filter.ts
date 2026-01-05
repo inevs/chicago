@@ -50,8 +50,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       // Handle standard JavaScript errors
-      message = exception.message;
-      error = exception.name;
+      // In production, sanitize error messages to prevent information disclosure
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      if (isProduction) {
+        // Only expose generic error message in production
+        message = 'Internal server error';
+        error = 'Internal Server Error';
+      } else {
+        // In development, expose detailed errors for debugging
+        message = exception.message;
+        error = exception.name;
+      }
     }
 
     const errorResponse: ErrorResponse = {
