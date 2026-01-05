@@ -7,6 +7,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module';
+import { GlobalExceptionFilter } from './app/common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -28,6 +29,9 @@ async function bootstrap() {
       },
     })
   );
+
+  // Enable global exception filter for centralized error handling
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
