@@ -4,10 +4,7 @@ import { SecurityPricesService } from './security-prices.service';
 import { PrismaService } from '../../prisma.service';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
-// Helper type to access private methods for testing
-type SecurityPricesServiceWithPrivates = SecurityPricesService & {
-  fetchHistoricalPricesWithRetry: (symbol: string, from: Date, to: Date) => Promise<unknown[]>;
-};
+
 
 describe('SecurityPricesService', () => {
   let service: SecurityPricesService;
@@ -156,7 +153,7 @@ describe('SecurityPricesService', () => {
 
       // Mock the private fetchHistoricalPricesWithRetry to return empty
       jest
-        .spyOn(service as SecurityPricesServiceWithPrivates, 'fetchHistoricalPricesWithRetry')
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
         .mockResolvedValue([] as any);
 
       const result = await service.syncHistoricalPrices();
@@ -187,7 +184,7 @@ describe('SecurityPricesService', () => {
       });
 
       jest
-        .spyOn(service as SecurityPricesServiceWithPrivates, 'fetchHistoricalPricesWithRetry')
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
         .mockResolvedValue([] as any);
 
       await service.syncHistoricalPrices({ securityId: 'security-1' });
@@ -215,7 +212,7 @@ describe('SecurityPricesService', () => {
       });
 
       jest
-        .spyOn(service as SecurityPricesServiceWithPrivates, 'fetchHistoricalPricesWithRetry')
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
         .mockResolvedValue([] as any);
 
       const result = await service.syncHistoricalPrices({ from, to });
@@ -237,7 +234,7 @@ describe('SecurityPricesService', () => {
       mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
 
       jest
-        .spyOn(service as SecurityPricesServiceWithPrivates, 'fetchHistoricalPricesWithRetry')
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
         .mockRejectedValueOnce(new Error('API error') as any);
 
       const result = await service.syncHistoricalPrices();
@@ -263,7 +260,7 @@ describe('SecurityPricesService', () => {
       });
 
       (jest
-        .spyOn(service as SecurityPricesServiceWithPrivates, 'fetchHistoricalPricesWithRetry') as any)
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry') as any)
         .mockResolvedValue([
           {
             date: new Date('2024-01-01'),
