@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStateService } from '../../services/app-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
+import { TransactionFacadeService } from '../../services/transaction-facade.service';
 import { SecuritiesSummaryComponent } from './securities-summary/securities-summary.component';
 
 @Component({
@@ -10,9 +11,15 @@ import { SecuritiesSummaryComponent } from './securities-summary/securities-summ
   styleUrls: ['./portfolio.component.scss'],
 })
 export class PortfolioComponent {
-  protected readonly appState = inject(AppStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+  private readonly transactionFacade = inject(TransactionFacadeService);
+
+  // Expose for template access
+  protected get appState() {
+    return this.portfolioState;
+  }
 
   onEditSecurity(securityId: string): void {
-    this.appState.openEditSecurityModal(securityId);
+    this.transactionFacade.openEditSecurityModal(securityId);
   }
 }

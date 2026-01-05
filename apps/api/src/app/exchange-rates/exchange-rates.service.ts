@@ -39,7 +39,7 @@ export class ExchangeRatesService {
     targetCurrency: string,
     from?: Date,
     to?: Date,
-    baseCurrency: string = 'EUR'
+    baseCurrency = 'EUR'
   ): Promise<{ synced: number; skipped: number }> {
     // Validate that base currency is EUR (ECB only provides EUR-based rates)
     if (baseCurrency !== 'EUR') {

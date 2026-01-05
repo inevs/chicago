@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AppStateService } from '../../services/app-state.service';
+import { UiStateService } from '../../services/ui-state.service';
 import {
   LucideAngularModule,
   LayoutDashboard,
@@ -26,7 +26,12 @@ interface NavItem {
   styleUrls: ['./sidebar-nav.component.scss'],
 })
 export class SidebarNavComponent {
-  protected readonly appState = inject(AppStateService);
+  protected readonly uiState = inject(UiStateService);
+
+  // Expose for template access
+  protected get appState() {
+    return this.uiState;
+  }
 
   // Lucide icons
   protected readonly ChevronLeft = ChevronLeft;
@@ -41,13 +46,13 @@ export class SidebarNavComponent {
   ];
 
   toggleSidebar() {
-    this.appState.toggleSidebar();
+    this.uiState.toggleSidebar();
   }
 
   onNavItemClick() {
     // Close sidebar on mobile/tablet when nav item is clicked
-    if (window.innerWidth <= 1024 && !this.appState.sidebarCollapsed()) {
-      this.appState.toggleSidebar();
+    if (window.innerWidth <= 1024 && !this.uiState.sidebarCollapsed()) {
+      this.uiState.toggleSidebar();
     }
   }
 }

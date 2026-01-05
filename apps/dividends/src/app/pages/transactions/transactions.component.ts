@@ -1,6 +1,7 @@
 import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStateService } from '../../services/app-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
+import { UiStateService } from '../../services/ui-state.service';
 import { DividendDataService } from '../../services/dividend-data.service';
 import { PaginationStateService } from '../../services/pagination-state.service';
 import { TransactionTableComponent } from '../../shared/tables/transaction-table/transaction-table.component';
@@ -17,15 +18,21 @@ import { SecurityTransactionTableComponent } from '../../shared/tables/security-
   styleUrls: ['./transactions.component.scss'],
 })
 export class TransactionsComponent {
-  protected readonly appState = inject(AppStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+  protected readonly uiState = inject(UiStateService);
   private readonly dividendDataService = inject(DividendDataService);
   protected readonly paginationStateService = inject(PaginationStateService);
+
+  // Expose for template access
+  protected get appState() {
+    return { ...this.portfolioState, ...this.uiState };
+  }
 
   searchTerm = signal('');
 
   filteredTransactions = computed(() => {
     return this.dividendDataService.getFilteredTransactions(
-      this.appState.selectedTimeRange(),
+      this.portfolioState.selectedTimeRange(),
       this.searchTerm()
     );
   });
@@ -72,7 +79,7 @@ export class TransactionsComponent {
 
   filteredSecurityTransactions = computed(() => {
     const search = this.securityTransactionSearchTerm().toLowerCase();
-    const transactions = this.appState.securityTransactions();
+    const transactions = this.portfolioState.securityTransactions();
 
     if (!search) return transactions;
 

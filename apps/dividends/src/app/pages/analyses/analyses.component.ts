@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStateService } from '../../services/app-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { MonthlyDividendsChartComponent } from './monthly-dividends-chart/monthly-dividends-chart.component';
 
 @Component({
@@ -10,5 +10,10 @@ import { MonthlyDividendsChartComponent } from './monthly-dividends-chart/monthl
   styleUrls: ['./analyses.component.scss'],
 })
 export class AnalysesComponent {
-  protected readonly appState = inject(AppStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+
+  // Expose for template access
+  protected get appState() {
+    return this.portfolioState;
+  }
 }

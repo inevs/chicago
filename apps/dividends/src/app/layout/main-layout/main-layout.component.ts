@@ -1,7 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { AppStateService } from '../../services/app-state.service';
+import { UiStateService } from '../../services/ui-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
+import { TransactionFacadeService } from '../../services/transaction-facade.service';
 import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
 import { HeaderNavComponent } from '../header-nav/header-nav.component';
 import { TransactionModalComponent } from '../../shared/modals/transaction-modal/transaction-modal.component';
@@ -29,14 +31,36 @@ import { ToastContainerComponent } from '../../shared/toast-container/toast-cont
   styleUrls: ['./main-layout.component.scss'],
 })
 export class MainLayoutComponent implements OnInit {
-  protected readonly appState = inject(AppStateService);
+  protected readonly uiState = inject(UiStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+  protected readonly transactionFacade = inject(TransactionFacadeService);
+
+  // Expose combined state for template access
+  protected get appState() {
+    return {
+      // UI State
+      ...this.uiState,
+      // Portfolio State
+      currencies: this.portfolioState.currencies,
+      defaultCurrency: this.portfolioState.defaultCurrency,
+      // Facade Methods
+      handleTransactionSubmit: this.transactionFacade.handleTransactionSubmit.bind(this.transactionFacade),
+      handleSecuritySubmit: this.transactionFacade.handleSecuritySubmit.bind(this.transactionFacade),
+      handleSecurityTransactionSubmit: this.transactionFacade.handleSecurityTransactionSubmit.bind(this.transactionFacade),
+      handleImportConfirm: this.transactionFacade.handleImportConfirm.bind(this.transactionFacade),
+      confirmDeleteTransaction: this.transactionFacade.confirmDeleteTransaction.bind(this.transactionFacade),
+      cancelDeleteTransaction: this.transactionFacade.cancelDeleteTransaction.bind(this.transactionFacade),
+      confirmDeleteSecurityTransaction: this.transactionFacade.confirmDeleteSecurityTransaction.bind(this.transactionFacade),
+      cancelDeleteSecurityTransaction: this.transactionFacade.cancelDeleteSecurityTransaction.bind(this.transactionFacade),
+    };
+  }
 
   ngOnInit() {
     // Load all data on app initialization
-    this.appState.loadAllData();
+    this.portfolioState.loadAllData();
   }
 
   onCurrencySubmit(form: CurrencyForm) {
-    this.appState.addCurrency(form);
+    this.transactionFacade.addCurrency(form);
   }
 }
