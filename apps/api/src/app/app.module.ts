@@ -9,10 +9,12 @@ import { DataModule } from './data/data.module';
 import { CurrenciesModule } from './currencies/currencies.module';
 import { SecurityPricesModule } from './security-prices/security-prices.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    HealthModule,
     AuthModule,
     SecuritiesModule,
     DividendPaymentsModule,
