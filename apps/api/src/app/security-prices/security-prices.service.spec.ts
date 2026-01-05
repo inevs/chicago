@@ -4,6 +4,8 @@ import { SecurityPricesService } from './security-prices.service';
 import { PrismaService } from '../../prisma.service';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
+
+
 describe('SecurityPricesService', () => {
   let service: SecurityPricesService;
   let prisma: PrismaService;
@@ -152,7 +154,7 @@ describe('SecurityPricesService', () => {
       // Mock the private fetchHistoricalPricesWithRetry to return empty
       jest
         .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockResolvedValue([]);
+        .mockResolvedValue([] as any);
 
       const result = await service.syncHistoricalPrices();
 
@@ -183,7 +185,7 @@ describe('SecurityPricesService', () => {
 
       jest
         .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockResolvedValue([]);
+        .mockResolvedValue([] as any);
 
       await service.syncHistoricalPrices({ securityId: 'security-1' });
 
@@ -211,7 +213,7 @@ describe('SecurityPricesService', () => {
 
       jest
         .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockResolvedValue([]);
+        .mockResolvedValue([] as any);
 
       const result = await service.syncHistoricalPrices({ from, to });
 
@@ -233,7 +235,7 @@ describe('SecurityPricesService', () => {
 
       jest
         .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockRejectedValueOnce(new Error('API error'));
+        .mockRejectedValueOnce(new Error('API error') as any);
 
       const result = await service.syncHistoricalPrices();
 
@@ -257,8 +259,8 @@ describe('SecurityPricesService', () => {
         count: 5,
       });
 
-      jest
-        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
+      (jest
+        .spyOn(service as any, 'fetchHistoricalPricesWithRetry') as any)
         .mockResolvedValue([
           {
             date: new Date('2024-01-01'),

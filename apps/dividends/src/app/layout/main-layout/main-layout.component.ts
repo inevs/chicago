@@ -1,7 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { AppStateService } from '../../services/app-state.service';
+import { UiStateService } from '../../services/ui-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
+import { TransactionFacadeService } from '../../services/transaction-facade.service';
 import { SidebarNavComponent } from '../sidebar-nav/sidebar-nav.component';
 import { HeaderNavComponent } from '../header-nav/header-nav.component';
 import { TransactionModalComponent } from '../../shared/modals/transaction-modal/transaction-modal.component';
@@ -29,14 +31,16 @@ import { ToastContainerComponent } from '../../shared/toast-container/toast-cont
   styleUrls: ['./main-layout.component.scss'],
 })
 export class MainLayoutComponent implements OnInit {
-  protected readonly appState = inject(AppStateService);
+  protected readonly uiState = inject(UiStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+  protected readonly transactionFacade = inject(TransactionFacadeService);
 
   ngOnInit() {
     // Load all data on app initialization
-    this.appState.loadAllData();
+    this.portfolioState.loadAllData();
   }
 
   onCurrencySubmit(form: CurrencyForm) {
-    this.appState.addCurrency(form);
+    this.transactionFacade.addCurrency(form);
   }
 }

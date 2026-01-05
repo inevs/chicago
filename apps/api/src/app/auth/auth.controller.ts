@@ -60,7 +60,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Request() req: any) {
+  async login(@Request() req: Express.Request & { user: { id: string; email: string; name: string; createdAt: Date; updatedAt: Date } }) {
     return this.authService.login(req.user);
   }
 

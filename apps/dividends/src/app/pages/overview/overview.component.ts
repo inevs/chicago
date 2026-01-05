@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStateService } from '../../services/app-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
+import { UiStateService } from '../../services/ui-state.service';
 import { KpiCardsComponent } from './kpi-cards/kpi-cards.component';
 import { AllocationChartComponent } from './allocation-chart/allocation-chart.component';
 
@@ -11,5 +12,17 @@ import { AllocationChartComponent } from './allocation-chart/allocation-chart.co
   styleUrls: ['./overview.component.scss'],
 })
 export class OverviewComponent {
-  protected readonly appState = inject(AppStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+  protected readonly uiState = inject(UiStateService);
+
+  // Expose for template access
+  protected get appState() {
+    return {
+      // Portfolio State
+      kpis: this.portfolioState.kpis,
+      securityTransactions: this.portfolioState.securityTransactions,
+      // UI State
+      isDarkMode: this.uiState.isDarkMode,
+    };
+  }
 }

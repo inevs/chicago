@@ -99,8 +99,8 @@ export async function seedCurrencies(prisma: PrismaService): Promise<void> {
  */
 export async function createAuthenticatedUser(
   app: INestApplication,
-  email: string = 'test@example.com',
-  password: string = 'TestPassword123!'
+  email = 'test@example.com',
+  password = 'TestPassword123!'
 ): Promise<{ token: string; userId: string }> {
   const request = await import('supertest').then((m) => m.default);
 

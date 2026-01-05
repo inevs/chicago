@@ -5,6 +5,14 @@ import { PrismaService } from '../../prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './decorators/current-user.decorator';
 
+type UserWithoutPassword = {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -12,7 +20,7 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(email: string, password: string): Promise<UserWithoutPassword | null> {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -26,11 +34,12 @@ export class AuthService {
       return null;
     }
 
-    const { password: _, ...result } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...result } = user;
     return result;
   }
 
-  async login(user: any) {
+  async login(user: UserWithoutPassword) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -66,7 +75,8 @@ export class AuthService {
       },
     });
 
-    const { password: _, ...result } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...result } = user;
     return this.login(result);
   }
 

@@ -1,6 +1,8 @@
 import { Component, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStateService } from '../../services/app-state.service';
+import { UiStateService } from '../../services/ui-state.service';
+import { PortfolioStateService } from '../../services/portfolio-state.service';
+import { TransactionFacadeService } from '../../services/transaction-facade.service';
 import { TimeRange } from '../../models/dividend.model';
 
 @Component({
@@ -10,53 +12,60 @@ import { TimeRange } from '../../models/dividend.model';
   styleUrls: ['./header-nav.component.scss'],
 })
 export class HeaderNavComponent {
-  protected readonly appState = inject(AppStateService);
+  protected readonly uiState = inject(UiStateService);
+  protected readonly portfolioState = inject(PortfolioStateService);
+  private readonly transactionFacade = inject(TransactionFacadeService);
+
+  // Expose for template access
+  protected get appState() {
+    return this.uiState;
+  }
 
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
 
   onRangeChange(range: TimeRange) {
-    this.appState.setTimeRange(range);
+    this.uiState.setTimeRange(range);
   }
 
   onThemeToggle() {
-    this.appState.toggleTheme();
+    this.uiState.toggleTheme();
   }
 
   onMenuToggle() {
-    this.appState.toggleMenu();
+    this.uiState.toggleMenu();
   }
 
   onNewTransactionClick() {
-    this.appState.toggleTransactionModal();
+    this.uiState.toggleTransactionModal();
   }
 
   onNewSecurityClick() {
-    this.appState.toggleSecurityModal();
+    this.uiState.toggleSecurityModal();
   }
 
   onNewSecurityTransactionClick() {
-    this.appState.toggleSecurityTransactionModal();
+    this.uiState.toggleSecurityTransactionModal();
   }
 
   onNewCurrencyClick() {
-    this.appState.toggleCurrencyModal();
+    this.uiState.toggleCurrencyModal();
   }
 
   onExportDataClick() {
-    this.appState.handleExportData();
+    this.transactionFacade.handleExportData();
   }
 
   onImportDataClick() {
     if (this.fileInput) {
-      this.appState.handleImportData(this.fileInput);
+      this.transactionFacade.handleImportData(this.fileInput);
     }
   }
 
   onFileSelected(event: Event) {
-    this.appState.onFileSelected(event);
+    this.transactionFacade.onFileSelected(event);
   }
 
   onMobileSidebarToggle() {
-    this.appState.toggleSidebar();
+    this.uiState.toggleSidebar();
   }
 }

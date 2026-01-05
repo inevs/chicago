@@ -4,6 +4,11 @@
     <div
       class="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
       (click)="onClose()"
+      (keydown.escape)="onClose()"
+      (keydown.enter)="onClose()"
+      role="button"
+      tabindex="0"
+      aria-label="Close modal"
     ></div>
 
     <!-- Modal -->
@@ -11,6 +16,11 @@
       <div
         class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6"
         (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.escape)="$event.stopPropagation()"
+        role="dialog"
+        aria-modal="true"
+        tabindex="0"
       >
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
@@ -39,10 +49,11 @@
             <div class="grid grid-cols-2 gap-4">
               <!-- Date -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label for="transactionDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Datum *
                 </label>
                 <input
+                  id="transactionDate"
                   type="date"
                   [value]="formData().date"
                   (input)="updateFormData('date', $any($event.target).value)"
@@ -55,10 +66,11 @@
 
               <!-- Transaction Type -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label for="transactionType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Typ *
                 </label>
                 <select
+                  id="transactionType"
                   [ngModel]="formData().type"
                   (ngModelChange)="updateFormData('type', $event)"
                   name="transactionType"
@@ -75,6 +87,7 @@
 
             <!-- Security Autocomplete -->
             <div>
+              <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Wertpapier *
               </label>
@@ -95,10 +108,11 @@
             <div class="grid grid-cols-2 gap-4">
             <!-- Quantity -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label for="quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Anzahl * <span class="text-xs text-gray-500">(Bruchstücke möglich)</span>
               </label>
               <input
+                id="quantity"
                 type="text"
                 inputmode="decimal"
                 [value]="formData().quantity"
@@ -113,10 +127,11 @@
 
             <!-- Price Per Share -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label for="pricePerShare" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Preis pro Anteil *
               </label>
               <input
+                id="pricePerShare"
                 type="text"
                 inputmode="decimal"
                 [value]="formData().pricePerShare"
@@ -134,10 +149,11 @@
             <div class="grid grid-cols-3 gap-4">
               <!-- Fees -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label for="fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Gebühren
                 </label>
                 <input
+                  id="fees"
                   type="text"
                   inputmode="decimal"
                   [value]="formData().fees"
@@ -151,10 +167,11 @@
 
               <!-- Currency -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label for="currency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Währung *
                 </label>
                 <select
+                  id="currency"
                   [value]="formData().currency"
                   (change)="onCurrencyChange($any($event.target).value)"
                   required
@@ -171,10 +188,11 @@
               <!-- Exchange Rate (only visible for non-default currencies) -->
               @if (formData().currency !== (defaultCurrency()?.code || 'EUR')) {
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label for="exchangeRate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Kurs zu EUR *
                   </label>
                   <input
+                    id="exchangeRate"
                     type="text"
                     inputmode="decimal"
                     [value]="formData().exchangeRate"
@@ -219,10 +237,11 @@
 
             <!-- Notes -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Notizen
               </label>
               <textarea
+                id="notes"
                 [value]="formData().note"
                 (input)="updateFormData('note', $any($event.target).value)"
                 rows="3"

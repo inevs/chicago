@@ -409,7 +409,8 @@ export class SecurityPricesService {
     return date.toISOString().slice(0, 10);
   }
 
-  private ensureProviderConfigured(provider: string): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private ensureProviderConfigured(_provider: string): void {
     // Yahoo Finance doesn't require API key configuration
   }
 
