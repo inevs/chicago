@@ -385,4 +385,32 @@ export class ExchangeRatesService {
       orderBy: [{ baseCurrency: 'asc' }, { targetCurrency: 'asc' }, { date: 'asc' }],
     });
   }
+
+  /**
+   * Get latest exchange rates for all currencies to EUR
+   * Returns the most recent rate for each currency pair
+   * Optimized to use a single query with DISTINCT ON
+   */
+  async getLatestRatesToEur(): Promise<Array<{ currency: string; rate: number; date: Date }>> {
+    const baseCurrency = 'EUR';
+
+    // Use raw SQL with DISTINCT ON to get the latest rate for each currency in a single query
+    // This is more efficient than N+1 queries (one per currency)
+    const rates = await this.prisma.$queryRaw<Array<{ targetCurrency: string; rate: any; date: Date }>>`
+      SELECT DISTINCT ON ("targetCurrency")
+        "targetCurrency",
+        rate,
+        date
+      FROM "ExchangeRate"
+      WHERE "baseCurrency" = ${baseCurrency}
+      ORDER BY "targetCurrency", date DESC
+    `;
+
+    // Transform the results to match the expected format
+    return rates.map((rate) => ({
+      currency: rate.targetCurrency,
+      rate: Number(rate.rate),
+      date: rate.date,
+    }));
+  }
 }

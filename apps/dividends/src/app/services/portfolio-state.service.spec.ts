@@ -7,6 +7,7 @@ import { SecurityTransactionService } from './security-transaction.service';
 import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
 import { UiStateService } from './ui-state.service';
+import { ExchangeRateService } from './exchange-rate.service';
 import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
 
 describe('PortfolioStateService', () => {
@@ -15,6 +16,7 @@ describe('PortfolioStateService', () => {
   let mockSecurityTransactionService: jest.Mocked<Partial<SecurityTransactionService>>;
   let mockSecurityPriceService: jest.Mocked<Partial<SecurityPriceService>>;
   let mockCurrencyService: jest.Mocked<Partial<CurrencyService>>;
+  let mockExchangeRateService: jest.Mocked<Partial<ExchangeRateService>>;
   let mockUiStateService: jest.Mocked<Partial<UiStateService>>;
 
   beforeEach(() => {
@@ -37,6 +39,10 @@ describe('PortfolioStateService', () => {
       getDefaultCurrency: jest.fn().mockReturnValue(of(null)),
     };
 
+    mockExchangeRateService = {
+      getLatestRates: jest.fn().mockReturnValue(of([])),
+    };
+
     mockUiStateService = {
       selectedTimeRange: signal('ALL' as const),
       setTimeRange: jest.fn(),
@@ -49,6 +55,7 @@ describe('PortfolioStateService', () => {
         { provide: SecurityTransactionService, useValue: mockSecurityTransactionService },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
         { provide: CurrencyService, useValue: mockCurrencyService },
+        { provide: ExchangeRateService, useValue: mockExchangeRateService },
         { provide: UiStateService, useValue: mockUiStateService },
       ],
     });
@@ -66,6 +73,7 @@ describe('PortfolioStateService', () => {
       expect(service.securityPrices()).toEqual([]);
       expect(service.currencies()).toEqual([]);
       expect(service.defaultCurrency()).toBeNull();
+      expect(service.exchangeRates()).toEqual([]);
     });
   });
 
@@ -78,6 +86,7 @@ describe('PortfolioStateService', () => {
       expect(mockSecurityPriceService.getLatestSecurityPrices).toHaveBeenCalled();
       expect(mockCurrencyService.getCurrencies).toHaveBeenCalled();
       expect(mockCurrencyService.getDefaultCurrency).toHaveBeenCalled();
+      expect(mockExchangeRateService.getLatestRates).toHaveBeenCalled();
     });
 
     it('should load security transactions successfully', () => {

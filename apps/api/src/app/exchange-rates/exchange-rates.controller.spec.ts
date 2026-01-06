@@ -10,6 +10,7 @@ describe('ExchangeRatesController', () => {
     syncExchangeRates: jest.fn(),
     syncAllCurrencies: jest.fn(),
     getExchangeRate: jest.fn(),
+    getLatestRatesToEur: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -237,6 +238,40 @@ describe('ExchangeRatesController', () => {
         date: new Date('2024-01-15T12:30:00.000Z'),
         rate: 0.92,
       });
+    });
+  });
+
+  describe('getLatestRates', () => {
+    it('should return latest exchange rates for all currencies', async () => {
+      const mockRates = [
+        { currency: 'USD', rate: 1.0845, date: new Date('2025-01-03') },
+        { currency: 'GBP', rate: 0.8567, date: new Date('2025-01-03') },
+        { currency: 'JPY', rate: 156.78, date: new Date('2025-01-03') },
+      ];
+
+      mockExchangeRatesService.getLatestRatesToEur.mockResolvedValue(mockRates);
+
+      const result = await controller.getLatestRates();
+
+      expect(result).toEqual(mockRates);
+      expect(service.getLatestRatesToEur).toHaveBeenCalledWith();
+    });
+
+    it('should return empty array when no rates exist', async () => {
+      mockExchangeRatesService.getLatestRatesToEur.mockResolvedValue([]);
+
+      const result = await controller.getLatestRates();
+
+      expect(result).toEqual([]);
+      expect(service.getLatestRatesToEur).toHaveBeenCalled();
+    });
+
+    it('should handle service errors', async () => {
+      const error = new Error('Database connection failed');
+      mockExchangeRatesService.getLatestRatesToEur.mockRejectedValue(error);
+
+      await expect(controller.getLatestRates()).rejects.toThrow('Database connection failed');
+      expect(service.getLatestRatesToEur).toHaveBeenCalled();
     });
   });
 });
