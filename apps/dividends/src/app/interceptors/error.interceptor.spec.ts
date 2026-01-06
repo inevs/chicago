@@ -3,9 +3,8 @@ import {
   HttpRequest,
   HttpErrorResponse,
   HttpEvent,
-  HttpInterceptorFn,
 } from '@angular/common/http';
-import { Observable, throwError, of } from 'rxjs';
+import { throwError, of } from 'rxjs';
 import { errorInterceptor } from './error.interceptor';
 import { ToastService } from '../services/toast.service';
 
@@ -49,11 +48,11 @@ describe('errorInterceptor', () => {
 
     TestBed.runInInjectionContext(() => {
       errorInterceptor(request, next).subscribe({
-        error: (error) => {
+        error: (err) => {
           expect(toastService.error).toHaveBeenCalledWith(
             'Resource not found (ID: test-cor)'
           );
-          expect(error).toBe(errorResponse);
+          expect(err).toBe(errorResponse);
           done();
         },
       });
@@ -78,7 +77,7 @@ describe('errorInterceptor', () => {
 
     TestBed.runInInjectionContext(() => {
       errorInterceptor(request, next).subscribe({
-        error: (error) => {
+        error: () => {
           expect(toastService.error).toHaveBeenCalledWith(
             'Field 1 is required, Field 2 is invalid (ID: test-cor)'
           );
@@ -105,7 +104,7 @@ describe('errorInterceptor', () => {
 
     TestBed.runInInjectionContext(() => {
       errorInterceptor(request, next).subscribe({
-        error: (error) => {
+        error: () => {
           expect(toastService.error).toHaveBeenCalledWith(
             'Internal server error'
           );
@@ -130,7 +129,7 @@ describe('errorInterceptor', () => {
 
     TestBed.runInInjectionContext(() => {
       errorInterceptor(request, next).subscribe({
-        error: (error) => {
+        error: () => {
           expect(toastService.error).toHaveBeenCalledWith(
             'Network error: Connection failed'
           );
@@ -156,7 +155,7 @@ describe('errorInterceptor', () => {
 
     TestBed.runInInjectionContext(() => {
       errorInterceptor(request, next).subscribe({
-        error: (error) => {
+        error: () => {
           expect(toastService.error).toHaveBeenCalledWith('Forbidden');
           done();
         },
@@ -166,7 +165,7 @@ describe('errorInterceptor', () => {
 
   it('should not interfere with successful requests', (done) => {
     const request = new HttpRequest('GET', '/api/test');
-    const next = jest.fn(() => of({} as HttpEvent<any>));
+    const next = jest.fn(() => of({} as HttpEvent<unknown>));
 
     TestBed.runInInjectionContext(() => {
       errorInterceptor(request, next).subscribe({

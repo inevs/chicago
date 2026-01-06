@@ -6,7 +6,6 @@ import { AuthService, LoginResponse, User } from './auth.service';
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
-  let router: Router;
 
   const mockRouter = {
     navigate: jest.fn(),
@@ -25,7 +24,6 @@ describe('AuthService', () => {
 
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
-    router = TestBed.inject(Router);
   });
 
   afterEach(() => {

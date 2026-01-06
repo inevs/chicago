@@ -225,7 +225,7 @@ describe('PortfolioStateService', () => {
       const mockFiltered = [{ id: '1' }];
       mockDividendDataService.getFilteredTransactions = jest.fn().mockReturnValue(mockFiltered);
 
-      mockUiStateService.selectedTimeRange!.set('1M');
+      mockUiStateService.selectedTimeRange?.set('1M');
 
       expect(service.filteredDividends()).toEqual(mockFiltered);
       expect(mockDividendDataService.getFilteredTransactions).toHaveBeenCalledWith('1M', '');

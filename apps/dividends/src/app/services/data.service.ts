@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 
 export interface ExportData {
   currencies: unknown[];
@@ -59,7 +59,7 @@ export class DataService {
               observer.error(error);
             }
           });
-        } catch (error) {
+        } catch {
           observer.error(new Error('Ungültiges JSON-Format'));
         }
       };

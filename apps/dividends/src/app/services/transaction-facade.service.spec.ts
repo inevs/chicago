@@ -27,8 +27,8 @@ describe('TransactionFacadeService', () => {
   let mockPortfolioState: jest.Mocked<Partial<PortfolioStateService>>;
 
   beforeEach(() => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => { /* ignore */ });
+    jest.spyOn(console, 'log').mockImplementation(() => { /* ignore */ });
 
     mockDividendPaymentService = {
       createDividendPayment: jest.fn().mockReturnValue(of({})),
@@ -96,7 +96,7 @@ describe('TransactionFacadeService', () => {
       showMenu: {
         set: jest.fn(),
       },
-    } as any;
+    } as unknown as jest.Mocked<Partial<UiStateService>>;
 
     mockPortfolioState = {
       loadAllData: jest.fn(),
@@ -105,7 +105,7 @@ describe('TransactionFacadeService', () => {
       currencies: {
         update: jest.fn(),
       },
-    } as any;
+    } as unknown as jest.Mocked<Partial<PortfolioStateService>>;
 
     TestBed.configureTestingModule({
       providers: [
@@ -390,7 +390,7 @@ describe('TransactionFacadeService', () => {
           files: [mockFile],
           value: 'test.json',
         },
-      } as any;
+      } as unknown as Event;
 
       service.onFileSelected(mockEvent);
 

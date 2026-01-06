@@ -3,7 +3,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import {
-  SecurityTransaction,
   SecurityTransactionWithSecurity,
   CreateSecurityTransactionDto,
   UpdateSecurityTransactionDto,

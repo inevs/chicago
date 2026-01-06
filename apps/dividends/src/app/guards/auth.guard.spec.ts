@@ -1,10 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, UrlTree } from '@angular/router';
+import { Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
 
 describe('authGuard', () => {
-  let authService: AuthService;
   let router: Router;
 
   const mockAuthService = {
@@ -23,7 +22,6 @@ describe('authGuard', () => {
       ],
     });
 
-    authService = TestBed.inject(AuthService);
     router = TestBed.inject(Router);
   });
 
@@ -34,7 +32,9 @@ describe('authGuard', () => {
   it('should allow access when user is authenticated', () => {
     mockAuthService.isAuthenticated.mockReturnValue(true);
 
-    const result = TestBed.runInInjectionContext(() => authGuard(null as any, null as any));
+    const result = TestBed.runInInjectionContext(() => 
+      authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
+    );
 
     expect(result).toBe(true);
   });
@@ -44,7 +44,9 @@ describe('authGuard', () => {
     mockAuthService.isAuthenticated.mockReturnValue(false);
     mockRouter.createUrlTree.mockReturnValue(mockUrlTree);
 
-    const result = TestBed.runInInjectionContext(() => authGuard(null as any, null as any));
+    const result = TestBed.runInInjectionContext(() => 
+      authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
+    );
 
     expect(result).toBe(mockUrlTree);
     expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
