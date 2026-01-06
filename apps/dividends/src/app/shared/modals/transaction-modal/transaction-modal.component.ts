@@ -37,7 +37,7 @@ export class TransactionModalComponent implements OnChanges {
   transactionSubmit = output<TransactionForm>();
 
   private readonly toastService = inject(ToastService);
-  private readonly defaultCurrencyCode = computed(() =>
+  readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
   );
 
@@ -137,11 +137,23 @@ export class TransactionModalComponent implements OnChanges {
     this.formData.update(data => ({ ...data, [field]: value }));
   }
 
+  onCurrencyChange(currency: string) {
+    const defaultCode = this.defaultCurrencyCode();
+    this.formData.update(data => ({
+      ...data,
+      currency: currency,
+      rate: currency === defaultCode ? 1.0 : data.rate
+    }));
+  }
+
   onSecuritySelected(security: Security) {
+    const defaultCode = this.defaultCurrencyCode();
     this.formData.update(data => ({
       ...data,
       name: security.name,
-      securityId: security.id
+      securityId: security.id,
+      currency: security.currency,
+      rate: security.currency === defaultCode ? 1.0 : data.rate
     }));
   }
 }

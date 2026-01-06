@@ -45,9 +45,26 @@ export class SecuritiesService {
 
     // Trigger price update for the new security
     // We don't await this so the API response isn't delayed
-    this.securityPricesService.syncHistoricalPrices({ securityId: security.id }).catch(err => {
-      console.error(`Failed to trigger price update for new security ${security.symbol}:`, err);
-    });
+    this.securityPricesService
+      .syncHistoricalPrices({ securityId: security.id })
+      .then((result) => {
+        if (result.failures.length > 0) {
+          console.warn(
+            `Price update finished with failures for new security ${security.symbol}:`,
+            result.failures
+          );
+        } else {
+          console.log(
+            `Price update completed for new security ${security.symbol}. Inserted ${result.pricesInserted} prices.`
+          );
+        }
+      })
+      .catch((err) => {
+        console.error(
+          `Failed to trigger price update for new security ${security.symbol}:`,
+          err
+        );
+      });
 
     return security as Security;
   }

@@ -351,6 +351,9 @@ export class SecurityPricesService {
     const quote = result?.indicators?.quote?.[0];
 
     if (!Array.isArray(timestamps) || !quote) {
+      this.logger.warn(
+        `Yahoo Finance returned no price data for ${symbol} (response valid but empty)`
+      );
       return [];
     }
 

@@ -23,7 +23,10 @@ describe('SecuritiesService', () => {
   };
 
   const mockSecurityPricesService = {
-    syncHistoricalPrices: jest.fn().mockResolvedValue({}),
+    syncHistoricalPrices: jest.fn().mockResolvedValue({
+      failures: [],
+      pricesInserted: 10,
+    }),
   };
 
   beforeEach(async () => {
