@@ -402,7 +402,7 @@ export class ExchangeRatesService {
         "targetCurrency",
         rate,
         date
-      FROM "ExchangeRate"
+      FROM "exchange_rates"
       WHERE "baseCurrency" = ${baseCurrency}
       ORDER BY "targetCurrency", date DESC
     `;
