@@ -2,9 +2,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TransactionModalComponent } from './transaction-modal.component';
 import { ToastService } from '../../../services/toast.service';
 import { PortfolioStateService } from '../../../services/portfolio-state.service';
+import { ExchangeRateService } from '../../../services/exchange-rate.service';
 import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
 import { Currency, Security, SecurityType } from '@dividends/shared';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { of } from 'rxjs';
 
 // Mock SecurityAutocompleteComponent
 @Component({
@@ -21,6 +23,7 @@ describe('TransactionModalComponent', () => {
   let component: TransactionModalComponent;
   let fixture: ComponentFixture<TransactionModalComponent>;
   let portfolioStateService: PortfolioStateService;
+  let exchangeRateService: ExchangeRateService;
 
   const mockToastService = {
     warning: jest.fn(),
@@ -30,6 +33,10 @@ describe('TransactionModalComponent', () => {
 
   const mockPortfolioStateService = {
     getSharesAtDate: jest.fn().mockReturnValue(0),
+  };
+
+  const mockExchangeRateService = {
+    getExchangeRate: jest.fn().mockReturnValue(of({ rate: 1.1 })),
   };
 
   const mockCurrencies: Currency[] = [
@@ -46,6 +53,7 @@ describe('TransactionModalComponent', () => {
       providers: [
         { provide: ToastService, useValue: mockToastService },
         { provide: PortfolioStateService, useValue: mockPortfolioStateService },
+        { provide: ExchangeRateService, useValue: mockExchangeRateService },
       ],
     })
     .overrideComponent(TransactionModalComponent, {
@@ -63,6 +71,7 @@ describe('TransactionModalComponent', () => {
     fixture.componentRef.setInput('defaultCurrency', defaultCurrency);
     
     portfolioStateService = TestBed.inject(PortfolioStateService);
+    exchangeRateService = TestBed.inject(ExchangeRateService);
     fixture.detectChanges();
   });
 
@@ -138,7 +147,7 @@ describe('TransactionModalComponent', () => {
     });
   });
 
-  describe('Currency Handling', () => {
+  describe('Currency Handling & Exchange Rates', () => {
     it('should reset rate to 1.0 when default currency is selected', () => {
       // First set a non-default currency and rate
       component.onCurrencyChange('USD');
@@ -166,6 +175,26 @@ describe('TransactionModalComponent', () => {
       component.onCurrencyChange('EUR');
       
       expect(component.formData().finalPayment).toBe(100);
+    });
+
+    it('should fetch exchange rate when currency changes and payoutDate is set', () => {
+      component.updateFormData('payoutDate', '2023-01-01');
+      mockExchangeRateService.getExchangeRate.mockReturnValue(of({ rate: 1.23 }));
+
+      component.onCurrencyChange('USD');
+
+      expect(exchangeRateService.getExchangeRate).toHaveBeenCalledWith('EUR', 'USD', '2023-01-01');
+      expect(component.formData().rate).toBe(1.23);
+    });
+
+    it('should fetch exchange rate when payoutDate changes and currency is set', () => {
+      component.updateFormData('currency', 'GBP');
+      mockExchangeRateService.getExchangeRate.mockReturnValue(of({ rate: 0.85 }));
+
+      component.onPayoutDateChange('2023-02-02');
+
+      expect(exchangeRateService.getExchangeRate).toHaveBeenCalledWith('EUR', 'GBP', '2023-02-02');
+      expect(component.formData().rate).toBe(0.85);
     });
   });
 
@@ -239,6 +268,29 @@ describe('TransactionModalComponent', () => {
 
       expect(portfolioStateService.getSharesAtDate).toHaveBeenCalledWith('123', '2023-01-01');
       expect(component.formData().amount).toBe(50);
+    });
+
+    it('should fetch exchange rate when security with non-default currency is selected', () => {
+      const security: Security = {
+        id: '123',
+        name: 'US Stock',
+        symbol: 'US',
+        isin: null,
+        wkn: null,
+        type: SecurityType.STOCK,
+        exchange: 'NYSE',
+        currency: 'USD',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      component.updateFormData('payoutDate', '2023-01-01');
+      mockExchangeRateService.getExchangeRate.mockReturnValue(of({ rate: 1.15 }));
+
+      component.onSecuritySelected(security);
+
+      expect(exchangeRateService.getExchangeRate).toHaveBeenCalledWith('EUR', 'USD', '2023-01-01');
+      expect(component.formData().rate).toBe(1.15);
     });
 
     it('should update shares from holdings when exDate changes', () => {

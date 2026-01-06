@@ -5,6 +5,7 @@ import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplet
 import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { PortfolioStateService } from '../../../services/portfolio-state.service';
+import { ExchangeRateService } from '../../../services/exchange-rate.service';
 import { ToastService } from '../../../services/toast.service';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
@@ -39,6 +40,7 @@ export class TransactionModalComponent implements OnChanges {
 
   private readonly toastService = inject(ToastService);
   private readonly portfolioState = inject(PortfolioStateService);
+  private readonly exchangeRateService = inject(ExchangeRateService);
 
   readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
@@ -176,6 +178,7 @@ export class TransactionModalComponent implements OnChanges {
       newData.finalPayment = this.calculateFinalPayment(newData);
       return newData;
     });
+    this.updateExchangeRateFromService();
   }
 
   onSecuritySelected(security: Security) {
@@ -194,11 +197,33 @@ export class TransactionModalComponent implements OnChanges {
       return newData;
     });
     this.updateSharesFromHoldings();
+    this.updateExchangeRateFromService();
   }
 
   onExDateChange(date: string) {
     this.updateFormData('exDate', date);
     this.updateSharesFromHoldings();
+  }
+
+  onPayoutDateChange(date: string) {
+    this.updateFormData('payoutDate', date);
+    this.updateExchangeRateFromService();
+  }
+
+  private updateExchangeRateFromService() {
+    const data = this.formData();
+    const defaultCode = this.defaultCurrencyCode();
+
+    if (data.currency && data.currency !== defaultCode && data.payoutDate) {
+      this.exchangeRateService.getExchangeRate(defaultCode, data.currency, data.payoutDate).subscribe({
+        next: (response) => {
+          if (response && response.rate) {
+            this.updateFormDataWithCalculation('rate', response.rate);
+          }
+        },
+        error: (err) => console.warn('Could not fetch exchange rate:', err),
+      });
+    }
   }
 
   private updateSharesFromHoldings() {
