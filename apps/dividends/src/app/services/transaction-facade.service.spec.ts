@@ -27,6 +27,9 @@ describe('TransactionFacadeService', () => {
   let mockPortfolioState: jest.Mocked<Partial<PortfolioStateService>>;
 
   beforeEach(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+
     mockDividendPaymentService = {
       createDividendPayment: jest.fn().mockReturnValue(of({})),
       updateDividendPayment: jest.fn().mockReturnValue(of({})),

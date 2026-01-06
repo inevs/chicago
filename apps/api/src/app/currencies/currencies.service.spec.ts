@@ -3,10 +3,12 @@ import { ConflictException } from '@nestjs/common';
 import { CurrenciesService } from './currencies.service';
 import { PrismaService } from '../../prisma.service';
 import { CURRENCY_ERRORS } from '@dividends/shared';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 describe('CurrenciesService', () => {
   let service: CurrenciesService;
   let prisma: PrismaService;
+  let exchangeRatesService: ExchangeRatesService;
 
   const mockPrismaService = {
     currency: {
@@ -14,6 +16,10 @@ describe('CurrenciesService', () => {
       findMany: jest.fn(),
       create: jest.fn(),
     },
+  };
+
+  const mockExchangeRatesService = {
+    syncExchangeRates: jest.fn().mockResolvedValue({ synced: 0, skipped: 0 }),
   };
 
   beforeEach(async () => {
@@ -24,11 +30,16 @@ describe('CurrenciesService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: ExchangeRatesService,
+          useValue: mockExchangeRatesService,
+        },
       ],
     }).compile();
 
     service = module.get<CurrenciesService>(CurrenciesService);
     prisma = module.get<PrismaService>(PrismaService);
+    exchangeRatesService = module.get<ExchangeRatesService>(ExchangeRatesService);
   });
 
   afterEach(() => {
@@ -81,7 +92,7 @@ describe('CurrenciesService', () => {
   });
 
   describe('create', () => {
-    it('should successfully create a currency with normalized code', async () => {
+    it('should successfully create a currency with normalized code and trigger background sync', async () => {
       const dto = {
         code: 'usd',
         name: 'US Dollar',
@@ -110,6 +121,7 @@ describe('CurrenciesService', () => {
           name: 'US Dollar',
         },
       });
+      expect(exchangeRatesService.syncExchangeRates).toHaveBeenCalledWith('USD');
     });
 
     it('should throw ConflictException when currency code already exists', async () => {
@@ -132,6 +144,7 @@ describe('CurrenciesService', () => {
         new ConflictException(CURRENCY_ERRORS.ALREADY_EXISTS('EUR'))
       );
       expect(prisma.currency.create).not.toHaveBeenCalled();
+      expect(exchangeRatesService.syncExchangeRates).not.toHaveBeenCalled();
     });
 
     it('should normalize lowercase code to uppercase', async () => {

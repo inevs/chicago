@@ -1,12 +1,18 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CURRENCY_ERRORS } from '@dividends/shared';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
 import type { Currency } from '../../../generated/prisma/client';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 @Injectable()
 export class CurrenciesService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(CurrenciesService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private exchangeRatesService: ExchangeRatesService
+  ) {}
 
   async findAll(): Promise<Currency[]> {
     return this.prisma.currency.findMany({
@@ -33,12 +39,30 @@ export class CurrenciesService {
       );
     }
 
-    return this.prisma.currency.create({
+    const currency = await this.prisma.currency.create({
       data: {
         code: normalizedCode,
         name: createCurrencyDto.name.trim(),
       },
     });
+
+    // Trigger background job to fetch exchange rates
+    // We don't await this promise so it runs in the background
+    this.exchangeRatesService
+      .syncExchangeRates(normalizedCode)
+      .then((result) => {
+        this.logger.log(
+          `Background sync for ${normalizedCode}: ${result.synced} synced, ${result.skipped} skipped`
+        );
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Background sync failed for ${normalizedCode}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          error instanceof Error ? error.stack : undefined
+        );
+      });
+
+    return currency;
   }
 
   async getDefaultCurrency(): Promise<Currency | null> {
