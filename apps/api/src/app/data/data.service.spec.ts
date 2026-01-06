@@ -65,7 +65,7 @@ describe('DataService', () => {
 
   describe('exportAllData', () => {
     it('should export all data from database', async () => {
-      const mockCurrencies = [{ code: 'EUR', name: 'Euro' }];
+      const mockCurrencies = [{ code: 'EUR', name: 'Euro', isDefault: true }];
       const mockSecurities = [{ id: 'security-1', symbol: 'AAPL' }];
       const mockDividendPayments = [{ id: 'payment-1', shares: 10 }];
       const mockSecurityTransactions = [{ id: 'transaction-1', quantity: 5 }];
@@ -120,7 +120,7 @@ describe('DataService', () => {
   describe('importAllData', () => {
     it('should import data without clearing existing data', async () => {
       const importData = {
-        currencies: [{ code: 'EUR', name: 'Euro' }],
+        currencies: [{ code: 'EUR', name: 'Euro', isDefault: true }],
         securities: [{ id: 'security-1', symbol: 'AAPL' }],
         dividendPayments: [{ id: 'payment-1', shares: 10 }],
         securityTransactions: [{ id: 'transaction-1', quantity: 5 }],

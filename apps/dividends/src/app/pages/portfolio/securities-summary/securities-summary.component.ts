@@ -197,6 +197,7 @@ export class SecuritiesSummaryComponent {
     currentValueEur: number | null;
   }> {
     // Use epsilon to handle floating-point precision issues
+    // Treats values below 0.0001 as effectively zero
     const EPSILON = 0.0001;
 
     return Array.from(securitiesMap.entries())

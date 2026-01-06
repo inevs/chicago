@@ -33,7 +33,7 @@ describe('DataController', () => {
   describe('exportData', () => {
     it('should export all data', async () => {
       const exportData = {
-        currencies: [{ code: 'EUR', name: 'Euro' }],
+        currencies: [{ code: 'EUR', name: 'Euro', isDefault: true }],
         securities: [{ id: 'security-1', symbol: 'AAPL' }],
         dividendPayments: [{ id: 'payment-1', shares: 10 }],
         securityTransactions: [{ id: 'transaction-1', quantity: 5 }],

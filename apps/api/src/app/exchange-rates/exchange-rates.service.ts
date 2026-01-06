@@ -395,6 +395,7 @@ export class ExchangeRatesService {
     const baseCurrency = 'EUR';
 
     // Use raw SQL with DISTINCT ON to get the latest rate for each currency in a single query
+    // Using raw SQL with DISTINCT ON for PostgreSQL optimization
     // This is more efficient than N+1 queries (one per currency)
     const rates = await this.prisma.$queryRaw<Array<{ targetCurrency: string; rate: any; date: Date }>>`
       SELECT DISTINCT ON ("targetCurrency")

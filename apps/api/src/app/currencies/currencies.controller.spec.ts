@@ -41,18 +41,21 @@ describe('CurrenciesController', () => {
           id: 'uuid-1',
           code: 'CHF',
           name: 'Swiss Franc',
+          isDefault: false,
           createdAt: new Date(),
         },
         {
           id: 'uuid-2',
           code: 'EUR',
           name: 'Euro',
+          isDefault: true,
           createdAt: new Date(),
         },
         {
           id: 'uuid-3',
           code: 'USD',
           name: 'US Dollar',
+          isDefault: false,
           createdAt: new Date(),
         },
       ];
@@ -153,6 +156,7 @@ describe('CurrenciesController', () => {
         id: 'uuid-eur',
         code: 'EUR',
         name: 'Euro',
+        isDefault: true,
         createdAt: new Date(),
       };
 

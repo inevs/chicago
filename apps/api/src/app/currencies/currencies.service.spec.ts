@@ -42,18 +42,21 @@ describe('CurrenciesService', () => {
           id: 'uuid-1',
           code: 'CHF',
           name: 'Swiss Franc',
+          isDefault: false,
           createdAt: new Date(),
         },
         {
           id: 'uuid-2',
           code: 'EUR',
           name: 'Euro',
+          isDefault: true,
           createdAt: new Date(),
         },
         {
           id: 'uuid-3',
           code: 'USD',
           name: 'US Dollar',
+          isDefault: false,
           createdAt: new Date(),
         },
       ];
@@ -88,6 +91,7 @@ describe('CurrenciesService', () => {
         id: 'uuid-123',
         code: 'USD',
         name: 'US Dollar',
+        isDefault: false,
         createdAt: new Date(),
       };
 
@@ -118,6 +122,7 @@ describe('CurrenciesService', () => {
         id: 'existing-id',
         code: 'EUR',
         name: 'Euro',
+        isDefault: true,
         createdAt: new Date(),
       };
 
@@ -139,6 +144,7 @@ describe('CurrenciesService', () => {
         id: 'uuid-456',
         code: 'GBP',
         name: 'British Pound',
+        isDefault: false,
         createdAt: new Date(),
       };
 
@@ -168,6 +174,7 @@ describe('CurrenciesService', () => {
         id: 'uuid-789',
         code: 'CHF',
         name: 'Swiss Franc',
+        isDefault: false,
         createdAt: new Date(),
       };
 
@@ -204,6 +211,7 @@ describe('CurrenciesService', () => {
         id: 'uuid-usd',
         code: 'USD',
         name: 'US Dollar',
+        isDefault: true,
         createdAt: new Date(),
       };
 
@@ -224,6 +232,7 @@ describe('CurrenciesService', () => {
         id: 'uuid-eur',
         code: 'EUR',
         name: 'Euro',
+        isDefault: true,
         createdAt: new Date(),
       };
 

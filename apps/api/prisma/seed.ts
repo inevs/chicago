@@ -43,12 +43,18 @@ async function main() {
 
   // Seed currencies
   console.log('📊 Seeding currencies...');
+  const defaultCurrency = process.env.DEFAULT_CURRENCY;
+  const defaultCurrencyName = process.env.DEFAULT_CURRENCY_NAME;
+ 
+  if (!(defaultCurrency && defaultCurrencyName)) {
+    throw new Error(
+      '❌ DEFAULT_CURRENCY / DEFAULT_CURRENCY_NAME environment variable is required for seeding. ' +
+      'Please set it in your .env file.'
+    );
+  }
 
   const currencies = [
-    { code: 'EUR', name: 'Euro' },
-    { code: 'USD', name: 'US Dollar' },
-    { code: 'GBP', name: 'British Pound' },
-    { code: 'NOK', name: 'Norwegian Krone' },
+    { code: defaultCurrency || '', name: defaultCurrencyName || '', isDefault: true }
   ];
 
   for (const currency of currencies) {

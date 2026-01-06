@@ -87,6 +87,7 @@ export class AllocationChartComponent implements OnDestroy {
     });
 
     // Convert to current value in EUR using latest prices (only securities with holdings > 0)
+    // Treats values below 0.0001 as effectively zero
     const EPSILON = 0.0001;
     const companies: Record<string, number> = {};
 
@@ -96,7 +97,7 @@ export class AllocationChartComponent implements OnDestroy {
         if (price) {
           const currentPrice = Number(price.close);
           // Current value = current quantity × current price
-          let currentValue = data.quantity * currentPrice;
+          const currentValue = data.quantity * currentPrice;
 
           // Convert to EUR if needed
           if (price.currency === 'EUR') {

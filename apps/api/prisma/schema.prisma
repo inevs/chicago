@@ -157,6 +157,7 @@ model Currency {
   id        String   @id @default(uuid())
   code      String   @unique // ISO 4217 code (EUR, USD, etc.)
   name      String   // Display name (Euro, US Dollar, etc.)
+  isDefault Boolean  @default(false) // Whether this is the default currency
   createdAt DateTime @default(now())
 
   securities              Security[]           @relation("SecurityCurrency")
@@ -188,7 +189,7 @@ model ExchangeRate {
   @@unique([baseCurrency, targetCurrency, date])
   @@index([baseCurrency, targetCurrency])
   @@index([date])
-  @@index([baseCurrency, targetCurrency, date])
+  @@index([baseCurrency, targetCurrency, date(sort: Desc)])
   @@map("exchange_rates")
 }
 
