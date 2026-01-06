@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TransactionModalComponent } from './transaction-modal.component';
 import { ToastService } from '../../../services/toast.service';
+import { PortfolioStateService } from '../../../services/portfolio-state.service';
 import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
 import { Currency, Security, SecurityType } from '@dividends/shared';
 import { Component, Input, Output, EventEmitter } from '@angular/core';
@@ -19,11 +20,16 @@ class MockSecurityAutocompleteComponent {
 describe('TransactionModalComponent', () => {
   let component: TransactionModalComponent;
   let fixture: ComponentFixture<TransactionModalComponent>;
+  let portfolioStateService: PortfolioStateService;
 
   const mockToastService = {
     warning: jest.fn(),
     success: jest.fn(),
     error: jest.fn(),
+  };
+
+  const mockPortfolioStateService = {
+    getSharesAtDate: jest.fn().mockReturnValue(0),
   };
 
   const mockCurrencies: Currency[] = [
@@ -39,6 +45,7 @@ describe('TransactionModalComponent', () => {
       imports: [TransactionModalComponent],
       providers: [
         { provide: ToastService, useValue: mockToastService },
+        { provide: PortfolioStateService, useValue: mockPortfolioStateService },
       ],
     })
     .overrideComponent(TransactionModalComponent, {
@@ -55,6 +62,7 @@ describe('TransactionModalComponent', () => {
     fixture.componentRef.setInput('currencies', mockCurrencies);
     fixture.componentRef.setInput('defaultCurrency', defaultCurrency);
     
+    portfolioStateService = TestBed.inject(PortfolioStateService);
     fixture.detectChanges();
   });
 
@@ -161,7 +169,7 @@ describe('TransactionModalComponent', () => {
     });
   });
 
-  describe('Security Selection', () => {
+  describe('Security Selection & Holdings', () => {
     it('should update currency and rate when security is selected', () => {
       const security: Security = {
         id: '1',
@@ -207,16 +215,11 @@ describe('TransactionModalComponent', () => {
       expect(component.formData().rate).toBe(1.0);
     });
 
-    it('should recalculate when security is selected', () => {
-      component.updateFormData('amount', 10);
-      component.updateFormData('dividend', 10);
-      component.updateFormData('taxes', 0);
-      component.updateFormData('rate', 2.0); // Weird state
-
+    it('should update shares from holdings when security selected with exDate set', () => {
       const security: Security = {
-        id: '1',
-        name: 'EU Stock',
-        symbol: 'EU',
+        id: '123',
+        name: 'My Stock',
+        symbol: 'MST',
         isin: null,
         wkn: null,
         type: SecurityType.STOCK,
@@ -226,10 +229,44 @@ describe('TransactionModalComponent', () => {
         updatedAt: new Date()
       };
 
+      // Mock holdings return 50 shares
+      mockPortfolioStateService.getSharesAtDate.mockReturnValue(50);
+
+      // Set exDate first
+      component.updateFormData('exDate', '2023-01-01');
+      
       component.onSecuritySelected(security);
 
-      // Should reset rate to 1.0 and calc: 100/1 = 100
-      expect(component.formData().finalPayment).toBe(100);
+      expect(portfolioStateService.getSharesAtDate).toHaveBeenCalledWith('123', '2023-01-01');
+      expect(component.formData().amount).toBe(50);
+    });
+
+    it('should update shares from holdings when exDate changes', () => {
+      // Mock holdings return 100 shares
+      mockPortfolioStateService.getSharesAtDate.mockReturnValue(100);
+      
+      // Set security first
+      component.updateFormData('securityId', '456');
+
+      component.onExDateChange('2023-06-01');
+
+      expect(portfolioStateService.getSharesAtDate).toHaveBeenCalledWith('456', '2023-06-01');
+      expect(component.formData().amount).toBe(100);
+    });
+
+    it('should recalculate final payment when holdings update amount', () => {
+      mockPortfolioStateService.getSharesAtDate.mockReturnValue(10); // 10 shares
+      
+      // Dividend 5, Taxes 0, Rate 1
+      component.updateFormData('dividend', 5);
+      component.updateFormData('taxes', 0);
+      component.updateFormData('rate', 1);
+      component.updateFormData('securityId', '789');
+
+      component.onExDateChange('2023-01-01');
+
+      // 10 * 5 = 50
+      expect(component.formData().finalPayment).toBe(50);
     });
   });
 

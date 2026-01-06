@@ -51,7 +51,8 @@
           <input
             id="exDate"
             type="date"
-            [(ngModel)]="formData().exDate"
+            [ngModel]="formData().exDate"
+            (ngModelChange)="onExDateChange($event)"
             name="exDate"
             required
             class="modal-input"

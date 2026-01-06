@@ -5,7 +5,7 @@ import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
 import { UiStateService } from './ui-state.service';
 import { ExchangeRateService, LatestExchangeRate } from './exchange-rate.service';
-import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
+import { SecurityPrice, SecurityTransactionWithSecurity, Currency, TransactionType } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -39,6 +39,23 @@ export class PortfolioStateService {
       this.securityTransactions()
     );
   });
+
+  getSharesAtDate(securityId: string, dateStr: string): number {
+    const transactions = this.securityTransactions();
+    const targetDate = new Date(dateStr);
+    
+    return transactions
+      .filter(t => t.securityId === securityId && new Date(t.date) <= targetDate)
+      .reduce((total, t) => {
+        const qty = Number(t.quantity);
+        if (t.type === TransactionType.BUY) {
+          return total + qty;
+        } else if (t.type === TransactionType.SELL) {
+          return total - qty;
+        }
+        return total;
+      }, 0);
+  }
 
   // Data Loading Methods
   loadAllData() {

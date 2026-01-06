@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
 import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
+import { PortfolioStateService } from '../../../services/portfolio-state.service';
 import { ToastService } from '../../../services/toast.service';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
@@ -37,6 +38,8 @@ export class TransactionModalComponent implements OnChanges {
   transactionSubmit = output<TransactionForm>();
 
   private readonly toastService = inject(ToastService);
+  private readonly portfolioState = inject(PortfolioStateService);
+
   readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
   );
@@ -190,5 +193,21 @@ export class TransactionModalComponent implements OnChanges {
       newData.finalPayment = this.calculateFinalPayment(newData);
       return newData;
     });
+    this.updateSharesFromHoldings();
+  }
+
+  onExDateChange(date: string) {
+    this.updateFormData('exDate', date);
+    this.updateSharesFromHoldings();
+  }
+
+  private updateSharesFromHoldings() {
+    const data = this.formData();
+    if (data.securityId && data.exDate) {
+      const shares = this.portfolioState.getSharesAtDate(data.securityId, data.exDate);
+      if (shares > 0) {
+        this.updateFormDataWithCalculation('amount', shares);
+      }
+    }
   }
 }
