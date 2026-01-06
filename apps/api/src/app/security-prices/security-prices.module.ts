@@ -9,5 +9,6 @@ import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
   imports: [forwardRef(() => ExchangeRatesModule)],
   controllers: [SecurityPricesController],
   providers: [SecurityPricesService, PriceUpdateSchedulerService, PrismaService],
+  exports: [SecurityPricesService],
 })
 export class SecurityPricesModule {}

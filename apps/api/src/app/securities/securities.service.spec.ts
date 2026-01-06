@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { SecuritiesService } from './securities.service';
 import { PrismaService } from '../../prisma.service';
+import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { SecurityType } from '@dividends/shared';
 
 describe('SecuritiesService', () => {
   let service: SecuritiesService;
   let prisma: PrismaService;
+  let securityPricesService: SecurityPricesService;
 
   const mockPrismaService = {
     security: {
@@ -20,6 +22,10 @@ describe('SecuritiesService', () => {
     },
   };
 
+  const mockSecurityPricesService = {
+    syncHistoricalPrices: jest.fn().mockResolvedValue({}),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -28,11 +34,16 @@ describe('SecuritiesService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        {
+          provide: SecurityPricesService,
+          useValue: mockSecurityPricesService,
+        },
       ],
     }).compile();
 
     service = module.get<SecuritiesService>(SecuritiesService);
     prisma = module.get<PrismaService>(PrismaService);
+    securityPricesService = module.get<SecurityPricesService>(SecurityPricesService);
   });
 
   afterEach(() => {
@@ -72,6 +83,9 @@ describe('SecuritiesService', () => {
         where: { code: 'USD' },
       });
       expect(prisma.security.create).toHaveBeenCalledWith({ data: dto });
+      expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledWith({
+        securityId: 'uuid-123',
+      });
     });
 
     it('should throw ConflictException when symbol already exists', async () => {
@@ -92,6 +106,7 @@ describe('SecuritiesService', () => {
       );
       expect(prisma.currency.findUnique).not.toHaveBeenCalled();
       expect(prisma.security.create).not.toHaveBeenCalled();
+      expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
     });
 
     it('should create security with optional fields as undefined', async () => {
@@ -137,6 +152,7 @@ describe('SecuritiesService', () => {
         NotFoundException
       );
       expect(prisma.security.create).not.toHaveBeenCalled();
+      expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
     });
   });
 

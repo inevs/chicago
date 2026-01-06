@@ -7,10 +7,14 @@ import { PrismaService } from '../../prisma.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
 import { Security } from '@dividends/shared';
+import { SecurityPricesService } from '../security-prices/security-prices.service';
 
 @Injectable()
 export class SecuritiesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly securityPricesService: SecurityPricesService
+  ) {}
 
   async createSecurity(dto: CreateSecurityDto): Promise<Security> {
     // Check for duplicate symbol
@@ -37,6 +41,12 @@ export class SecuritiesService {
     // Create security
     const security = await this.prisma.security.create({
       data: dto,
+    });
+
+    // Trigger price update for the new security
+    // We don't await this so the API response isn't delayed
+    this.securityPricesService.syncHistoricalPrices({ securityId: security.id }).catch(err => {
+      console.error(`Failed to trigger price update for new security ${security.symbol}:`, err);
     });
 
     return security as Security;
