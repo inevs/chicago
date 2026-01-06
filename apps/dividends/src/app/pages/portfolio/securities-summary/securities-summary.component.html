@@ -47,6 +47,14 @@
               }
             </div>
           </th>
+          <th class="px-6 py-4 text-right text-indigo-600 dark:text-indigo-400 font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" (click)="sort('currentValueEur')">
+            <div class="flex items-center justify-end">
+              <span>Aktueller Wert (EUR)</span>
+              @if (sortColumn() === 'currentValueEur') {
+                <span class="ml-2">{{ sortDirection() === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </div>
+          </th>
           <th class="px-6 py-4 text-right text-orange-600 dark:text-orange-400 font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors select-none" (click)="sort('dividendYield')">
             <div class="flex items-center justify-end">
               <span>Dividendenrendite</span>
@@ -92,6 +100,15 @@
               <div class="text-xs font-normal text-slate-400 dark:text-slate-500">
                 {{ formatDate(security.latestPriceDate) }}
               </div>
+            } @else {
+              <span class="text-slate-400 dark:text-slate-500">-</span>
+            }
+          </td>
+          <td
+            class="px-6 py-4 text-right font-bold text-indigo-600 dark:text-indigo-400"
+          >
+            @if (security.currentValueEur !== null && security.currentValueEur !== undefined) {
+              {{ formatCurrency(security.currentValueEur) }}
             } @else {
               <span class="text-slate-400 dark:text-slate-500">-</span>
             }

@@ -4,6 +4,7 @@ import { SecurityTransactionService } from './security-transaction.service';
 import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
 import { UiStateService } from './ui-state.service';
+import { ExchangeRateService, LatestExchangeRate } from './exchange-rate.service';
 import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
 
 @Injectable({
@@ -14,6 +15,7 @@ export class PortfolioStateService {
   private readonly securityTransactionService = inject(SecurityTransactionService);
   private readonly securityPriceService = inject(SecurityPriceService);
   private readonly currencyService = inject(CurrencyService);
+  private readonly exchangeRateService = inject(ExchangeRateService);
   private readonly uiState = inject(UiStateService);
 
   // Data State
@@ -21,6 +23,7 @@ export class PortfolioStateService {
   securityPrices = signal<SecurityPrice[]>([]);
   currencies = signal<Currency[]>([]);
   defaultCurrency = signal<Currency | null>(null);
+  exchangeRates = signal<LatestExchangeRate[]>([]);
 
   // Computed State
   filteredDividends = computed(() => {
@@ -43,6 +46,7 @@ export class PortfolioStateService {
     this.loadSecurityTransactions();
     this.loadSecurityPrices();
     this.loadCurrencies();
+    this.loadExchangeRates();
   }
 
   loadDividends() {
@@ -87,6 +91,17 @@ export class PortfolioStateService {
       },
       error: (error) => {
         console.error('Error loading default currency:', error);
+      },
+    });
+  }
+
+  loadExchangeRates() {
+    this.exchangeRateService.getLatestRates().subscribe({
+      next: (rates) => {
+        this.exchangeRates.set(rates);
+      },
+      error: (error) => {
+        console.error('Error loading exchange rates:', error);
       },
     });
   }

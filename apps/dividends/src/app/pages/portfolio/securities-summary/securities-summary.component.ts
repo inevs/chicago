@@ -2,8 +2,9 @@ import { Component, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
+import { LatestExchangeRate } from '../../../services/exchange-rate.service';
 
-type SortColumn = 'name' | 'quantity' | 'averageBuyPrice' | 'latestPrice' | 'dividendYield' | 'totalDividends';
+type SortColumn = 'name' | 'quantity' | 'averageBuyPrice' | 'latestPrice' | 'currentValueEur' | 'dividendYield' | 'totalDividends';
 type SortDirection = 'asc' | 'desc';
 
 @Component({
@@ -17,6 +18,7 @@ export class SecuritiesSummaryComponent {
   filteredTransactions = input.required<DividendTransaction[]>();
   securityTransactions = input.required<SecurityTransactionWithSecurity[]>();
   latestPrices = input.required<SecurityPrice[]>();
+  exchangeRates = input.required<LatestExchangeRate[]>();
 
   // Output event when a row is clicked for editing
   editSecurity = output<string>();
@@ -29,7 +31,8 @@ export class SecuritiesSummaryComponent {
   aggregatedSecurities = computed(() => {
     const securitiesMap = this.buildSecuritiesMap();
     const latestPriceMap = this.buildPriceMap(this.latestPrices());
-    const securities = this.convertToSecuritiesArray(securitiesMap, latestPriceMap);
+    const exchangeRateMap = this.buildExchangeRateMap(this.exchangeRates());
+    const securities = this.convertToSecuritiesArray(securitiesMap, latestPriceMap, exchangeRateMap);
     return this.applySorting(securities);
   });
 
@@ -37,6 +40,14 @@ export class SecuritiesSummaryComponent {
     const map = new Map<string, SecurityPrice>();
     prices.forEach((price) => {
       map.set(price.securityId, price);
+    });
+    return map;
+  }
+
+  private buildExchangeRateMap(rates: LatestExchangeRate[]): Map<string, number> {
+    const map = new Map<string, number>();
+    rates.forEach((rate) => {
+      map.set(rate.currency, rate.rate);
     });
     return map;
   }
@@ -171,7 +182,8 @@ export class SecuritiesSummaryComponent {
         currency?: string;
       }
     >,
-    latestPriceMap: Map<string, SecurityPrice>
+    latestPriceMap: Map<string, SecurityPrice>,
+    exchangeRateMap: Map<string, number>
   ): Array<{
     securityId?: string;
     name: string;
@@ -182,6 +194,7 @@ export class SecuritiesSummaryComponent {
     latestPrice: number | null;
     latestPriceDate: Date | null;
     latestPriceCurrency: string;
+    currentValueEur: number | null;
   }> {
     // Use epsilon to handle floating-point precision issues
     const EPSILON = 0.0001;
@@ -212,6 +225,27 @@ export class SecuritiesSummaryComponent {
         const latestPriceCurrency =
           price?.currency || data.currency || 'EUR';
 
+        // Calculate current value in EUR
+        let currentValueEur: number | null = null;
+        if (latestPrice !== null && quantity > 0) {
+          const currentValue = quantity * latestPrice;
+
+          // Convert to EUR based on currency
+          if (latestPriceCurrency === 'EUR') {
+            currentValueEur = currentValue;
+          } else {
+            // Convert using exchange rate
+            const exchangeRate = exchangeRateMap.get(latestPriceCurrency);
+            if (exchangeRate) {
+              // Exchange rate is from EUR to currency, so we need to divide
+              currentValueEur = currentValue / exchangeRate;
+            } else {
+              // No exchange rate available
+              currentValueEur = null;
+            }
+          }
+        }
+
         return {
           securityId: data.securityId || (key || undefined),
           name: data.name,
@@ -222,6 +256,7 @@ export class SecuritiesSummaryComponent {
           latestPrice,
           latestPriceDate,
           latestPriceCurrency,
+          currentValueEur,
         };
       })
       .filter((s) => s.quantity > EPSILON); // Only show securities with holdings
@@ -238,6 +273,7 @@ export class SecuritiesSummaryComponent {
       latestPrice: number | null;
       latestPriceDate: Date | null;
       latestPriceCurrency: string;
+      currentValueEur: number | null;
     }>
   ): Array<{
     securityId?: string;
@@ -249,6 +285,7 @@ export class SecuritiesSummaryComponent {
     latestPrice: number | null;
     latestPriceDate: Date | null;
     latestPriceCurrency: string;
+    currentValueEur: number | null;
   }> {
     const column = this.sortColumn();
     const direction = this.sortDirection();
@@ -258,10 +295,10 @@ export class SecuritiesSummaryComponent {
 
       if (column === 'name') {
         comparison = a.name.localeCompare(b.name);
-      } else if (column === 'latestPrice') {
-        // Handle null values for latestPrice
-        const left = a.latestPrice ?? -Infinity;
-        const right = b.latestPrice ?? -Infinity;
+      } else if (column === 'latestPrice' || column === 'currentValueEur') {
+        // Handle null values for latestPrice and currentValueEur
+        const left = (column === 'latestPrice' ? a.latestPrice : a.currentValueEur) ?? -Infinity;
+        const right = (column === 'latestPrice' ? b.latestPrice : b.currentValueEur) ?? -Infinity;
         comparison = left - right;
       } else {
         const left = (a[column] as number) ?? 0;
@@ -279,7 +316,8 @@ export class SecuritiesSummaryComponent {
     return securities.reduce((acc, security) => ({
       totalQuantity: acc.totalQuantity + security.quantity,
       totalDividends: acc.totalDividends + security.totalDividends,
-    }), { totalQuantity: 0, totalDividends: 0 });
+      totalCurrentValueEur: acc.totalCurrentValueEur + (security.currentValueEur ?? 0),
+    }), { totalQuantity: 0, totalDividends: 0, totalCurrentValueEur: 0 });
   });
 
   formatCurrency(value: number, currency = 'EUR'): string {

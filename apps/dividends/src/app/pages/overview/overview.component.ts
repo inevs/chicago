@@ -21,6 +21,8 @@ export class OverviewComponent {
       // Portfolio State
       kpis: this.portfolioState.kpis,
       securityTransactions: this.portfolioState.securityTransactions,
+      securityPrices: this.portfolioState.securityPrices,
+      exchangeRates: this.portfolioState.exchangeRates,
       // UI State
       isDarkMode: this.uiState.isDarkMode,
     };

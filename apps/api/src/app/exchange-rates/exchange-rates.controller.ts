@@ -92,4 +92,28 @@ export class ExchangeRatesController {
       rate,
     };
   }
+
+  @Get('latest')
+  @ApiOperation({
+    summary: 'Get latest exchange rates to EUR for all currencies',
+    description:
+      'Retrieve the most recent exchange rate to EUR for each currency in the system',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Latest exchange rates retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        properties: {
+          currency: { type: 'string', example: 'USD' },
+          rate: { type: 'number', example: 0.85 },
+          date: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  async getLatestRates() {
+    return this.exchangeRatesService.getLatestRatesToEur();
+  }
 }

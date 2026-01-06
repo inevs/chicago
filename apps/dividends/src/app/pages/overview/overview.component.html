@@ -8,6 +8,8 @@
     <h2 class="section-header">Bestandsallokation nach Unternehmen</h2>
     <app-allocation-chart
       [securityTransactions]="appState.securityTransactions()"
+      [latestPrices]="appState.securityPrices()"
+      [exchangeRates]="appState.exchangeRates()"
       [isDarkMode]="appState.isDarkMode()"
     />
   </section>

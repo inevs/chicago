@@ -385,4 +385,52 @@ export class ExchangeRatesService {
       orderBy: [{ baseCurrency: 'asc' }, { targetCurrency: 'asc' }, { date: 'asc' }],
     });
   }
+
+  /**
+   * Get latest exchange rates for all currencies to EUR
+   * Returns the most recent rate for each currency pair
+   */
+  async getLatestRatesToEur(): Promise<Array<{ currency: string; rate: number; date: Date }>> {
+    const baseCurrency = 'EUR';
+
+    // Get all unique currencies from the Currency table
+    const currencies = await this.prisma.currency.findMany({
+      where: {
+        code: {
+          not: baseCurrency,
+        },
+      },
+      select: {
+        code: true,
+      },
+    });
+
+    // Get the latest rate for each currency
+    const rates = await Promise.all(
+      currencies.map(async (currency) => {
+        const latestRate = await this.prisma.exchangeRate.findFirst({
+          where: {
+            baseCurrency,
+            targetCurrency: currency.code,
+          },
+          orderBy: {
+            date: 'desc',
+          },
+        });
+
+        if (latestRate) {
+          return {
+            currency: currency.code,
+            rate: Number(latestRate.rate),
+            date: latestRate.date,
+          };
+        }
+
+        return null;
+      })
+    );
+
+    // Filter out null values (currencies without rates)
+    return rates.filter((rate): rate is { currency: string; rate: number; date: Date } => rate !== null);
+  }
 }

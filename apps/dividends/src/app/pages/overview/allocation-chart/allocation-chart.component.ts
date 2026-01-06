@@ -1,7 +1,8 @@
 import { Component, OnDestroy, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
-import { SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
+import { SecurityTransactionWithSecurity, SecurityPrice, TransactionType } from '@dividends/shared';
+import { LatestExchangeRate } from '../../../services/exchange-rate.service';
 
 Chart.register(...registerables);
 
@@ -13,6 +14,8 @@ Chart.register(...registerables);
 })
 export class AllocationChartComponent implements OnDestroy {
   securityTransactions = input.required<SecurityTransactionWithSecurity[]>();
+  latestPrices = input.required<SecurityPrice[]>();
+  exchangeRates = input.required<LatestExchangeRate[]>();
   isDarkMode = input.required<boolean>();
 
   private chart: Chart | null = null;
@@ -20,9 +23,11 @@ export class AllocationChartComponent implements OnDestroy {
   constructor() {
     effect(() => {
       const data = this.securityTransactions();
+      const prices = this.latestPrices();
+      const rates = this.exchangeRates();
       const isDark = this.isDarkMode();
       if (data.length >= 0) {
-        setTimeout(() => this.renderChart(data, isDark), 0);
+        setTimeout(() => this.renderChart(data, prices, rates, isDark), 0);
       }
     });
   }
@@ -38,34 +43,42 @@ export class AllocationChartComponent implements OnDestroy {
     }
   }
 
-  private renderChart(data: SecurityTransactionWithSecurity[], isDark: boolean) {
+  private renderChart(data: SecurityTransactionWithSecurity[], prices: SecurityPrice[], rates: LatestExchangeRate[], isDark: boolean) {
     const textColor = isDark ? '#cbd5e1' : '#64748b';
+
+    // Build price map by security ID
+    const priceMap = new Map<string, SecurityPrice>();
+    prices.forEach(price => {
+      priceMap.set(price.securityId, price);
+    });
+
+    // Build exchange rate map
+    const exchangeRateMap = new Map<string, number>();
+    rates.forEach(rate => {
+      exchangeRateMap.set(rate.currency, rate.rate);
+    });
 
     // Calculate holdings value per security
     const securitiesMap = new Map<string, {
+      securityId: string;
       quantity: number;
-      totalBuyValue: number;
-      buyCount: number;
     }>();
 
     // Aggregate security transactions (BUY/SELL)
     data.forEach(tx => {
       const securityName = tx.security?.name;
-      if (!securityName) return;
+      const securityId = tx.security?.id;
+      if (!securityName || !securityId) return;
 
       const current = securitiesMap.get(securityName) || {
+        securityId,
         quantity: 0,
-        totalBuyValue: 0,
-        buyCount: 0
       };
 
       const quantity = Number(tx.quantity) || 0;
-      const pricePerShare = Number(tx.pricePerShare) || 0;
 
       if (tx.type === TransactionType.BUY) {
         current.quantity += quantity;
-        current.totalBuyValue += pricePerShare * quantity;
-        current.buyCount += quantity;
       } else if (tx.type === TransactionType.SELL) {
         current.quantity -= quantity;
       }
@@ -73,18 +86,36 @@ export class AllocationChartComponent implements OnDestroy {
       securitiesMap.set(securityName, current);
     });
 
-    // Convert to holdings value (only securities with holdings > 0)
+    // Convert to current value in EUR using latest prices (only securities with holdings > 0)
     const EPSILON = 0.0001;
     const companies: Record<string, number> = {};
 
     securitiesMap.forEach((data, name) => {
       if (data.quantity > EPSILON) {
-        // Calculate average buy price
-        const avgPrice = data.buyCount > 0 ? data.totalBuyValue / data.buyCount : 0;
-        // Holdings value = current quantity × average buy price
-        const holdingsValue = data.quantity * avgPrice;
-        if (holdingsValue > 0) {
-          companies[name] = holdingsValue;
+        const price = priceMap.get(data.securityId);
+        if (price) {
+          const currentPrice = Number(price.close);
+          // Current value = current quantity × current price
+          let currentValue = data.quantity * currentPrice;
+
+          // Convert to EUR if needed
+          if (price.currency === 'EUR') {
+            // Already in EUR
+            if (currentValue > 0) {
+              companies[name] = currentValue;
+            }
+          } else {
+            // Convert using exchange rate
+            const exchangeRate = exchangeRateMap.get(price.currency);
+            if (exchangeRate) {
+              // Exchange rate is from EUR to currency, so we need to divide
+              const currentValueEur = currentValue / exchangeRate;
+              if (currentValueEur > 0) {
+                companies[name] = currentValueEur;
+              }
+            }
+            // If no exchange rate, skip this security
+          }
         }
       }
     });
