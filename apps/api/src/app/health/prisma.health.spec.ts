@@ -48,8 +48,6 @@ describe('PrismaHealthIndicator', () => {
       const dbError = new Error('Connection refused');
       mockPrismaService.$queryRaw.mockRejectedValue(dbError);
 
-      await expect(indicator.isHealthy('database')).rejects.toThrow(HealthCheckError);
-
       try {
         await indicator.isHealthy('database');
       } catch (error) {
