@@ -137,23 +137,58 @@ export class TransactionModalComponent implements OnChanges {
     this.formData.update(data => ({ ...data, [field]: value }));
   }
 
+  updateFormDataWithCalculation(field: keyof TransactionForm, value: unknown) {
+    this.formData.update(data => {
+      const newData = { ...data, [field]: value };
+      if (['amount', 'dividend', 'taxes', 'rate'].includes(field)) {
+        newData.finalPayment = this.calculateFinalPayment(newData);
+      }
+      return newData;
+    });
+  }
+
+  private calculateFinalPayment(data: TransactionForm): number {
+    const gross = data.amount * data.dividend;
+    const netOrig = gross - data.taxes;
+    const rate = data.rate && data.rate !== 0 ? data.rate : 1;
+    // Round to 2 decimal places to avoid floating point issues
+    return Math.round((netOrig / rate) * 100) / 100;
+  }
+
+  parseNumberInput(value: string): number {
+    if (!value) return 0;
+    const normalized = value.toString().replace(',', '.');
+    const parsed = parseFloat(normalized);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
   onCurrencyChange(currency: string) {
     const defaultCode = this.defaultCurrencyCode();
-    this.formData.update(data => ({
-      ...data,
-      currency: currency,
-      rate: currency === defaultCode ? 1.0 : data.rate
-    }));
+    this.formData.update(data => {
+      const newData = {
+        ...data,
+        currency: currency,
+        rate: currency === defaultCode ? 1.0 : data.rate
+      };
+      newData.finalPayment = this.calculateFinalPayment(newData);
+      return newData;
+    });
   }
 
   onSecuritySelected(security: Security) {
     const defaultCode = this.defaultCurrencyCode();
-    this.formData.update(data => ({
-      ...data,
-      name: security.name,
-      securityId: security.id,
-      currency: security.currency,
-      rate: security.currency === defaultCode ? 1.0 : data.rate
-    }));
+    this.formData.update(data => {
+      const newData = {
+        ...data,
+        name: security.name,
+        securityId: security.id,
+        currency: security.currency,
+        rate: security.currency === defaultCode ? 1.0 : data.rate
+      };
+      // We don't necessarily want to recalculate here as amount/dividend might be 0,
+      // but if they are set, it makes sense to update the final payment with new rate/currency.
+      newData.finalPayment = this.calculateFinalPayment(newData);
+      return newData;
+    });
   }
 }
