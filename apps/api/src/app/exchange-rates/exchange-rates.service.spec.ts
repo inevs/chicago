@@ -29,6 +29,7 @@ describe('ExchangeRatesService', () => {
     currency: {
       findMany: jest.fn(),
     },
+    $queryRaw: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -814,6 +815,117 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
 
       expect(result.synced).toBe(1);
       expect(result.skipped).toBe(1);
+    });
+  });
+
+  describe('getLatestRatesToEur', () => {
+    it('should return latest rates for all currencies using optimized query', async () => {
+      const mockQueryResult = [
+        {
+          targetCurrency: 'USD',
+          rate: 1.0845,
+          date: new Date('2025-01-03'),
+        },
+        {
+          targetCurrency: 'GBP',
+          rate: 0.8567,
+          date: new Date('2025-01-03'),
+        },
+        {
+          targetCurrency: 'JPY',
+          rate: 156.78,
+          date: new Date('2025-01-03'),
+        },
+      ];
+
+      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+
+      const result = await service.getLatestRatesToEur();
+
+      expect(result).toEqual([
+        { currency: 'USD', rate: 1.0845, date: new Date('2025-01-03') },
+        { currency: 'GBP', rate: 0.8567, date: new Date('2025-01-03') },
+        { currency: 'JPY', rate: 156.78, date: new Date('2025-01-03') },
+      ]);
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return empty array when no rates exist', async () => {
+      mockPrismaService.$queryRaw.mockResolvedValueOnce([]);
+
+      const result = await service.getLatestRatesToEur();
+
+      expect(result).toEqual([]);
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle rates with different dates per currency', async () => {
+      const mockQueryResult = [
+        {
+          targetCurrency: 'USD',
+          rate: 1.0845,
+          date: new Date('2025-01-03'),
+        },
+        {
+          targetCurrency: 'GBP',
+          rate: 0.8567,
+          date: new Date('2025-01-02'), // Different date
+        },
+      ];
+
+      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+
+      const result = await service.getLatestRatesToEur();
+
+      expect(result).toHaveLength(2);
+      expect(result[0].currency).toBe('USD');
+      expect(result[0].date).toEqual(new Date('2025-01-03'));
+      expect(result[1].currency).toBe('GBP');
+      expect(result[1].date).toEqual(new Date('2025-01-02'));
+    });
+
+    it('should correctly convert rate to number', async () => {
+      // Prisma might return Decimal or string from database
+      const mockQueryResult = [
+        {
+          targetCurrency: 'USD',
+          rate: '1.0845', // String representation
+          date: new Date('2025-01-03'),
+        },
+      ];
+
+      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+
+      const result = await service.getLatestRatesToEur();
+
+      expect(result[0].rate).toBe(1.0845);
+      expect(typeof result[0].rate).toBe('number');
+    });
+
+    it('should handle database errors gracefully', async () => {
+      const dbError = new Error('Database connection lost');
+      mockPrismaService.$queryRaw.mockRejectedValueOnce(dbError);
+
+      await expect(service.getLatestRatesToEur()).rejects.toThrow('Database connection lost');
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('should only return one rate per currency (most recent)', async () => {
+      // DISTINCT ON ensures only the latest rate per currency
+      const mockQueryResult = [
+        { targetCurrency: 'USD', rate: 1.0845, date: new Date('2025-01-03') },
+        { targetCurrency: 'GBP', rate: 0.8567, date: new Date('2025-01-03') },
+        { targetCurrency: 'JPY', rate: 156.78, date: new Date('2025-01-03') },
+      ];
+
+      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+
+      const result = await service.getLatestRatesToEur();
+
+      // Verify no duplicates
+      const currencies = result.map(r => r.currency);
+      const uniqueCurrencies = [...new Set(currencies)];
+      expect(currencies.length).toBe(uniqueCurrencies.length);
     });
   });
 });

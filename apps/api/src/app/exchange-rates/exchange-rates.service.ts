@@ -389,48 +389,28 @@ export class ExchangeRatesService {
   /**
    * Get latest exchange rates for all currencies to EUR
    * Returns the most recent rate for each currency pair
+   * Optimized to use a single query with DISTINCT ON
    */
   async getLatestRatesToEur(): Promise<Array<{ currency: string; rate: number; date: Date }>> {
     const baseCurrency = 'EUR';
 
-    // Get all unique currencies from the Currency table
-    const currencies = await this.prisma.currency.findMany({
-      where: {
-        code: {
-          not: baseCurrency,
-        },
-      },
-      select: {
-        code: true,
-      },
-    });
+    // Use raw SQL with DISTINCT ON to get the latest rate for each currency in a single query
+    // This is more efficient than N+1 queries (one per currency)
+    const rates = await this.prisma.$queryRaw<Array<{ targetCurrency: string; rate: any; date: Date }>>`
+      SELECT DISTINCT ON ("targetCurrency")
+        "targetCurrency",
+        rate,
+        date
+      FROM "ExchangeRate"
+      WHERE "baseCurrency" = ${baseCurrency}
+      ORDER BY "targetCurrency", date DESC
+    `;
 
-    // Get the latest rate for each currency
-    const rates = await Promise.all(
-      currencies.map(async (currency) => {
-        const latestRate = await this.prisma.exchangeRate.findFirst({
-          where: {
-            baseCurrency,
-            targetCurrency: currency.code,
-          },
-          orderBy: {
-            date: 'desc',
-          },
-        });
-
-        if (latestRate) {
-          return {
-            currency: currency.code,
-            rate: Number(latestRate.rate),
-            date: latestRate.date,
-          };
-        }
-
-        return null;
-      })
-    );
-
-    // Filter out null values (currencies without rates)
-    return rates.filter((rate): rate is { currency: string; rate: number; date: Date } => rate !== null);
+    // Transform the results to match the expected format
+    return rates.map((rate) => ({
+      currency: rate.targetCurrency,
+      rate: Number(rate.rate),
+      date: rate.date,
+    }));
   }
 }
