@@ -131,6 +131,7 @@ describe('TransactionFacadeService', () => {
   describe('Dividend Payment Methods', () => {
     const mockTransactionForm: TransactionForm = {
       id: undefined,
+      name: 'Test Security',
       securityId: 'sec1',
       exDate: '2024-01-01',
       payoutDate: '2024-01-15',
@@ -140,6 +141,7 @@ describe('TransactionFacadeService', () => {
       currency: 'USD',
       rate: 1.1,
       finalPayment: 15.0,
+      note: undefined,
     };
 
     it('should show warning if security is not selected', () => {

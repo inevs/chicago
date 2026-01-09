@@ -22,6 +22,7 @@ export interface TransactionForm {
   rate: number;
   taxes: number;
   finalPayment: number;
+  note?: string;
 }
 
 @Component({
@@ -57,6 +58,7 @@ export class TransactionModalComponent implements OnChanges {
     rate: 1.0,
     taxes: 0,
     finalPayment: 0,
+    note: '',
   });
 
   constructor() {
@@ -87,6 +89,7 @@ export class TransactionModalComponent implements OnChanges {
           rate: tx.rate,
           taxes: tx.taxes,
           finalPayment: tx.finalPayment,
+          note: tx.note || '',
         });
       } else {
         // Reset form when editTransaction becomes null
@@ -135,6 +138,7 @@ export class TransactionModalComponent implements OnChanges {
       rate: 1.0,
       taxes: 0,
       finalPayment: 0,
+      note: '',
     });
   }
 

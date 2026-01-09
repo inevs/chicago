@@ -10,6 +10,7 @@ export interface DividendTransaction {
   rate: number;
   finalPayment: number;
   buyPrice?: number;
+  note?: string | null;
 }
 
 export type TimeRange = 'M' | 'Y' | '5Y' | 'ALL';

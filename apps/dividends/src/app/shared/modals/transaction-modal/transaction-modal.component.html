@@ -165,6 +165,21 @@
             class="modal-input"
           />
         </div>
+
+        <div class="col-span-2">
+          <label for="note" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
+            >Notiz (optional)</label
+          >
+          <textarea
+            id="note"
+            [ngModel]="formData().note"
+            (ngModelChange)="updateFormData('note', $event)"
+            name="note"
+            rows="2"
+            placeholder="z.B. Q1 2024 Dividende"
+            class="modal-input resize-none"
+          ></textarea>
+        </div>
       </div>
 
       <div class="mt-6 flex justify-end gap-3">
