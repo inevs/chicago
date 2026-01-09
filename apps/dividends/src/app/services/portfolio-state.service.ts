@@ -43,9 +43,9 @@ export class PortfolioStateService {
   getSharesAtDate(securityId: string, dateStr: string): number {
     const transactions = this.securityTransactions();
     const targetDate = new Date(dateStr);
-    
+
     return transactions
-      .filter(t => t.securityId === securityId && new Date(t.date) <= targetDate)
+      .filter(t => t.securityId === securityId && new Date(t.date) < targetDate)
       .reduce((total, t) => {
         const qty = Number(t.quantity);
         if (t.type === TransactionType.BUY) {

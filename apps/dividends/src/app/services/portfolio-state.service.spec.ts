@@ -245,4 +245,276 @@ describe('PortfolioStateService', () => {
       expect(mockDividendDataService.calculateKPIs).toHaveBeenCalledWith(mockFiltered, mockTransactions);
     });
   });
+
+  describe('getSharesAtDate', () => {
+    it('should return 0 when no transactions exist', () => {
+      service.securityTransactions.set([]);
+
+      const shares = service.getSharesAtDate('sec1', '2024-01-15');
+
+      expect(shares).toBe(0);
+    });
+
+    it('should include transactions before the ex-date', () => {
+      const mockTransactions: SecurityTransactionWithSecurity[] = [
+        {
+          id: '1',
+          date: '2024-01-10',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 100,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 5005,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+      ];
+
+      service.securityTransactions.set(mockTransactions);
+
+      const shares = service.getSharesAtDate('sec1', '2024-01-15');
+
+      expect(shares).toBe(100);
+    });
+
+    it('should exclude transactions on the ex-date', () => {
+      const mockTransactions: SecurityTransactionWithSecurity[] = [
+        {
+          id: '1',
+          date: '2024-01-10',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 100,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 5005,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+        {
+          id: '2',
+          date: '2024-01-15',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 50,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 2505,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+      ];
+
+      service.securityTransactions.set(mockTransactions);
+
+      const shares = service.getSharesAtDate('sec1', '2024-01-15');
+
+      expect(shares).toBe(100); // Should only include the transaction from 2024-01-10, not 2024-01-15
+    });
+
+    it('should exclude transactions after the ex-date', () => {
+      const mockTransactions: SecurityTransactionWithSecurity[] = [
+        {
+          id: '1',
+          date: '2024-01-10',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 100,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 5005,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+        {
+          id: '2',
+          date: '2024-01-20',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 50,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 2505,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+      ];
+
+      service.securityTransactions.set(mockTransactions);
+
+      const shares = service.getSharesAtDate('sec1', '2024-01-15');
+
+      expect(shares).toBe(100); // Should only include the transaction from 2024-01-10
+    });
+
+    it('should handle BUY and SELL transactions correctly', () => {
+      const mockTransactions: SecurityTransactionWithSecurity[] = [
+        {
+          id: '1',
+          date: '2024-01-05',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 100,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 5005,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+        {
+          id: '2',
+          date: '2024-01-10',
+          type: 'SELL',
+          securityId: 'sec1',
+          quantity: 30,
+          pricePerShare: 55,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 1645,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+      ];
+
+      service.securityTransactions.set(mockTransactions);
+
+      const shares = service.getSharesAtDate('sec1', '2024-01-15');
+
+      expect(shares).toBe(70); // 100 bought - 30 sold
+    });
+
+    it('should only count transactions for the specified security', () => {
+      const mockTransactions: SecurityTransactionWithSecurity[] = [
+        {
+          id: '1',
+          date: '2024-01-10',
+          type: 'BUY',
+          securityId: 'sec1',
+          quantity: 100,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 5005,
+          note: null,
+          security: {
+            id: 'sec1',
+            name: 'Test Security',
+            symbol: 'TEST',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+        {
+          id: '2',
+          date: '2024-01-10',
+          type: 'BUY',
+          securityId: 'sec2',
+          quantity: 50,
+          pricePerShare: 50,
+          fees: 5,
+          currency: 'USD',
+          exchangeRate: 1,
+          totalValue: 2505,
+          note: null,
+          security: {
+            id: 'sec2',
+            name: 'Other Security',
+            symbol: 'OTHER',
+            type: 'STOCK',
+            exchange: 'NYSE',
+            currency: 'USD',
+            isin: null,
+            wkn: null,
+          },
+        },
+      ];
+
+      service.securityTransactions.set(mockTransactions);
+
+      const shares = service.getSharesAtDate('sec1', '2024-01-15');
+
+      expect(shares).toBe(100); // Should only include sec1 transactions
+    });
+  });
 });
