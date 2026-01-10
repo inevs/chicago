@@ -361,6 +361,74 @@ export class TransactionFacadeService {
     input.value = '';
   }
 
+  handleImportSecuritiesCsv(fileInput: ElementRef<HTMLInputElement>) {
+    this.uiState.showMenu.set(false);
+    fileInput.nativeElement.click();
+  }
+
+  onCsvFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      this.toastService.error('Bitte wählen Sie eine CSV-Datei aus');
+      input.value = '';
+      return;
+    }
+
+    // Show loading toast
+    this.toastService.info('Importiere Wertpapiere...', 0);
+
+    this.securityService.importSecuritiesCsv(file).subscribe({
+      next: (result) => {
+        this.toastService.clear();
+
+        // Success message
+        if (result.created > 0) {
+          this.toastService.success(
+            `${result.created} Wertpapier(e) erfolgreich importiert! (${result.skipped} übersprungen, ${result.errors} Fehler)`,
+            8000
+          );
+        } else if (result.total === result.skipped) {
+          this.toastService.warning(
+            `Alle ${result.total} Wertpapiere wurden übersprungen (bereits vorhanden)`,
+            6000
+          );
+        } else {
+          this.toastService.error(
+            `Import fehlgeschlagen: ${result.errors} Fehler von ${result.total} Zeilen`,
+            7000
+          );
+        }
+
+        // Show price sync info
+        if (result.pricesSyncTriggered && result.created > 0) {
+          this.toastService.info(
+            'Kursdaten werden im Hintergrund synchronisiert...',
+            5000
+          );
+        }
+
+        // Reload portfolio data to show new securities
+        this.portfolioState.loadAllData();
+      },
+      error: (error) => {
+        this.toastService.clear();
+        this.toastService.error(
+          `Fehler beim CSV-Import: ${error.message}`,
+          7000
+        );
+      },
+      complete: () => {
+        // Reset file input
+        input.value = '';
+      }
+    });
+  }
+
   handleImportConfirm(mode: ImportMode) {
     if (mode === 'cancel') {
       this.uiState.closeImportConfirmModal();

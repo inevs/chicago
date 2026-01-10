@@ -11,7 +11,10 @@ import {
   UsePipes,
   ValidationPipe,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -20,11 +23,13 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { SecuritiesService } from './securities.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
-import { Security } from '@dividends/shared';
+import { UploadedFile as UploadedFileType } from './dto/import-securities-csv.dto';
+import { Security, ImportCsvResponse } from '@dividends/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('securities')
@@ -106,5 +111,34 @@ export class SecuritiesController {
     @Body() dto: UpdateSecurityDto
   ): Promise<Security> {
     return this.securitiesService.updateSecurity(id, dto);
+  }
+
+  @Post('import/csv')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Import securities from CSV file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'CSV file with securities data',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Import results with statistics',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid CSV file or format' })
+  @UseGuards(JwtAuthGuard)
+  async importCsv(
+    @UploadedFile() file: UploadedFileType
+  ): Promise<ImportCsvResponse> {
+    return this.securitiesService.importFromCsv(file);
   }
 }
