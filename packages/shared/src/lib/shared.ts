@@ -173,6 +173,25 @@ export interface ExchangeRate {
   updatedAt: Date;
 }
 
+// CSV Import result for individual securities
+export interface ImportSecurityResult {
+  row: number;
+  symbol: string;
+  status: 'created' | 'skipped' | 'error';
+  reason?: string;
+  securityId?: string;
+}
+
+// CSV Import response
+export interface ImportCsvResponse {
+  total: number;
+  created: number;
+  skipped: number;
+  errors: number;
+  results: ImportSecurityResult[];
+  pricesSyncTriggered: boolean;
+}
+
 // Currency conversion utilities
 export class CurrencyConverter {
   /**

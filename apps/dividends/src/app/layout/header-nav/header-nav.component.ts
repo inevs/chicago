@@ -50,6 +50,12 @@ export class HeaderNavComponent {
           color: 'blue'
         },
         {
+          label: 'Wertpapiere importieren (CSV)',
+          icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12',
+          action: () => this.onImportSecuritiesCsvClick(),
+          color: 'green'
+        },
+        {
           label: 'Neue Währung',
           icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
           action: () => this.onNewCurrencyClick(),
@@ -111,6 +117,7 @@ export class HeaderNavComponent {
   }
 
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('csvFileInput') csvFileInput?: ElementRef<HTMLInputElement>;
 
   onRangeChange(range: TimeRange) {
     this.uiState.setTimeRange(range);
@@ -152,6 +159,16 @@ export class HeaderNavComponent {
 
   onFileSelected(event: Event) {
     this.transactionFacade.onFileSelected(event);
+  }
+
+  onImportSecuritiesCsvClick() {
+    if (this.csvFileInput) {
+      this.transactionFacade.handleImportSecuritiesCsv(this.csvFileInput);
+    }
+  }
+
+  onCsvFileSelected(event: Event) {
+    this.transactionFacade.onCsvFileSelected(event);
   }
 
   onMobileSidebarToggle() {

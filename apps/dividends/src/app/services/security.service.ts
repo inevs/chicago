@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Security } from '@dividends/shared';
+import { Security, ImportCsvResponse } from '@dividends/shared';
 
 export interface CreateSecurityRequest {
   name: string;
@@ -63,6 +63,15 @@ export class SecurityService {
     return this.http.get<Security[]>(`${this.apiUrl}/search`, {
       params: { q: query }
     }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  importSecuritiesCsv(file: File): Observable<ImportCsvResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<ImportCsvResponse>(`${this.apiUrl}/import/csv`, formData).pipe(
       catchError(this.handleError)
     );
   }

@@ -2,12 +2,16 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
-import { Security } from '@dividends/shared';
+import { CsvSecurityRow, UploadedFile } from './dto/import-securities-csv.dto';
+import { Security, ImportCsvResponse, ImportSecurityResult, SecurityType } from '@dividends/shared';
 import { SecurityPricesService } from '../security-prices/security-prices.service';
+import { parse } from 'csv-parse/sync';
+import { validate } from 'class-validator';
 
 @Injectable()
 export class SecuritiesService {
@@ -155,5 +159,188 @@ export class SecuritiesService {
     });
 
     return securities as Security[];
+  }
+
+  async importFromCsv(file: UploadedFile): Promise<ImportCsvResponse> {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const csvContent = file.buffer.toString('utf-8');
+
+    if (!csvContent || csvContent.trim().length === 0) {
+      throw new BadRequestException('CSV file is empty');
+    }
+
+    // Parse CSV
+    let records: CsvSecurityRow[];
+    try {
+      records = parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        cast: false,
+      }) as CsvSecurityRow[];
+    } catch (error) {
+      throw new BadRequestException(`Invalid CSV format: ${error.message}`);
+    }
+
+    if (records.length === 0) {
+      throw new BadRequestException('CSV file contains no data rows');
+    }
+
+    // Validate headers
+    const requiredHeaders = ['name', 'symbol', 'type', 'exchange', 'currency'];
+    const firstRecord = records[0];
+    const missingHeaders = requiredHeaders.filter(
+      (header) => !(header in firstRecord)
+    );
+
+    if (missingHeaders.length > 0) {
+      throw new BadRequestException(
+        `Missing required headers: ${missingHeaders.join(', ')}. Required headers: ${requiredHeaders.join(', ')}`
+      );
+    }
+
+    // Process each row
+    const results: ImportSecurityResult[] = [];
+    const createdSecurityIds: string[] = [];
+
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      const rowNumber = i + 2; // +2 because: array is 0-indexed and CSV has header row
+
+      try {
+        // Trim and prepare data
+        const symbol = row.symbol?.trim().toUpperCase();
+        const name = row.name?.trim();
+        const type = row.type?.trim().toUpperCase();
+        const exchange = row.exchange?.trim();
+        const currency = row.currency?.trim().toUpperCase();
+        const isin = row.isin?.trim() || undefined;
+        const wkn = row.wkn?.trim() || undefined;
+
+        // Basic validation
+        if (!name || !symbol || !type || !exchange || !currency) {
+          results.push({
+            row: rowNumber,
+            symbol: symbol || 'UNKNOWN',
+            status: 'error',
+            reason: 'Missing required fields',
+          });
+          continue;
+        }
+
+        // Validate type
+        if (!['STOCK', 'ETF', 'BOND'].includes(type)) {
+          results.push({
+            row: rowNumber,
+            symbol,
+            status: 'error',
+            reason: `Invalid type: ${type}. Must be STOCK, ETF, or BOND`,
+          });
+          continue;
+        }
+
+        // Check for duplicate symbol
+        const existing = await this.prisma.security.findUnique({
+          where: { symbol },
+        });
+
+        if (existing) {
+          results.push({
+            row: rowNumber,
+            symbol,
+            status: 'skipped',
+            reason: 'Symbol already exists',
+          });
+          continue;
+        }
+
+        // Validate currency exists
+        const currencyRecord = await this.prisma.currency.findUnique({
+          where: { code: currency },
+        });
+
+        if (!currencyRecord) {
+          results.push({
+            row: rowNumber,
+            symbol,
+            status: 'error',
+            reason: `Currency ${currency} not found`,
+          });
+          continue;
+        }
+
+        // Create security
+        const dto: CreateSecurityDto = {
+          name,
+          symbol,
+          type: type as SecurityType,
+          exchange,
+          currency,
+          isin,
+          wkn,
+        };
+
+        const security = await this.prisma.security.create({
+          data: dto,
+        });
+
+        createdSecurityIds.push(security.id);
+
+        results.push({
+          row: rowNumber,
+          symbol,
+          status: 'created',
+          securityId: security.id,
+        });
+      } catch (error) {
+        results.push({
+          row: rowNumber,
+          symbol: row.symbol?.trim() || 'UNKNOWN',
+          status: 'error',
+          reason: error.message || 'Unknown error',
+        });
+      }
+    }
+
+    // Trigger price sync for all created securities (non-blocking)
+    if (createdSecurityIds.length > 0) {
+      for (const securityId of createdSecurityIds) {
+        this.securityPricesService
+          .syncHistoricalPrices({ securityId })
+          .then((result) => {
+            if (result.failures.length > 0) {
+              console.warn(
+                `Price sync finished with failures for security ${securityId}:`,
+                result.failures
+              );
+            } else {
+              console.log(
+                `Price sync completed for security ${securityId}. Inserted ${result.pricesInserted} prices.`
+              );
+            }
+          })
+          .catch((err) => {
+            console.error(
+              `Failed to trigger price sync for security ${securityId}:`,
+              err
+            );
+          });
+      }
+    }
+
+    // Build response
+    const response: ImportCsvResponse = {
+      total: records.length,
+      created: results.filter((r) => r.status === 'created').length,
+      skipped: results.filter((r) => r.status === 'skipped').length,
+      errors: results.filter((r) => r.status === 'error').length,
+      results,
+      pricesSyncTriggered: createdSecurityIds.length > 0,
+    };
+
+    return response;
   }
 }
