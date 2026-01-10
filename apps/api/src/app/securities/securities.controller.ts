@@ -28,6 +28,7 @@ import {
 import { SecuritiesService } from './securities.service';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
+import { UploadedFile as UploadedFileType } from './dto/import-securities-csv.dto';
 import { Security, ImportCsvResponse } from '@dividends/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -135,7 +136,7 @@ export class SecuritiesController {
   })
   @ApiResponse({ status: 400, description: 'Invalid CSV file or format' })
   async importCsv(
-    @UploadedFile() file: any
+    @UploadedFile() file: UploadedFileType
   ): Promise<ImportCsvResponse> {
     return this.securitiesService.importFromCsv(file);
   }

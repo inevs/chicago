@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SecuritiesService } from './securities.service';
 import { PrismaService } from '../../prisma.service';
 import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { SecurityType } from '@dividends/shared';
+import { UploadedFile } from './dto/import-securities-csv.dto';
 
 describe('SecuritiesService', () => {
   let service: SecuritiesService;
@@ -15,10 +16,12 @@ describe('SecuritiesService', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
+      createManyAndReturn: jest.fn(),
       update: jest.fn(),
     },
     currency: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
   };
 
@@ -652,6 +655,288 @@ describe('SecuritiesService', () => {
       const result = await service.searchSecurities('nonexistent');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('importFromCsv', () => {
+    const createMockFile = (content: string): UploadedFile => ({
+      fieldname: 'file',
+      originalname: 'test.csv',
+      encoding: '7bit',
+      mimetype: 'text/csv',
+      size: Buffer.byteLength(content),
+      buffer: Buffer.from(content, 'utf-8'),
+    });
+
+    it('should successfully import valid securities from CSV', async () => {
+      const csvContent = `name,symbol,type,exchange,currency,isin,wkn
+Apple Inc.,AAPL,STOCK,NASDAQ,USD,US0378331005,865985
+Microsoft Corp.,MSFT,STOCK,NASDAQ,USD,US5949181045,870747`;
+
+      const file = createMockFile(csvContent);
+
+      const createdSecurities = [
+        { id: 'uuid-1', name: 'Apple Inc.', symbol: 'AAPL', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD', isin: 'US0378331005', wkn: '865985' },
+        { id: 'uuid-2', name: 'Microsoft Corp.', symbol: 'MSFT', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD', isin: 'US5949181045', wkn: '870747' },
+      ];
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue(createdSecurities);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.total).toBe(2);
+      expect(result.created).toBe(2);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(0);
+      expect(result.pricesSyncTriggered).toBe(true);
+      expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledTimes(2);
+    });
+
+    it('should skip duplicate symbols', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,USD
+Microsoft Corp.,MSFT,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([{ symbol: 'AAPL' }]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+        { id: 'uuid-2', symbol: 'MSFT', name: 'Microsoft Corp.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.total).toBe(2);
+      expect(result.created).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(result.results[0].status).toBe('skipped');
+      expect(result.results[0].reason).toBe('Symbol already exists');
+      expect(result.results[1].status).toBe('created');
+    });
+
+    it('should reject CSV with missing headers', async () => {
+      const csvContent = `name,symbol,type
+Apple Inc.,AAPL,STOCK`;
+
+      const file = createMockFile(csvContent);
+
+      await expect(service.importFromCsv(file)).rejects.toThrow(BadRequestException);
+      await expect(service.importFromCsv(file)).rejects.toThrow(/Missing required headers/);
+    });
+
+    it('should reject empty CSV file', async () => {
+      const file = createMockFile('');
+
+      await expect(service.importFromCsv(file)).rejects.toThrow(BadRequestException);
+      await expect(service.importFromCsv(file)).rejects.toThrow('CSV file is empty');
+    });
+
+    it('should reject CSV with no data rows', async () => {
+      const csvContent = `name,symbol,type,exchange,currency`;
+
+      const file = createMockFile(csvContent);
+
+      await expect(service.importFromCsv(file)).rejects.toThrow(BadRequestException);
+      await expect(service.importFromCsv(file)).rejects.toThrow('CSV file contains no data rows');
+    });
+
+    it('should reject CSV exceeding row limit', async () => {
+      const headers = `name,symbol,type,exchange,currency\n`;
+      const rows = Array.from({ length: 1001 }, (_, i) => `Security ${i},SYM${i},STOCK,NASDAQ,USD`).join('\n');
+      const csvContent = headers + rows;
+
+      const file = createMockFile(csvContent);
+
+      await expect(service.importFromCsv(file)).rejects.toThrow(BadRequestException);
+      await expect(service.importFromCsv(file)).rejects.toThrow(/too many rows/);
+    });
+
+    it('should handle invalid security type', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,INVALID,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.total).toBe(1);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toContain('Invalid type');
+    });
+
+    it('should handle currency not found', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,XYZ`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.total).toBe(1);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toBe('Currency XYZ not found');
+    });
+
+    it('should handle missing required fields', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+,AAPL,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.total).toBe(1);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toBe('Missing required fields');
+    });
+
+    it('should handle invalid CSV format', async () => {
+      const csvContent = `This is not a valid CSV format`;
+
+      const file = createMockFile(csvContent);
+
+      await expect(service.importFromCsv(file)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle no file provided', async () => {
+      await expect(service.importFromCsv(null as any)).rejects.toThrow(BadRequestException);
+      await expect(service.importFromCsv(null as any)).rejects.toThrow('No file provided');
+    });
+
+    it('should trim whitespace from fields', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+  Apple Inc.  ,  AAPL  ,  STOCK  ,  NASDAQ  ,  USD  `;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+        { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.created).toBe(1);
+      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'Apple Inc.',
+              symbol: 'AAPL',
+              type: 'STOCK',
+              exchange: 'NASDAQ',
+              currency: 'USD',
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should convert symbol to uppercase', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,aapl,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+        { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.created).toBe(1);
+      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              symbol: 'AAPL',
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should handle optional ISIN and WKN fields', async () => {
+      const csvContent = `name,symbol,type,exchange,currency,isin,wkn
+Apple Inc.,AAPL,STOCK,NASDAQ,USD,,`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+        { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD', isin: undefined, wkn: undefined },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.created).toBe(1);
+      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              isin: undefined,
+              wkn: undefined,
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should batch load symbols and currencies for performance', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,USD
+Microsoft Corp.,MSFT,STOCK,NASDAQ,USD
+BMW AG,BMW.DE,STOCK,XETRA,EUR`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }, { code: 'EUR' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+        { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+        { id: 'uuid-2', symbol: 'MSFT', name: 'Microsoft Corp.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+        { id: 'uuid-3', symbol: 'BMW.DE', name: 'BMW AG', type: 'STOCK', exchange: 'XETRA', currency: 'EUR' },
+      ]);
+
+      await service.importFromCsv(file);
+
+      // Should only call findMany once for symbols and once for currencies
+      expect(mockPrismaService.security.findMany).toHaveBeenCalledTimes(1);
+      expect(mockPrismaService.currency.findMany).toHaveBeenCalledTimes(1);
+
+      // Should call with all symbols at once
+      expect(mockPrismaService.security.findMany).toHaveBeenCalledWith({
+        where: { symbol: { in: ['AAPL', 'MSFT', 'BMW.DE'] } },
+        select: { symbol: true },
+      });
+
+      // Should call with unique currencies
+      expect(mockPrismaService.currency.findMany).toHaveBeenCalledWith({
+        where: { code: { in: ['USD', 'EUR'] } },
+        select: { code: true },
+      });
     });
   });
 });

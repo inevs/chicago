@@ -11,7 +11,6 @@ import { CsvSecurityRow, UploadedFile } from './dto/import-securities-csv.dto';
 import { Security, ImportCsvResponse, ImportSecurityResult, SecurityType } from '@dividends/shared';
 import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { parse } from 'csv-parse/sync';
-import { validate } from 'class-validator';
 
 @Injectable()
 export class SecuritiesService {
@@ -189,6 +188,14 @@ export class SecuritiesService {
       throw new BadRequestException('CSV file contains no data rows');
     }
 
+    // Validate row count limit (max 1000 rows)
+    const MAX_ROWS = 1000;
+    if (records.length > MAX_ROWS) {
+      throw new BadRequestException(
+        `CSV file contains too many rows. Maximum allowed: ${MAX_ROWS}, found: ${records.length}`
+      );
+    }
+
     // Validate headers
     const requiredHeaders = ['name', 'symbol', 'type', 'exchange', 'currency'];
     const firstRecord = records[0];
@@ -202,13 +209,39 @@ export class SecuritiesService {
       );
     }
 
-    // Process each row
+    // Batch load existing symbols and currencies to avoid N+1 queries
+    const symbolsToCheck = records
+      .map(r => r.symbol?.trim().toUpperCase())
+      .filter(s => s && s.length > 0);
+
+    const currenciesToCheck = [...new Set(
+      records
+        .map(r => r.currency?.trim().toUpperCase())
+        .filter(c => c && c.length > 0)
+    )];
+
+    const [existingSecurities, existingCurrencies] = await Promise.all([
+      this.prisma.security.findMany({
+        where: { symbol: { in: symbolsToCheck } },
+        select: { symbol: true },
+      }),
+      this.prisma.currency.findMany({
+        where: { code: { in: currenciesToCheck } },
+        select: { code: true },
+      }),
+    ]);
+
+    const existingSymbolsSet = new Set(existingSecurities.map(s => s.symbol));
+    const existingCurrenciesSet = new Set(existingCurrencies.map(c => c.code));
+
+    // Process and validate each row
     const results: ImportSecurityResult[] = [];
-    const createdSecurityIds: string[] = [];
+    const securitiesToCreate: CreateSecurityDto[] = [];
+    const ROW_NUMBER_OFFSET = 2; // CSV header row + 0-indexed array
 
     for (let i = 0; i < records.length; i++) {
       const row = records[i];
-      const rowNumber = i + 2; // +2 because: array is 0-indexed and CSV has header row
+      const rowNumber = i + ROW_NUMBER_OFFSET;
 
       try {
         // Trim and prepare data
@@ -220,7 +253,7 @@ export class SecuritiesService {
         const isin = row.isin?.trim() || undefined;
         const wkn = row.wkn?.trim() || undefined;
 
-        // Basic validation
+        // Basic validation - check for empty strings after trimming
         if (!name || !symbol || !type || !exchange || !currency) {
           results.push({
             row: rowNumber,
@@ -242,12 +275,8 @@ export class SecuritiesService {
           continue;
         }
 
-        // Check for duplicate symbol
-        const existing = await this.prisma.security.findUnique({
-          where: { symbol },
-        });
-
-        if (existing) {
+        // Check for duplicate symbol (using pre-loaded set)
+        if (existingSymbolsSet.has(symbol)) {
           results.push({
             row: rowNumber,
             symbol,
@@ -257,12 +286,8 @@ export class SecuritiesService {
           continue;
         }
 
-        // Validate currency exists
-        const currencyRecord = await this.prisma.currency.findUnique({
-          where: { code: currency },
-        });
-
-        if (!currencyRecord) {
+        // Validate currency exists (using pre-loaded set)
+        if (!existingCurrenciesSet.has(currency)) {
           results.push({
             row: rowNumber,
             symbol,
@@ -272,7 +297,7 @@ export class SecuritiesService {
           continue;
         }
 
-        // Create security
+        // Prepare security for batch creation
         const dto: CreateSecurityDto = {
           name,
           symbol,
@@ -283,25 +308,49 @@ export class SecuritiesService {
           wkn,
         };
 
-        const security = await this.prisma.security.create({
-          data: dto,
-        });
-
-        createdSecurityIds.push(security.id);
+        securitiesToCreate.push(dto);
 
         results.push({
           row: rowNumber,
           symbol,
           status: 'created',
-          securityId: security.id,
+          securityId: undefined, // Will be populated after batch insert
         });
       } catch (error) {
+        const sanitizedMessage = this.sanitizeErrorMessage(error.message);
         results.push({
           row: rowNumber,
           symbol: row.symbol?.trim() || 'UNKNOWN',
           status: 'error',
-          reason: error.message || 'Unknown error',
+          reason: sanitizedMessage,
         });
+      }
+    }
+
+    // Batch create all valid securities
+    const createdSecurityIds: string[] = [];
+    if (securitiesToCreate.length > 0) {
+      try {
+        // Use createMany for batch insert (more efficient than individual creates)
+        const createResult = await this.prisma.security.createManyAndReturn({
+          data: securitiesToCreate,
+          skipDuplicates: true,
+        });
+
+        // Update results with actual security IDs
+        let createdIndex = 0;
+        for (const result of results) {
+          if (result.status === 'created' && createdIndex < createResult.length) {
+            const createdSecurity = createResult[createdIndex];
+            result.securityId = createdSecurity.id;
+            createdSecurityIds.push(createdSecurity.id);
+            createdIndex++;
+          }
+        }
+      } catch (error) {
+        // If batch insert fails, fall back to marking all as errors
+        console.error('Batch insert failed:', error);
+        throw new BadRequestException('Failed to create securities. Please check your data and try again.');
       }
     }
 
@@ -342,5 +391,23 @@ export class SecuritiesService {
     };
 
     return response;
+  }
+
+  /**
+   * Sanitize error messages to avoid exposing internal implementation details
+   */
+  private sanitizeErrorMessage(message: string): string {
+    // Remove database-specific error details
+    if (message.includes('Prisma')) {
+      return 'Database error occurred';
+    }
+    if (message.includes('unique constraint') || message.includes('UNIQUE')) {
+      return 'Duplicate entry detected';
+    }
+    // Return generic message for unknown errors
+    if (!message || message.length > 200) {
+      return 'An error occurred while processing this row';
+    }
+    return message;
   }
 }
