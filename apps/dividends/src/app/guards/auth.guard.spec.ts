@@ -1,13 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import { signal } from '@angular/core';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
 
 describe('authGuard', () => {
   let router: Router;
+  let mockIsAuthenticated: ReturnType<typeof signal<boolean>>;
 
   const mockAuthService = {
-    isAuthenticated: jest.fn(),
+    isAuthenticated: signal(false),
   };
 
   const mockRouter = {
@@ -23,6 +25,7 @@ describe('authGuard', () => {
     });
 
     router = TestBed.inject(Router);
+    mockIsAuthenticated = mockAuthService.isAuthenticated;
   });
 
   afterEach(() => {
@@ -30,9 +33,9 @@ describe('authGuard', () => {
   });
 
   it('should allow access when user is authenticated', () => {
-    mockAuthService.isAuthenticated.mockReturnValue(true);
+    mockIsAuthenticated.set(true);
 
-    const result = TestBed.runInInjectionContext(() => 
+    const result = TestBed.runInInjectionContext(() =>
       authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
     );
 
@@ -41,10 +44,10 @@ describe('authGuard', () => {
 
   it('should redirect to login when user is not authenticated', () => {
     const mockUrlTree = {} as UrlTree;
-    mockAuthService.isAuthenticated.mockReturnValue(false);
+    mockIsAuthenticated.set(false);
     mockRouter.createUrlTree.mockReturnValue(mockUrlTree);
 
-    const result = TestBed.runInInjectionContext(() => 
+    const result = TestBed.runInInjectionContext(() =>
       authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
     );
 
