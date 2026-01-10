@@ -309,6 +309,7 @@ export class SecuritiesService {
         };
 
         securitiesToCreate.push(dto);
+        existingSymbolsSet.add(symbol); // Prevent duplicates within the same import
 
         results.push({
           row: rowNumber,

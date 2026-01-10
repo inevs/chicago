@@ -135,6 +135,7 @@ export class SecuritiesController {
     description: 'Import results with statistics',
   })
   @ApiResponse({ status: 400, description: 'Invalid CSV file or format' })
+  @UseGuards(JwtAuthGuard)
   async importCsv(
     @UploadedFile() file: UploadedFileType
   ): Promise<ImportCsvResponse> {
