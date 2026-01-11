@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { SecurityTransactionsService } from './security-transactions.service';
 import { PrismaService } from '../../prisma.service';
 import { TransactionType } from '@dividends/shared';
@@ -11,9 +11,11 @@ describe('SecurityTransactionsService', () => {
   const mockPrismaService = {
     security: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     currency: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
     },
     securityTransaction: {
       create: jest.fn(),
@@ -21,6 +23,7 @@ describe('SecurityTransactionsService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      createManyAndReturn: jest.fn(),
     },
   };
 
@@ -482,6 +485,260 @@ describe('SecurityTransactionsService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(prisma.securityTransaction.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('importFromCsv', () => {
+    const createMockFile = (content: string) => ({
+      fieldname: 'file',
+      originalname: 'test.csv',
+      encoding: '7bit',
+      mimetype: 'text/csv',
+      size: Buffer.byteLength(content),
+      buffer: Buffer.from(content),
+    });
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should successfully import valid transactions', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,2025-01-15,BUY,10,150.50,9.99,USD,0.92,1395.99,Initial purchase
+DE0005190003,2025-01-10,SELL,20,85.30,12.50,EUR,1.00,1718.50,BMW sale`;
+
+      const mockFile = createMockFile(csvContent);
+
+      // Mock security lookup
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+        { id: 'sec-2', isin: 'DE0005190003' },
+      ]);
+
+      // Mock currency lookup
+      mockPrismaService.currency.findMany.mockResolvedValue([
+        { code: 'USD' },
+        { code: 'EUR' },
+      ]);
+
+      // Mock batch create
+      mockPrismaService.securityTransaction.createManyAndReturn.mockResolvedValue([
+        { id: 'trans-1' },
+        { id: 'trans-2' },
+      ]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(2);
+      expect(result.created).toBe(2);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(0);
+      expect(result.results).toHaveLength(2);
+      expect(result.results[0].status).toBe('created');
+      expect(result.results[1].status).toBe('created');
+
+      expect(prisma.securityTransaction.createManyAndReturn).toHaveBeenCalledWith({
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            type: TransactionType.BUY,
+            securityId: 'sec-1',
+            quantity: 10,
+          }),
+          expect.objectContaining({
+            type: TransactionType.SELL,
+            securityId: 'sec-2',
+            quantity: 20,
+          }),
+        ]),
+      });
+    });
+
+    it('should throw BadRequestException when file is empty', async () => {
+      const mockFile = createMockFile('');
+
+      await expect(service.importFromCsv(mockFile)).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
+    it('should throw BadRequestException when file has no buffer', async () => {
+      const mockFile = {
+        fieldname: 'file',
+        originalname: 'test.csv',
+        encoding: '7bit',
+        mimetype: 'text/csv',
+        size: 0,
+        buffer: null,
+      } as any;
+
+      await expect(service.importFromCsv(mockFile)).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
+    it('should throw BadRequestException when required headers are missing', async () => {
+      const csvContent = `ISIN,Datum,Typ
+US0378331005,2025-01-15,BUY`;
+
+      const mockFile = createMockFile(csvContent);
+
+      await expect(service.importFromCsv(mockFile)).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
+    it('should skip transactions with non-existent ISIN', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,2025-01-15,BUY,10,150.50,9.99,USD,0.92,1395.99,Known security
+XX0000000000,2025-01-10,SELL,20,85.30,12.50,EUR,1.00,1718.50,Unknown security`;
+
+      const mockFile = createMockFile(csvContent);
+
+      // Mock security lookup - only return one security
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+      ]);
+
+      // Mock currency lookup
+      mockPrismaService.currency.findMany.mockResolvedValue([
+        { code: 'USD' },
+        { code: 'EUR' },
+      ]);
+
+      // Mock batch create
+      mockPrismaService.securityTransaction.createManyAndReturn.mockResolvedValue([
+        { id: 'trans-1' },
+      ]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(2);
+      expect(result.created).toBe(1);
+      expect(result.skipped).toBe(1);
+      expect(result.errors).toBe(0);
+      expect(result.results[0].status).toBe('created');
+      expect(result.results[1].status).toBe('skipped');
+      expect(result.results[1].reason).toContain('not found');
+    });
+
+    it('should handle invalid transaction type', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,2025-01-15,INVALID,10,150.50,9.99,USD,0.92,1395.99,Invalid type`;
+
+      const mockFile = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+      ]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(1);
+      expect(result.created).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toContain('Invalid type');
+    });
+
+    it('should handle invalid numeric values', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,2025-01-15,BUY,abc,150.50,9.99,USD,0.92,1395.99,Invalid quantity`;
+
+      const mockFile = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+      ]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(1);
+      expect(result.created).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toContain('Invalid numeric value');
+    });
+
+    it('should handle currency not found', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,2025-01-15,BUY,10,150.50,9.99,XXX,0.92,1395.99,Invalid currency`;
+
+      const mockFile = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+      ]);
+      // Don't include XXX currency
+      mockPrismaService.currency.findMany.mockResolvedValue([]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(1);
+      expect(result.created).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toContain('Currency XXX not found');
+    });
+
+    it('should throw BadRequestException when row limit exceeded', async () => {
+      // Create CSV with more than 1000 rows
+      const header = 'ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz';
+      const row = 'US0378331005,2025-01-15,BUY,10,150.50,9.99,USD,0.92,1395.99,Test';
+      const rows = Array(1001).fill(row);
+      const csvContent = [header, ...rows].join('\n');
+
+      const mockFile = createMockFile(csvContent);
+
+      await expect(service.importFromCsv(mockFile)).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
+    it('should handle invalid date format', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,invalid-date,BUY,10,150.50,9.99,USD,0.92,1395.99,Invalid date`;
+
+      const mockFile = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+      ]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(1);
+      expect(result.created).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toContain('Invalid date format');
+    });
+
+    it('should handle missing required fields', async () => {
+      const csvContent = `ISIN,Datum,Typ,Menge,Preis,Gebühren,Währung,Wechselkurs,Gesamtwert,Notiz
+US0378331005,2025-01-15,BUY,,,9.99,USD,0.92,1395.99,Missing fields`;
+
+      const mockFile = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([
+        { id: 'sec-1', isin: 'US0378331005' },
+      ]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+
+      const result = await service.importFromCsv(mockFile);
+
+      expect(result.total).toBe(1);
+      expect(result.created).toBe(0);
+      expect(result.skipped).toBe(0);
+      expect(result.errors).toBe(1);
+      expect(result.results[0].status).toBe('error');
+      expect(result.results[0].reason).toContain('Missing required fields');
     });
   });
 });

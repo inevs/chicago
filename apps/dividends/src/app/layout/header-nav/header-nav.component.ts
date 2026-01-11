@@ -93,6 +93,12 @@ export class HeaderNavComponent {
           icon: 'M8 7h12M8 12h12m-12 5h12M3 7h.01M3 12h.01M3 17h.01',
           action: () => this.onNewSecurityTransactionClick(),
           color: 'blue'
+        },
+        {
+          label: 'Transaktionen importieren (CSV)',
+          icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12',
+          action: () => this.onImportSecurityTransactionsCsvClick(),
+          color: 'green'
         }
       ];
     }
@@ -133,6 +139,7 @@ export class HeaderNavComponent {
 
   @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('csvFileInput') csvFileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('transactionCsvFileInput') transactionCsvFileInput?: ElementRef<HTMLInputElement>;
 
   onRangeChange(range: TimeRange) {
     this.uiState.setTimeRange(range);
@@ -184,6 +191,16 @@ export class HeaderNavComponent {
 
   onCsvFileSelected(event: Event) {
     this.transactionFacade.onCsvFileSelected(event);
+  }
+
+  onImportSecurityTransactionsCsvClick() {
+    if (this.transactionCsvFileInput) {
+      this.transactionFacade.handleImportSecurityTransactionsCsv(this.transactionCsvFileInput);
+    }
+  }
+
+  onTransactionCsvFileSelected(event: Event) {
+    this.transactionFacade.onTransactionCsvFileSelected(event);
   }
 
   onMobileSidebarToggle() {
