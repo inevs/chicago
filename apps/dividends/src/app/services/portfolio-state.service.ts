@@ -3,9 +3,10 @@ import { DividendDataService } from './dividend-data.service';
 import { SecurityTransactionService } from './security-transaction.service';
 import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
+import { SecurityService } from './security.service';
 import { UiStateService } from './ui-state.service';
 import { ExchangeRateService, LatestExchangeRate } from './exchange-rate.service';
-import { SecurityPrice, SecurityTransactionWithSecurity, Currency, TransactionType } from '@dividends/shared';
+import { Security, SecurityPrice, SecurityTransactionWithSecurity, Currency, TransactionType } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -15,10 +16,12 @@ export class PortfolioStateService {
   private readonly securityTransactionService = inject(SecurityTransactionService);
   private readonly securityPriceService = inject(SecurityPriceService);
   private readonly currencyService = inject(CurrencyService);
+  private readonly securityService = inject(SecurityService);
   private readonly exchangeRateService = inject(ExchangeRateService);
   private readonly uiState = inject(UiStateService);
 
   // Data State
+  securities = signal<Security[]>([]);
   securityTransactions = signal<SecurityTransactionWithSecurity[]>([]);
   securityPrices = signal<SecurityPrice[]>([]);
   currencies = signal<Currency[]>([]);
@@ -59,11 +62,23 @@ export class PortfolioStateService {
 
   // Data Loading Methods
   loadAllData() {
+    this.loadSecurities();
     this.loadDividends();
     this.loadSecurityTransactions();
     this.loadSecurityPrices();
     this.loadCurrencies();
     this.loadExchangeRates();
+  }
+
+  loadSecurities() {
+    this.securityService.getSecurities().subscribe({
+      next: (securities) => {
+        this.securities.set(securities);
+      },
+      error: (error) => {
+        console.error('Error loading securities:', error);
+      },
+    });
   }
 
   loadDividends() {
