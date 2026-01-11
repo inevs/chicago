@@ -28,6 +28,13 @@ export const appRoutes: Route[] = [
     canActivate: [authGuard],
   },
   {
+    path: 'alle-wertpapiere',
+    loadComponent: () =>
+      import('./pages/all-securities/all-securities.component').then(m => m.AllSecuritiesComponent),
+    title: 'Alle Wertpapiere - DiviTrack',
+    canActivate: [authGuard],
+  },
+  {
     path: 'dividenden',
     loadComponent: () =>
       import('./pages/dividends/dividends.component').then(m => m.DividendsComponent),

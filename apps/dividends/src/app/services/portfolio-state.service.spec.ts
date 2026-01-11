@@ -6,6 +6,7 @@ import { DividendDataService } from './dividend-data.service';
 import { SecurityTransactionService } from './security-transaction.service';
 import { SecurityPriceService } from './security-price.service';
 import { CurrencyService } from './currency.service';
+import { SecurityService } from './security.service';
 import { UiStateService } from './ui-state.service';
 import { ExchangeRateService } from './exchange-rate.service';
 import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
@@ -16,6 +17,7 @@ describe('PortfolioStateService', () => {
   let mockSecurityTransactionService: jest.Mocked<Partial<SecurityTransactionService>>;
   let mockSecurityPriceService: jest.Mocked<Partial<SecurityPriceService>>;
   let mockCurrencyService: jest.Mocked<Partial<CurrencyService>>;
+  let mockSecurityService: jest.Mocked<Partial<SecurityService>>;
   let mockExchangeRateService: jest.Mocked<Partial<ExchangeRateService>>;
   let mockUiStateService: jest.Mocked<Partial<UiStateService>>;
 
@@ -39,6 +41,10 @@ describe('PortfolioStateService', () => {
       getDefaultCurrency: jest.fn().mockReturnValue(of(null)),
     };
 
+    mockSecurityService = {
+      getSecurities: jest.fn().mockReturnValue(of([])),
+    };
+
     mockExchangeRateService = {
       getLatestRates: jest.fn().mockReturnValue(of([])),
     };
@@ -55,6 +61,7 @@ describe('PortfolioStateService', () => {
         { provide: SecurityTransactionService, useValue: mockSecurityTransactionService },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
         { provide: CurrencyService, useValue: mockCurrencyService },
+        { provide: SecurityService, useValue: mockSecurityService },
         { provide: ExchangeRateService, useValue: mockExchangeRateService },
         { provide: UiStateService, useValue: mockUiStateService },
       ],
@@ -69,6 +76,7 @@ describe('PortfolioStateService', () => {
 
   describe('Initialization', () => {
     it('should initialize with empty data state', () => {
+      expect(service.securities()).toEqual([]);
       expect(service.securityTransactions()).toEqual([]);
       expect(service.securityPrices()).toEqual([]);
       expect(service.currencies()).toEqual([]);
@@ -81,6 +89,7 @@ describe('PortfolioStateService', () => {
     it('should load all data', () => {
       service.loadAllData();
 
+      expect(mockSecurityService.getSecurities).toHaveBeenCalled();
       expect(mockDividendDataService.loadTransactionsFromBackend).toHaveBeenCalled();
       expect(mockSecurityTransactionService.getSecurityTransactions).toHaveBeenCalled();
       expect(mockSecurityPriceService.getLatestSecurityPrices).toHaveBeenCalled();

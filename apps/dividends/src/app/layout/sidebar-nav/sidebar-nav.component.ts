@@ -11,6 +11,7 @@ import {
   LineChart,
   ChevronLeft,
   ChevronRight,
+  Library,
 } from 'lucide-angular';
 
 interface NavItem {
@@ -40,6 +41,7 @@ export class SidebarNavComponent {
   navItems: NavItem[] = [
     { path: '/uebersicht', label: 'Übersicht', icon: LayoutDashboard },
     { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
+    { path: '/alle-wertpapiere', label: 'Alle Wertpapiere', icon: Library },
     { path: '/dividenden', label: 'Dividenden', icon: DollarSign },
     { path: '/wertpapiere', label: 'Käufe & Verkäufe', icon: ArrowLeftRight },
     { path: '/analysen', label: 'Analysen', icon: LineChart },
