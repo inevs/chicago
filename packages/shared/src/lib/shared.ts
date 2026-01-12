@@ -210,6 +210,24 @@ export interface ImportTransactionsCsvResponse {
   results: ImportTransactionResult[];
 }
 
+// CSV Import result for individual dividend payments
+export interface ImportDividendResult {
+  row: number;
+  isin: string;
+  status: 'created' | 'skipped' | 'error';
+  reason?: string;
+  dividendPaymentId?: string;
+}
+
+// CSV Import response for dividend payments
+export interface ImportDividendsCsvResponse {
+  total: number;
+  created: number;
+  skipped: number;
+  errors: number;
+  results: ImportDividendResult[];
+}
+
 // Currency conversion utilities
 export class CurrencyConverter {
   /**

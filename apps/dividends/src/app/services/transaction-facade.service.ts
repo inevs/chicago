@@ -489,6 +489,66 @@ export class TransactionFacadeService {
     });
   }
 
+  handleImportDividendsCsv(fileInput: ElementRef<HTMLInputElement>) {
+    this.uiState.showMenu.set(false);
+    fileInput.nativeElement.click();
+  }
+
+  onDividendCsvFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      this.toastService.error('Bitte wählen Sie eine CSV-Datei aus');
+      input.value = '';
+      return;
+    }
+
+    // Show loading toast (duration: 0 = persistent)
+    this.toastService.info('Importiere Dividenden...', 0);
+
+    this.dividendPaymentService.importDividendsCsv(file).subscribe({
+      next: (result) => {
+        this.toastService.clear();
+
+        // Success message with counts
+        if (result.created > 0) {
+          this.toastService.success(
+            `${result.created} Dividendenzahlung(en) erfolgreich importiert! (${result.skipped} übersprungen, ${result.errors} Fehler)`,
+            8000
+          );
+        } else if (result.total === result.skipped) {
+          this.toastService.warning(
+            `Alle ${result.total} Dividendenzahlungen wurden übersprungen (Wertpapiere nicht gefunden)`,
+            6000
+          );
+        } else {
+          this.toastService.error(
+            `Import fehlgeschlagen: ${result.errors} Fehler von ${result.total} Zeilen`,
+            7000
+          );
+        }
+
+        // Reload dividends
+        this.portfolioState.loadDividends();
+      },
+      error: (error) => {
+        this.toastService.clear();
+        this.toastService.error(
+          `Fehler beim CSV-Import: ${error.message}`,
+          7000
+        );
+      },
+      complete: () => {
+        // Reset file input
+        input.value = '';
+      }
+    });
+  }
+
   handleImportConfirm(mode: ImportMode) {
     if (mode === 'cancel') {
       this.uiState.closeImportConfirmModal();

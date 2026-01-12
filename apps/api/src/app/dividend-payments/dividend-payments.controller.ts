@@ -12,6 +12,8 @@ import {
   UsePipes,
   ValidationPipe,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,12 +23,15 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DividendPaymentsService } from './dividend-payments.service';
 import { CreateDividendPaymentDto } from './dto/create-dividend-payment.dto';
 import { UpdateDividendPaymentDto } from './dto/update-dividend-payment.dto';
-import { DividendPayment } from '@dividends/shared';
+import { DividendPayment, ImportDividendsCsvResponse } from '@dividends/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UploadedFile as UploadedFileType } from './dto/import-dividends-csv.dto';
 
 @ApiTags('dividend-payments')
 @ApiBearerAuth()
@@ -144,5 +149,26 @@ export class DividendPaymentsController {
   @ApiResponse({ status: 404, description: 'Dividend payment not found' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.dividendPaymentsService.deleteDividendPayment(id);
+  }
+
+  @Post('import/csv')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Import dividend payments from CSV file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Import results with statistics' })
+  @ApiResponse({ status: 400, description: 'Invalid CSV file or format' })
+  async importCsv(
+    @UploadedFile() file: UploadedFileType
+  ): Promise<ImportDividendsCsvResponse> {
+    return this.dividendPaymentsService.importFromCsv(file);
   }
 }

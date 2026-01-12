@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { DividendPayment, CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/shared';
+import { DividendPayment, CreateDividendPaymentDto, UpdateDividendPaymentDto, ImportDividendsCsvResponse } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -65,6 +65,18 @@ export class DividendPaymentService {
 
   deleteDividendPayment(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  importDividendsCsv(file: File): Observable<ImportDividendsCsvResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<ImportDividendsCsvResponse>(
+      `${this.apiUrl}/import/csv`,
+      formData
+    ).pipe(
       catchError(this.handleError)
     );
   }
