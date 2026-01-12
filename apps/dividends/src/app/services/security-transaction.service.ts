@@ -7,6 +7,7 @@ import {
   CreateSecurityTransactionDto,
   UpdateSecurityTransactionDto,
   TransactionType,
+  ImportTransactionsCsvResponse,
 } from '@dividends/shared';
 
 @Injectable({
@@ -74,6 +75,18 @@ export class SecurityTransactionService {
 
   deleteSecurityTransaction(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  importSecurityTransactionsCsv(file: File): Observable<ImportTransactionsCsvResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<ImportTransactionsCsvResponse>(
+      `${this.apiUrl}/import/csv`,
+      formData
+    ).pipe(
       catchError(this.handleError)
     );
   }

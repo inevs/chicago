@@ -192,6 +192,24 @@ export interface ImportCsvResponse {
   pricesSyncTriggered: boolean;
 }
 
+// CSV Import result for individual security transactions
+export interface ImportTransactionResult {
+  row: number;
+  isin: string;
+  status: 'created' | 'skipped' | 'error';
+  reason?: string;
+  transactionId?: string;
+}
+
+// CSV Import response for transactions
+export interface ImportTransactionsCsvResponse {
+  total: number;
+  created: number;
+  skipped: number;
+  errors: number;
+  results: ImportTransactionResult[];
+}
+
 // Currency conversion utilities
 export class CurrencyConverter {
   /**

@@ -258,4 +258,13 @@
     (change)="onCsvFileSelected($event)"
     class="hidden"
   />
+
+  <!-- Hidden file input for transaction CSV import -->
+  <input
+    #transactionCsvFileInput
+    type="file"
+    accept=".csv"
+    (change)="onTransactionCsvFileSelected($event)"
+    class="hidden"
+  />
 </nav>

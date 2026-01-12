@@ -12,6 +12,8 @@ import {
   UsePipes,
   ValidationPipe,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,12 +23,15 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiConsumes,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { SecurityTransactionsService } from './security-transactions.service';
 import { CreateSecurityTransactionDto } from './dto/create-security-transaction.dto';
 import { UpdateSecurityTransactionDto } from './dto/update-security-transaction.dto';
-import { SecurityTransaction } from '@dividends/shared';
+import { SecurityTransaction, ImportTransactionsCsvResponse } from '@dividends/shared';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UploadedFile as UploadedFileType } from './dto/import-security-transactions-csv.dto';
 
 @ApiTags('security-transactions')
 @ApiBearerAuth()
@@ -160,5 +165,26 @@ export class SecurityTransactionsController {
   @ApiResponse({ status: 404, description: 'Security transaction not found' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.securityTransactionsService.deleteSecurityTransaction(id);
+  }
+
+  @Post('import/csv')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Import security transactions from CSV file' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Import results with statistics' })
+  @ApiResponse({ status: 400, description: 'Invalid CSV file or format' })
+  async importCsv(
+    @UploadedFile() file: UploadedFileType
+  ): Promise<ImportTransactionsCsvResponse> {
+    return this.securityTransactionsService.importFromCsv(file);
   }
 }
