@@ -18,6 +18,9 @@ interface ApiErrorResponse {
 const errorCache = new Map<string, number>();
 const ERROR_DEDUP_WINDOW_MS = 1000; // 1 second window for deduplication
 
+// Flag to prevent multiple simultaneous 401 error handlers
+let isHandling401 = false;
+
 function shouldShowError(message: string): boolean {
   const now = Date.now();
   const lastShown = errorCache.get(message);
@@ -54,6 +57,14 @@ function shouldShowError(message: string): boolean {
  */
 export function clearErrorCache(): void {
   errorCache.clear();
+}
+
+/**
+ * Reset the 401 handling flag - used for testing purposes
+ * @internal
+ */
+export function reset401Handler(): void {
+  isHandling401 = false;
 }
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
@@ -106,21 +117,25 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           toastService.error(sessionExpiredMessage);
         }
 
-        // Clear any existing auth data and redirect to login
-        // Use setTimeout to avoid navigation during the current change detection cycle
-        const returnUrl = router.url;
-        setTimeout(() => {
-          // Clear tokens and auth state
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('auth_user');
-          authService.isAuthenticated.set(false);
-          authService.currentUser.set(null);
+        // Ensure we only handle 401 once to prevent race conditions
+        if (!isHandling401) {
+          isHandling401 = true;
+          const returnUrl = router.url;
 
-          // Navigate to login with return URL
-          router.navigate(['/login'], {
-            queryParams: { returnUrl }
-          });
-        }, 100);
+          // Use setTimeout to avoid navigation during the current change detection cycle
+          setTimeout(() => {
+            // Clear auth state using the service method
+            authService.logout(true); // Skip navigation in logout
+
+            // Navigate to login with return URL
+            router.navigate(['/login'], {
+              queryParams: { returnUrl }
+            });
+
+            // Reset flag after navigation
+            isHandling401 = false;
+          }, 0);
+        }
 
         return throwError(() => error);
       }

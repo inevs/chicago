@@ -5,8 +5,8 @@ import {
   HttpEvent,
 } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { throwError, of } from 'rxjs';
-import { errorInterceptor, clearErrorCache } from './error.interceptor';
+import { throwError, of, forkJoin, catchError } from 'rxjs';
+import { errorInterceptor, clearErrorCache, reset401Handler } from './error.interceptor';
 import { ToastService } from '../services/toast.service';
 import { AuthService } from '../services/auth.service';
 import { signal } from '@angular/core';
@@ -56,6 +56,7 @@ describe('errorInterceptor', () => {
     jest.clearAllMocks();
     jest.useRealTimers();
     clearErrorCache(); // Clear error cache between tests
+    reset401Handler(); // Reset 401 handling flag between tests
   });
 
   it('should handle API error with string message', (done) => {
@@ -261,19 +262,61 @@ describe('errorInterceptor', () => {
           );
 
           // Advance timers to trigger the setTimeout
-          jest.advanceTimersByTime(100);
+          jest.advanceTimersByTime(10);
 
-          // Verify auth state is cleared
-          expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
-          expect(localStorage.removeItem).toHaveBeenCalledWith('auth_user');
-          expect(authService.isAuthenticated()).toBe(false);
-          expect(authService.currentUser()).toBe(null);
+          // Verify authService.logout() is called with skipNavigation=true
+          expect(authService.logout).toHaveBeenCalledWith(true);
 
           expect(router.navigate).toHaveBeenCalledWith(['/login'], {
             queryParams: { returnUrl: '/overview' }
           });
           done();
         },
+      });
+    });
+  });
+
+  it('should handle multiple simultaneous 401 errors gracefully', (done) => {
+    const errorResponse = new HttpErrorResponse({
+      error: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        error: 'Unauthorized',
+      },
+      status: 401,
+      statusText: 'Unauthorized',
+      url: '/api/test',
+    });
+
+    const request = new HttpRequest('GET', '/api/test');
+    const next = jest.fn(() => throwError(() => errorResponse));
+
+    TestBed.runInInjectionContext(() => {
+      // Fire 3 simultaneous 401 errors
+      const calls = [
+        errorInterceptor(request, next).pipe(catchError(() => of(null))),
+        errorInterceptor(request, next).pipe(catchError(() => of(null))),
+        errorInterceptor(request, next).pipe(catchError(() => of(null))),
+      ];
+
+      forkJoin(calls).subscribe(() => {
+        // Advance timers to trigger the setTimeout
+        jest.advanceTimersByTime(10);
+
+        // Should only call logout once despite 3 errors
+        expect(authService.logout).toHaveBeenCalledTimes(1);
+        expect(authService.logout).toHaveBeenCalledWith(true);
+
+        // Should only navigate once
+        expect(router.navigate).toHaveBeenCalledTimes(1);
+        expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+          queryParams: { returnUrl: '/overview' }
+        });
+
+        // Should only show toast once (due to deduplication)
+        expect(toastService.error).toHaveBeenCalledTimes(1);
+
+        done();
       });
     });
   });

@@ -40,12 +40,15 @@ export class AuthService {
     );
   }
 
-  logout(): void {
+  logout(skipNavigation = false): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.currentUser.set(null);
     this.isAuthenticated.set(false);
-    this.router.navigate(['/login']);
+
+    if (!skipNavigation) {
+      this.router.navigate(['/login']);
+    }
   }
 
   getToken(): string | null {

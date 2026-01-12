@@ -119,6 +119,21 @@ describe('AuthService', () => {
       expect(service.isAuthenticated()).toBe(false);
       expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
     });
+
+    it('should clear token and user data but skip navigation when skipNavigation is true', () => {
+      localStorage.setItem('auth_token', 'mock-token');
+      localStorage.setItem('auth_user', JSON.stringify({ id: '1', email: 'test@example.com', name: 'Test' }));
+      service.currentUser.set({ id: '1', email: 'test@example.com', name: 'Test' });
+      service.isAuthenticated.set(true);
+
+      service.logout(true);
+
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(localStorage.getItem('auth_user')).toBeNull();
+      expect(service.currentUser()).toBeNull();
+      expect(service.isAuthenticated()).toBe(false);
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('getToken', () => {
