@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { DividendPayment, CreateDividendPaymentDto, UpdateDividendPaymentDto } from '@dividends/shared';
+import { DividendPayment, CreateDividendPaymentDto, UpdateDividendPaymentDto, ImportDividendsCsvResponse } from '@dividends/shared';
 
 @Injectable({
   providedIn: 'root',
@@ -69,6 +69,18 @@ export class DividendPaymentService {
     );
   }
 
+  importDividendsCsv(file: File): Observable<ImportDividendsCsvResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<ImportDividendsCsvResponse>(
+      `${this.apiUrl}/import/csv`,
+      formData
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'An error occurred';
 
@@ -80,7 +92,14 @@ export class DividendPaymentService {
       if (error.status === 404) {
         errorMessage = 'Security or dividend payment not found';
       } else if (error.status === 400) {
-        errorMessage = 'Invalid dividend payment data provided';
+        // Try to extract detailed error message from backend
+        if (error.error && typeof error.error === 'object' && 'message' in error.error) {
+          errorMessage = error.error.message as string;
+        } else if (error.error && typeof error.error === 'string') {
+          errorMessage = error.error;
+        } else {
+          errorMessage = 'Invalid dividend payment data provided';
+        }
       } else {
         errorMessage = `Server error: ${error.message}`;
       }

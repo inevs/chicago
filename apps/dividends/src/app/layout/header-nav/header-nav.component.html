@@ -267,4 +267,13 @@
     (change)="onTransactionCsvFileSelected($event)"
     class="hidden"
   />
+
+  <!-- Hidden file input for dividend CSV import -->
+  <input
+    #dividendCsvFileInput
+    type="file"
+    accept=".csv"
+    (change)="onDividendCsvFileSelected($event)"
+    class="hidden"
+  />
 </nav>

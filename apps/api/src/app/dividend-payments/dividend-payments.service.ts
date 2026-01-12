@@ -1,11 +1,14 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import { CreateDividendPaymentDto } from './dto/create-dividend-payment.dto';
 import { UpdateDividendPaymentDto } from './dto/update-dividend-payment.dto';
-import { DividendPayment } from '@dividends/shared';
+import { DividendPayment, ImportDividendsCsvResponse, ImportDividendResult } from '@dividends/shared';
+import { parse } from 'csv-parse/sync';
+import { CsvDividendPaymentRow, UploadedFile } from './dto/import-dividends-csv.dto';
 
 @Injectable()
 export class DividendPaymentsService {
@@ -193,5 +196,267 @@ export class DividendPaymentsService {
     if (!currency) {
       throw new NotFoundException(`Currency with code ${code} not found`);
     }
+  }
+
+  async importFromCsv(file: UploadedFile): Promise<ImportDividendsCsvResponse> {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const csvContent = file.buffer.toString('utf-8');
+
+    if (!csvContent || csvContent.trim().length === 0) {
+      throw new BadRequestException('CSV file is empty');
+    }
+
+    // Parse CSV
+    let records: CsvDividendPaymentRow[];
+    try {
+      records = parse(csvContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        cast: false,
+      }) as CsvDividendPaymentRow[];
+    } catch (error) {
+      throw new BadRequestException(`Invalid CSV format. Please check file encoding and structure.`);
+    }
+
+    if (records.length === 0) {
+      throw new BadRequestException('CSV file contains no data rows');
+    }
+
+    // Validate row count limit (max 1000 rows)
+    const MAX_ROWS = 1000;
+    if (records.length > MAX_ROWS) {
+      throw new BadRequestException(
+        `CSV file contains too many rows. Maximum allowed: ${MAX_ROWS}, found: ${records.length}`
+      );
+    }
+
+    // Validate headers
+    const requiredHeaders = ['ISIN', 'Ex-Datum', 'Auszahlungsdatum', 'Anzahl Aktien', 'Dividende pro Aktie', 'Steuer', 'Ursprungswährung', 'Zielwährung', 'Wechselkurs', 'Endzahlung'];
+    const firstRecord = records[0];
+    const missingHeaders = requiredHeaders.filter(
+      (header) => !(header in firstRecord)
+    );
+
+    if (missingHeaders.length > 0) {
+      throw new BadRequestException(
+        `Missing required headers: ${missingHeaders.join(', ')}. Required headers: ${requiredHeaders.join(', ')}`
+      );
+    }
+
+    // Batch load securities by ISIN and currencies to avoid N+1 queries
+    const isinsToCheck = [...new Set(
+      records
+        .map(r => r.ISIN?.trim().toUpperCase())
+        .filter(i => i && i.length > 0)
+    )];
+
+    const currenciesToCheck = [...new Set([
+      ...records.map(r => r.Ursprungswährung?.trim().toUpperCase()).filter(c => c && c.length > 0),
+      ...records.map(r => r.Zielwährung?.trim().toUpperCase()).filter(c => c && c.length > 0)
+    ])];
+
+    const [existingSecurities, existingCurrencies] = await Promise.all([
+      this.prisma.security.findMany({
+        where: { isin: { in: isinsToCheck } },
+        select: { id: true, isin: true },
+      }),
+      this.prisma.currency.findMany({
+        where: { code: { in: currenciesToCheck } },
+        select: { code: true },
+      }),
+    ]);
+
+    // Create lookup maps for O(1) access
+    const isinToSecurityId = new Map(
+      existingSecurities
+        .filter(s => s.isin)
+        .map(s => [s.isin!.toUpperCase(), s.id])
+    );
+    const existingCurrenciesSet = new Set(existingCurrencies.map(c => c.code));
+
+    // Process and validate each row
+    const results: ImportDividendResult[] = [];
+    const paymentsToCreate: Array<{
+      exDate: Date;
+      payoutDate: Date;
+      securityId: string;
+      shares: number;
+      dividendYield: number;
+      taxAmount: number;
+      originCurrency: string;
+      destCurrency: string;
+      conversionRate: number;
+      finalPayment: number;
+      note: string | null;
+    }> = [];
+    const ROW_NUMBER_OFFSET = 2; // CSV header row + 0-indexed array
+
+    for (let i = 0; i < records.length; i++) {
+      const row = records[i];
+      const rowNumber = i + ROW_NUMBER_OFFSET;
+
+      try {
+        // Trim and normalize data
+        const isin = row.ISIN?.trim().toUpperCase();
+        const exDatumStr = row['Ex-Datum']?.trim();
+        const auszahlungsdatumStr = row.Auszahlungsdatum?.trim();
+        const anzahlAktienStr = row['Anzahl Aktien']?.trim();
+        const dividendeProAktieStr = row['Dividende pro Aktie']?.trim();
+        const steuerStr = row.Steuer?.trim();
+        const ursprungswährung = row.Ursprungswährung?.trim().toUpperCase();
+        const zielwährung = row.Zielwährung?.trim().toUpperCase();
+        const wechselkursStr = row.Wechselkurs?.trim();
+        const endzahlungStr = row.Endzahlung?.trim();
+        const notiz = row.Notiz?.trim() || null;
+
+        // Basic validation - check for empty strings after trimming
+        if (!isin || !exDatumStr || !auszahlungsdatumStr || !anzahlAktienStr || !dividendeProAktieStr || !steuerStr || !ursprungswährung || !zielwährung || !wechselkursStr || !endzahlungStr) {
+          results.push({
+            row: rowNumber,
+            isin: isin || 'UNKNOWN',
+            status: 'error',
+            reason: 'Missing required fields',
+          });
+          continue;
+        }
+
+        // Check if security exists
+        const securityId = isinToSecurityId.get(isin);
+        if (!securityId) {
+          results.push({
+            row: rowNumber,
+            isin,
+            status: 'error',
+            reason: `Security with ISIN ${isin} not found`,
+          });
+          continue;
+        }
+
+        // Check if currencies exist
+        if (!existingCurrenciesSet.has(ursprungswährung)) {
+          results.push({
+            row: rowNumber,
+            isin,
+            status: 'error',
+            reason: `Currency ${ursprungswährung} not found`,
+          });
+          continue;
+        }
+
+        if (!existingCurrenciesSet.has(zielwährung)) {
+          results.push({
+            row: rowNumber,
+            isin,
+            status: 'error',
+            reason: `Currency ${zielwährung} not found`,
+          });
+          continue;
+        }
+
+        // Parse dates
+        const exDate = new Date(exDatumStr);
+        const payoutDate = new Date(auszahlungsdatumStr);
+
+        if (isNaN(exDate.getTime()) || isNaN(payoutDate.getTime())) {
+          results.push({
+            row: rowNumber,
+            isin,
+            status: 'error',
+            reason: 'Invalid date format',
+          });
+          continue;
+        }
+
+        // Parse numeric fields
+        const shares = parseFloat(anzahlAktienStr);
+        const dividendYield = parseFloat(dividendeProAktieStr);
+        const taxAmount = parseFloat(steuerStr);
+        const conversionRate = parseFloat(wechselkursStr);
+        const finalPayment = parseFloat(endzahlungStr);
+
+        if (isNaN(shares) || isNaN(dividendYield) || isNaN(taxAmount) || isNaN(conversionRate) || isNaN(finalPayment)) {
+          results.push({
+            row: rowNumber,
+            isin,
+            status: 'error',
+            reason: 'Invalid numeric value',
+          });
+          continue;
+        }
+
+        // Validate numeric ranges
+        if (shares <= 0 || dividendYield < 0 || taxAmount < 0 || conversionRate <= 0 || finalPayment < 0) {
+          results.push({
+            row: rowNumber,
+            isin,
+            status: 'error',
+            reason: 'Invalid numeric range (shares must be > 0, rates must be > 0, amounts must be >= 0)',
+          });
+          continue;
+        }
+
+        // Add to batch create list
+        paymentsToCreate.push({
+          exDate,
+          payoutDate,
+          securityId,
+          shares,
+          dividendYield,
+          taxAmount,
+          originCurrency: ursprungswährung,
+          destCurrency: zielwährung,
+          conversionRate,
+          finalPayment,
+          note: notiz,
+        });
+
+        results.push({
+          row: rowNumber,
+          isin,
+          status: 'created',
+        });
+      } catch (error) {
+        results.push({
+          row: rowNumber,
+          isin: row.ISIN?.trim().toUpperCase() || 'UNKNOWN',
+          status: 'error',
+          reason: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Batch create dividend payments
+    if (paymentsToCreate.length > 0) {
+      const createdPayments = await this.prisma.dividendPayment.createManyAndReturn({
+        data: paymentsToCreate,
+        select: { id: true },
+      });
+
+      // Update results with created payment IDs
+      let createdIndex = 0;
+      for (const result of results) {
+        if (result.status === 'created') {
+          result.dividendPaymentId = createdPayments[createdIndex]?.id;
+          createdIndex++;
+        }
+      }
+    }
+
+    // Calculate summary statistics
+    const created = results.filter((r) => r.status === 'created').length;
+    const skipped = results.filter((r) => r.status === 'skipped').length;
+    const errors = results.filter((r) => r.status === 'error').length;
+
+    return {
+      total: records.length,
+      created,
+      skipped,
+      errors,
+      results,
+    };
   }
 }
