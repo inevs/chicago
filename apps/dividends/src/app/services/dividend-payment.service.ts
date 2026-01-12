@@ -92,7 +92,14 @@ export class DividendPaymentService {
       if (error.status === 404) {
         errorMessage = 'Security or dividend payment not found';
       } else if (error.status === 400) {
-        errorMessage = 'Invalid dividend payment data provided';
+        // Try to extract detailed error message from backend
+        if (error.error && typeof error.error === 'object' && 'message' in error.error) {
+          errorMessage = error.error.message as string;
+        } else if (error.error && typeof error.error === 'string') {
+          errorMessage = error.error;
+        } else {
+          errorMessage = 'Invalid dividend payment data provided';
+        }
       } else {
         errorMessage = `Server error: ${error.message}`;
       }
