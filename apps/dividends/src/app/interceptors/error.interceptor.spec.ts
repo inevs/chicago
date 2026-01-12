@@ -4,12 +4,14 @@ import {
   HttpErrorResponse,
   HttpEvent,
 } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { throwError, of } from 'rxjs';
-import { errorInterceptor } from './error.interceptor';
+import { errorInterceptor, clearErrorCache } from './error.interceptor';
 import { ToastService } from '../services/toast.service';
 
 describe('errorInterceptor', () => {
   let toastService: ToastService;
+  let router: Router;
 
   const mockToastService = {
     error: jest.fn(),
@@ -18,16 +20,28 @@ describe('errorInterceptor', () => {
     warning: jest.fn(),
   };
 
+  const mockRouter = {
+    navigate: jest.fn(),
+    url: '/overview',
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [{ provide: ToastService, useValue: mockToastService }],
+      providers: [
+        { provide: ToastService, useValue: mockToastService },
+        { provide: Router, useValue: mockRouter },
+      ],
     });
 
     toastService = TestBed.inject(ToastService);
+    router = TestBed.inject(Router);
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
+    clearErrorCache(); // Clear error cache between tests
   });
 
   it('should handle API error with string message', (done) => {
@@ -205,6 +219,111 @@ describe('errorInterceptor', () => {
           });
           consoleSpy.mockRestore();
           done();
+        },
+      });
+    });
+  });
+
+  it('should handle 401 error and redirect to login', (done) => {
+    const errorResponse = new HttpErrorResponse({
+      error: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        error: 'Unauthorized',
+      },
+      status: 401,
+      statusText: 'Unauthorized',
+      url: '/api/test',
+    });
+
+    const request = new HttpRequest('GET', '/api/test');
+    const next = jest.fn(() => throwError(() => errorResponse));
+
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(request, next).subscribe({
+        error: () => {
+          expect(toastService.error).toHaveBeenCalledWith(
+            'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.'
+          );
+
+          // Advance timers to trigger the setTimeout
+          jest.advanceTimersByTime(100);
+
+          expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+            queryParams: { returnUrl: '/overview' }
+          });
+          done();
+        },
+      });
+    });
+  });
+
+  it('should deduplicate identical error messages', (done) => {
+    const errorResponse = new HttpErrorResponse({
+      error: {
+        statusCode: 500,
+        message: 'Server error',
+        error: 'Internal Server Error',
+      },
+      status: 500,
+      statusText: 'Internal Server Error',
+      url: '/api/test',
+    });
+
+    const request = new HttpRequest('GET', '/api/test');
+    const next = jest.fn(() => throwError(() => errorResponse));
+
+    TestBed.runInInjectionContext(() => {
+      // First error - should show toast
+      errorInterceptor(request, next).subscribe({
+        error: () => {
+          expect(toastService.error).toHaveBeenCalledTimes(1);
+          expect(toastService.error).toHaveBeenCalledWith('Server error');
+
+          // Second error within deduplication window - should not show toast again
+          errorInterceptor(request, next).subscribe({
+            error: () => {
+              // Still only 1 call from the first error
+              expect(toastService.error).toHaveBeenCalledTimes(1);
+              done();
+            },
+          });
+        },
+      });
+    });
+  });
+
+  it('should show error again after deduplication window expires', (done) => {
+    const errorResponse = new HttpErrorResponse({
+      error: {
+        statusCode: 500,
+        message: 'Server error',
+        error: 'Internal Server Error',
+      },
+      status: 500,
+      statusText: 'Internal Server Error',
+      url: '/api/test',
+    });
+
+    const request = new HttpRequest('GET', '/api/test');
+    const next = jest.fn(() => throwError(() => errorResponse));
+
+    TestBed.runInInjectionContext(() => {
+      // First error
+      errorInterceptor(request, next).subscribe({
+        error: () => {
+          expect(toastService.error).toHaveBeenCalledTimes(1);
+
+          // Advance time beyond deduplication window (1 second)
+          jest.advanceTimersByTime(1100);
+
+          // Second error after window - should show toast again
+          errorInterceptor(request, next).subscribe({
+            error: () => {
+              expect(toastService.error).toHaveBeenCalledTimes(2);
+              done();
+            },
+          });
         },
       });
     });

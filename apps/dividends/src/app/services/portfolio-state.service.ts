@@ -6,6 +6,7 @@ import { CurrencyService } from './currency.service';
 import { SecurityService } from './security.service';
 import { UiStateService } from './ui-state.service';
 import { ExchangeRateService, LatestExchangeRate } from './exchange-rate.service';
+import { AuthService } from './auth.service';
 import { Security, SecurityPrice, SecurityTransactionWithSecurity, Currency, TransactionType } from '@dividends/shared';
 
 @Injectable({
@@ -19,6 +20,7 @@ export class PortfolioStateService {
   private readonly securityService = inject(SecurityService);
   private readonly exchangeRateService = inject(ExchangeRateService);
   private readonly uiState = inject(UiStateService);
+  private readonly authService = inject(AuthService);
 
   // Data State
   securities = signal<Security[]>([]);
@@ -62,6 +64,7 @@ export class PortfolioStateService {
 
   // Data Loading Methods
   loadAllData() {
+    // Load data - if token is invalid, the error interceptor will handle 401 errors
     this.loadSecurities();
     this.loadDividends();
     this.loadSecurityTransactions();

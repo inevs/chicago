@@ -52,6 +52,54 @@ export class AuthService {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
+  /**
+   * Check if the current token is valid (exists and not expired)
+   */
+  isTokenValid(): boolean {
+    const token = this.getToken();
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const payload = this.decodeTokenPayload(token);
+      if (!payload || !payload.exp) {
+        return false;
+      }
+
+      // Check if token is expired (exp is in seconds, Date.now() is in milliseconds)
+      const expirationTime = payload.exp * 1000;
+      const currentTime = Date.now();
+
+      // Add a small buffer (30 seconds) to account for clock skew
+      const bufferMs = 30 * 1000;
+      return currentTime < expirationTime - bufferMs;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Decode JWT token payload without verification
+   * This is only used to read the expiration time, not for security validation
+   */
+  private decodeTokenPayload(token: string): { exp?: number } | null {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+
+      const payload = parts[1];
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decoded);
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  }
+
   private setSession(authResult: LoginResponse): void {
     localStorage.setItem(this.TOKEN_KEY, authResult.access_token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(authResult.user));
