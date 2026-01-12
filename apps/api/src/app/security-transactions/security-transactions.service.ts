@@ -232,7 +232,7 @@ export class SecurityTransactionsService {
         cast: false,
       }) as CsvSecurityTransactionRow[];
     } catch (error) {
-      throw new BadRequestException(`Invalid CSV format: ${error.message}`);
+      throw new BadRequestException(`Invalid CSV format. Please check file encoding and structure.`);
     }
 
     if (records.length === 0) {
