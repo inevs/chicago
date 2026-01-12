@@ -119,6 +119,21 @@ describe('AuthService', () => {
       expect(service.isAuthenticated()).toBe(false);
       expect(mockRouter.navigate).toHaveBeenCalledWith(['/login']);
     });
+
+    it('should clear token and user data but skip navigation when skipNavigation is true', () => {
+      localStorage.setItem('auth_token', 'mock-token');
+      localStorage.setItem('auth_user', JSON.stringify({ id: '1', email: 'test@example.com', name: 'Test' }));
+      service.currentUser.set({ id: '1', email: 'test@example.com', name: 'Test' });
+      service.isAuthenticated.set(true);
+
+      service.logout(true);
+
+      expect(localStorage.getItem('auth_token')).toBeNull();
+      expect(localStorage.getItem('auth_user')).toBeNull();
+      expect(service.currentUser()).toBeNull();
+      expect(service.isAuthenticated()).toBe(false);
+      expect(mockRouter.navigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('getToken', () => {
@@ -129,6 +144,71 @@ describe('AuthService', () => {
 
     it('should return null when no token exists', () => {
       expect(service.getToken()).toBeNull();
+    });
+  });
+
+  describe('isTokenValid', () => {
+    function createMockJWT(expirationTime: number): string {
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ exp: expirationTime, sub: '1', email: 'test@example.com' }));
+      const signature = 'mock-signature';
+      return `${header}.${payload}.${signature}`;
+    }
+
+    it('should return true for valid non-expired token', () => {
+      // Create token that expires 1 hour in the future
+      const futureTime = Math.floor(Date.now() / 1000) + 3600;
+      const validToken = createMockJWT(futureTime);
+      localStorage.setItem('auth_token', validToken);
+
+      expect(service.isTokenValid()).toBe(true);
+    });
+
+    it('should return false for expired token', () => {
+      // Create token that expired 1 hour ago
+      const pastTime = Math.floor(Date.now() / 1000) - 3600;
+      const expiredToken = createMockJWT(pastTime);
+      localStorage.setItem('auth_token', expiredToken);
+
+      expect(service.isTokenValid()).toBe(false);
+    });
+
+    it('should return false for token expiring within buffer time (30s)', () => {
+      // Create token that expires in 15 seconds (within 30s buffer)
+      const soonTime = Math.floor(Date.now() / 1000) + 15;
+      const soonToExpireToken = createMockJWT(soonTime);
+      localStorage.setItem('auth_token', soonToExpireToken);
+
+      expect(service.isTokenValid()).toBe(false);
+    });
+
+    it('should return false when no token exists', () => {
+      expect(service.isTokenValid()).toBe(false);
+    });
+
+    it('should return false for malformed token', () => {
+      localStorage.setItem('auth_token', 'invalid-token-format');
+      expect(service.isTokenValid()).toBe(false);
+    });
+
+    it('should return false for token without expiration field', () => {
+      const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+      const payload = btoa(JSON.stringify({ sub: '1', email: 'test@example.com' })); // No exp field
+      const signature = 'mock-signature';
+      const tokenWithoutExp = `${header}.${payload}.${signature}`;
+      localStorage.setItem('auth_token', tokenWithoutExp);
+
+      expect(service.isTokenValid()).toBe(false);
+    });
+
+    it('should handle base64 decoding errors gracefully', () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const invalidBase64Token = 'header.@invalid@base64@.signature';
+      localStorage.setItem('auth_token', invalidBase64Token);
+
+      expect(service.isTokenValid()).toBe(false);
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
     });
   });
 });

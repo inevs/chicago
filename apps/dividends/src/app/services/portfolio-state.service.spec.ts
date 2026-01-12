@@ -9,6 +9,7 @@ import { CurrencyService } from './currency.service';
 import { SecurityService } from './security.service';
 import { UiStateService } from './ui-state.service';
 import { ExchangeRateService } from './exchange-rate.service';
+import { AuthService } from './auth.service';
 import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
 
 describe('PortfolioStateService', () => {
@@ -20,6 +21,7 @@ describe('PortfolioStateService', () => {
   let mockSecurityService: jest.Mocked<Partial<SecurityService>>;
   let mockExchangeRateService: jest.Mocked<Partial<ExchangeRateService>>;
   let mockUiStateService: jest.Mocked<Partial<UiStateService>>;
+  let mockAuthService: jest.Mocked<Partial<AuthService>>;
 
   beforeEach(() => {
     mockDividendDataService = {
@@ -54,6 +56,10 @@ describe('PortfolioStateService', () => {
       setTimeRange: jest.fn(),
     };
 
+    mockAuthService = {
+      isTokenValid: jest.fn().mockReturnValue(true), // Default to valid token
+    };
+
     TestBed.configureTestingModule({
       providers: [
         PortfolioStateService,
@@ -64,6 +70,7 @@ describe('PortfolioStateService', () => {
         { provide: SecurityService, useValue: mockSecurityService },
         { provide: ExchangeRateService, useValue: mockExchangeRateService },
         { provide: UiStateService, useValue: mockUiStateService },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     });
 

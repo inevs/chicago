@@ -6,9 +6,11 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
+  // Check if token is valid (isTokenValid already verifies token exists)
+  if (authService.isTokenValid()) {
     return true;
   }
 
+  // If token is invalid or doesn't exist, redirect to login
   return router.createUrlTree(['/login']);
 };
