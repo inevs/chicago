@@ -32,9 +32,6 @@ WORKDIR /app
 # Copy package files from builder
 COPY --from=builder /app/package*.json ./
 
-# Install production dependencies only
-RUN npm ci --omit=dev && npm cache clean --force
-
 # Copy built application
 COPY --from=builder /app/dist/apps/api ./
 
@@ -45,11 +42,14 @@ COPY --from=builder /app/apps/api/prisma.config.ts ./prisma.config.ts
 # Copy generated Prisma client
 COPY --from=builder /app/apps/api/generated ./generated
 
+# Install production dependencies (including tsx for seeding)
+RUN npm ci --omit=dev && npm cache clean --force
+
 # Install Prisma CLI for migrations
 RUN npm install -g prisma@7.1.0
 
 # Expose port
 EXPOSE 3000
 
-# Run migrations and start the application
-CMD ["sh", "-c", "npx prisma migrate deploy --config=prisma.config.ts && node main.js"]
+# Run migrations, seed database, and start the application
+CMD ["sh", "-c", "npx prisma migrate deploy --config=prisma.config.ts && npx prisma db seed --config=prisma.config.ts && node main.js"]
