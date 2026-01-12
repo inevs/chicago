@@ -42,11 +42,11 @@ COPY --from=builder /app/apps/api/prisma.config.ts ./prisma.config.ts
 # Copy generated Prisma client
 COPY --from=builder /app/apps/api/generated ./generated
 
-# Install production dependencies (including tsx for seeding)
+# Install production dependencies
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Install Prisma CLI for migrations
-RUN npm install -g prisma@7.1.0
+# Install Prisma CLI and tsx for migrations and seeding
+RUN npm install -g prisma@7.1.0 tsx@4.21.0
 
 # Expose port
 EXPOSE 3000
