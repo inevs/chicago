@@ -49,6 +49,7 @@ describe('authGuard', () => {
   it('should redirect to login when user is not authenticated', () => {
     const mockUrlTree = {} as UrlTree;
     mockIsAuthenticated.set(false);
+    mockAuthService.isTokenValid.mockReturnValue(false); // Token is invalid when not authenticated
     mockRouter.createUrlTree.mockReturnValue(mockUrlTree);
 
     const result = TestBed.runInInjectionContext(() =>

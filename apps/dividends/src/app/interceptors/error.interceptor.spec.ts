@@ -8,10 +8,13 @@ import { Router } from '@angular/router';
 import { throwError, of } from 'rxjs';
 import { errorInterceptor, clearErrorCache } from './error.interceptor';
 import { ToastService } from '../services/toast.service';
+import { AuthService } from '../services/auth.service';
+import { signal } from '@angular/core';
 
 describe('errorInterceptor', () => {
   let toastService: ToastService;
   let router: Router;
+  let authService: AuthService;
 
   const mockToastService = {
     error: jest.fn(),
@@ -25,16 +28,27 @@ describe('errorInterceptor', () => {
     url: '/overview',
   };
 
+  const mockAuthService = {
+    isAuthenticated: signal(true),
+    currentUser: signal(null),
+    logout: jest.fn(),
+  };
+
   beforeEach(() => {
+    // Setup localStorage mock
+    Storage.prototype.removeItem = jest.fn();
+
     TestBed.configureTestingModule({
       providers: [
         { provide: ToastService, useValue: mockToastService },
         { provide: Router, useValue: mockRouter },
+        { provide: AuthService, useValue: mockAuthService },
       ],
     });
 
     toastService = TestBed.inject(ToastService);
     router = TestBed.inject(Router);
+    authService = TestBed.inject(AuthService);
     jest.useFakeTimers();
   });
 
@@ -248,6 +262,12 @@ describe('errorInterceptor', () => {
 
           // Advance timers to trigger the setTimeout
           jest.advanceTimersByTime(100);
+
+          // Verify auth state is cleared
+          expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token');
+          expect(localStorage.removeItem).toHaveBeenCalledWith('auth_user');
+          expect(authService.isAuthenticated()).toBe(false);
+          expect(authService.currentUser()).toBe(null);
 
           expect(router.navigate).toHaveBeenCalledWith(['/login'], {
             queryParams: { returnUrl: '/overview' }

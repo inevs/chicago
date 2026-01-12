@@ -6,13 +6,11 @@ export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Check if token exists AND is valid (not expired)
-  if (authService.isAuthenticated() && authService.isTokenValid()) {
+  // Check if token is valid (isTokenValid already verifies token exists)
+  if (authService.isTokenValid()) {
     return true;
   }
 
   // If token is invalid or doesn't exist, redirect to login
-  // Note: If token exists but is invalid, we could call logout() here,
-  // but the PortfolioStateService will handle that when trying to load data
   return router.createUrlTree(['/login']);
 };

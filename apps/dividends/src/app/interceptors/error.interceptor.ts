@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { ToastService } from '../services/toast.service';
+import { AuthService } from '../services/auth.service';
 
 interface ApiErrorResponse {
   statusCode: number;
@@ -29,9 +30,18 @@ function shouldShowError(message: string): boolean {
 
   // Clean up old entries to prevent memory leaks
   if (errorCache.size > 50) {
-    const oldestKey = errorCache.keys().next().value;
-    if (oldestKey !== undefined) {
-      errorCache.delete(oldestKey);
+    // Remove expired entries first
+    const cutoffTime = now - ERROR_DEDUP_WINDOW_MS;
+    for (const [key, timestamp] of errorCache.entries()) {
+      if (timestamp < cutoffTime) {
+        errorCache.delete(key);
+      }
+    }
+
+    // If still over limit, remove oldest entries until we're at 40
+    if (errorCache.size > 50) {
+      const keysToDelete = Array.from(errorCache.keys()).slice(0, errorCache.size - 40);
+      keysToDelete.forEach(key => errorCache.delete(key));
     }
   }
 
@@ -49,6 +59,7 @@ export function clearErrorCache(): void {
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const toastService = inject(ToastService);
   const router = inject(Router);
+  const authService = inject(AuthService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -88,16 +99,26 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       // Handle 401 Unauthorized errors - redirect to login
       if (error.status === 401) {
+        const sessionExpiredMessage = 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
+
         // Only show error if not already shown recently (deduplication)
-        if (shouldShowError('Unauthorized')) {
-          toastService.error('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+        if (shouldShowError(sessionExpiredMessage)) {
+          toastService.error(sessionExpiredMessage);
         }
 
         // Clear any existing auth data and redirect to login
         // Use setTimeout to avoid navigation during the current change detection cycle
+        const returnUrl = router.url;
         setTimeout(() => {
+          // Clear tokens and auth state
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          authService.isAuthenticated.set(false);
+          authService.currentUser.set(null);
+
+          // Navigate to login with return URL
           router.navigate(['/login'], {
-            queryParams: { returnUrl: router.url }
+            queryParams: { returnUrl }
           });
         }, 100);
 
