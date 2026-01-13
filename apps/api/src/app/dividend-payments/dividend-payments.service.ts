@@ -235,6 +235,7 @@ export class DividendPaymentsService {
     }
 
     // Validate headers
+    // Note: 'Steuer', 'Wechselkurs', and 'Notiz' are optional, but their columns must exist
     const requiredHeaders = ['ISIN', 'Ex-Datum', 'Auszahlungsdatum', 'Anzahl Aktien', 'Dividende pro Aktie', 'Steuer', 'Ursprungswährung', 'Zielwährung', 'Wechselkurs', 'Endzahlung'];
     const firstRecord = records[0];
     const missingHeaders = requiredHeaders.filter(
@@ -314,7 +315,8 @@ export class DividendPaymentsService {
         const notiz = row.Notiz?.trim() || null;
 
         // Basic validation - check for empty strings after trimming
-        if (!isin || !exDatumStr || !auszahlungsdatumStr || !anzahlAktienStr || !dividendeProAktieStr || !steuerStr || !ursprungswährung || !zielwährung || !wechselkursStr || !endzahlungStr) {
+        // Note: steuerStr and wechselkursStr are optional
+        if (!isin || !exDatumStr || !auszahlungsdatumStr || !anzahlAktienStr || !dividendeProAktieStr || !ursprungswährung || !zielwährung || !endzahlungStr) {
           results.push({
             row: rowNumber,
             isin: isin || 'UNKNOWN',
@@ -372,10 +374,11 @@ export class DividendPaymentsService {
         }
 
         // Parse numeric fields
+        // Use default values for optional fields: taxAmount = 0, conversionRate = 1
         const shares = parseFloat(anzahlAktienStr);
         const dividendYield = parseFloat(dividendeProAktieStr);
-        const taxAmount = parseFloat(steuerStr);
-        const conversionRate = parseFloat(wechselkursStr);
+        const taxAmount = steuerStr && steuerStr.length > 0 ? parseFloat(steuerStr) : 0;
+        const conversionRate = wechselkursStr && wechselkursStr.length > 0 ? parseFloat(wechselkursStr) : 1;
         const finalPayment = parseFloat(endzahlungStr);
 
         if (isNaN(shares) || isNaN(dividendYield) || isNaN(taxAmount) || isNaN(conversionRate) || isNaN(finalPayment)) {
