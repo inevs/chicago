@@ -247,7 +247,7 @@ export class SecurityTransactionsService {
       );
     }
 
-    // Validate headers
+    // Validate headers (Wechselkurs is present but can be empty)
     const requiredHeaders = ['ISIN', 'Datum', 'Typ', 'Menge', 'Preis', 'Gebühren', 'Währung', 'Wechselkurs', 'Gesamtwert'];
     const firstRecord = records[0];
     const missingHeaders = requiredHeaders.filter(
@@ -256,7 +256,7 @@ export class SecurityTransactionsService {
 
     if (missingHeaders.length > 0) {
       throw new BadRequestException(
-        `Missing required headers: ${missingHeaders.join(', ')}. Required headers: ${requiredHeaders.join(', ')}`
+        `Missing required headers: ${missingHeaders.join(', ')}. Required headers: ${requiredHeaders.join(', ')} (Wechselkurs can be empty, defaults to 1.0)`
       );
     }
 
@@ -326,7 +326,8 @@ export class SecurityTransactionsService {
         const notiz = row.Notiz?.trim() || null;
 
         // Basic validation - check for empty strings after trimming
-        if (!isin || !dateStr || !typ || !mengeStr || !preisStr || !gebührenStr || !währung || !wechselkursStr || !gesamtwertStr) {
+        // Note: wechselkursStr is optional, will default to 1.0 if empty
+        if (!isin || !dateStr || !typ || !mengeStr || !preisStr || !gebührenStr || !währung || !gesamtwertStr) {
           results.push({
             row: rowNumber,
             isin: isin || 'UNKNOWN',
@@ -351,7 +352,8 @@ export class SecurityTransactionsService {
         const menge = parseFloat(mengeStr);
         const preis = parseFloat(preisStr);
         const gebühren = parseFloat(gebührenStr);
-        const wechselkurs = parseFloat(wechselkursStr);
+        // Default to 1.0 if wechselkurs is empty or not provided (for same-currency transactions)
+        const wechselkurs = wechselkursStr && wechselkursStr.length > 0 ? parseFloat(wechselkursStr) : 1.0;
         const gesamtwert = parseFloat(gesamtwertStr);
 
         if (isNaN(menge) || isNaN(preis) || isNaN(gebühren) || isNaN(wechselkurs) || isNaN(gesamtwert)) {
