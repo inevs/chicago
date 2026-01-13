@@ -71,7 +71,7 @@ export interface CreateDividendPaymentDto {
   destCurrency: string;
   conversionRate: number;
   finalPayment: number;
-  note?: string;
+  note?: string | null;
 }
 
 // DTO for updating an existing dividend payment
@@ -86,7 +86,7 @@ export interface UpdateDividendPaymentDto {
   destCurrency?: string;
   conversionRate?: number;
   finalPayment?: number;
-  note?: string;
+  note?: string | null;
 }
 
 // Enum for transaction types (matches Prisma schema)
@@ -144,7 +144,7 @@ export interface CreateSecurityTransactionDto {
   currency: string;
   exchangeRate: number;
   totalValue: number;
-  note?: string;
+  note?: string | null;
 }
 
 // DTO for updating an existing security transaction
@@ -158,7 +158,7 @@ export interface UpdateSecurityTransactionDto {
   currency?: string;
   exchangeRate?: number;
   totalValue?: number;
-  note?: string;
+  note?: string | null;
 }
 
 // ExchangeRate interface (matches Prisma model)

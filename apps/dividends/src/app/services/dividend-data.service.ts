@@ -233,6 +233,7 @@ export class DividendDataService {
     return {
       id: payment.id,
       date: new Date(payment.payoutDate).toISOString().split('T')[0],
+      exDate: new Date(payment.exDate).toISOString().split('T')[0],
       name: payment.security?.name || 'Unknown',
       securityId: payment.securityId,
       amount: Number(payment.shares),
@@ -242,6 +243,7 @@ export class DividendDataService {
       rate: Number(payment.conversionRate),
       finalPayment: Number(payment.finalPayment),
       buyPrice: 0, // Set to 0 as buyPrice is not stored in backend
+      note: payment.note,
     };
   }
 

@@ -1,6 +1,7 @@
 export interface DividendTransaction {
   id: string | number;
-  date: string;
+  date: string; // payoutDate - keeping for backward compatibility
+  exDate?: string; // Ex-dividend date
   name: string;
   securityId?: string;
   amount: number;

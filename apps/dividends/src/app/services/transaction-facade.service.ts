@@ -61,7 +61,7 @@ export class TransactionFacadeService {
       destCurrency: 'EUR',
       conversionRate: transaction.rate,
       finalPayment: transaction.finalPayment,
-      note: transaction.note || undefined,
+      note: transaction.note && transaction.note.trim() !== '' ? transaction.note : undefined,
     };
 
     this.dividendPaymentService.createDividendPayment(dto).subscribe({
@@ -91,7 +91,7 @@ export class TransactionFacadeService {
       destCurrency: 'EUR',
       conversionRate: transaction.rate,
       finalPayment: transaction.finalPayment,
-      note: transaction.note || undefined,
+      note: transaction.note !== undefined ? (transaction.note.trim() !== '' ? transaction.note : null) : undefined,
     };
 
     this.dividendPaymentService.updateDividendPayment(transaction.id, dto).subscribe({
@@ -231,7 +231,7 @@ export class TransactionFacadeService {
       currency: transaction.currency,
       exchangeRate: transaction.exchangeRate,
       totalValue: transaction.totalValue,
-      note: transaction.note || undefined,
+      note: transaction.note && transaction.note.trim() !== '' ? transaction.note : undefined,
     };
 
     this.securityTransactionService.createSecurityTransaction(dto).subscribe({
@@ -260,7 +260,7 @@ export class TransactionFacadeService {
       currency: transaction.currency,
       exchangeRate: transaction.exchangeRate,
       totalValue: transaction.totalValue,
-      note: transaction.note || undefined,
+      note: transaction.note !== undefined ? (transaction.note.trim() !== '' ? transaction.note : null) : undefined,
     };
 
     this.securityTransactionService.updateSecurityTransaction(transaction.id, dto).subscribe({

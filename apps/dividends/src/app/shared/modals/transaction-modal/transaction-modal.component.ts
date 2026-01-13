@@ -80,9 +80,9 @@ export class TransactionModalComponent implements OnChanges {
         this.formData.set({
           id: typeof tx.id === 'string' ? tx.id : String(tx.id),
           name: tx.name,
-          securityId: '', // Will be populated if we have the securityId from backend
-          exDate: tx.date,
-          payoutDate: tx.date, // Use same date if no separate payout date
+          securityId: tx.securityId || '', // Will be populated if we have the securityId from backend
+          exDate: tx.exDate || tx.date, // Use exDate if available, fallback to date
+          payoutDate: tx.date, // date field is the payoutDate
           amount: tx.amount,
           dividend: tx.dividend,
           currency: tx.currency,
