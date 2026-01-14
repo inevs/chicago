@@ -55,7 +55,7 @@
 
 | Aspect | Technology/Pattern |
 |--------|-------------------|
-| **Framework** | Angular 20 (standalone components) |
+| **Framework** | Angular 21 (standalone components) |
 | **State Management** | Signals + centralized AppStateService |
 | **HTTP Client** | Angular HttpClient |
 | **Routing** | Angular Router (lazy-loaded routes) |

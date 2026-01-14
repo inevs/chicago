@@ -38,7 +38,7 @@ This architecture documentation is organized according to the Arc42 template:
 ### Strengths
 
 1. ✅ **Clean Modular Architecture**: Well-organized Nx monorepo with clear separation of concerns
-2. ✅ **Modern Tech Stack**: Angular 20 (Signals), NestJS, Prisma ORM, PostgreSQL
+2. ✅ **Modern Tech Stack**: Angular 21 (Signals), NestJS, Prisma ORM, PostgreSQL
 3. ✅ **Type Safety**: Full TypeScript stack with shared types between frontend and backend
 4. ✅ **Good Validation**: Multi-layer validation (client, server, database)
 5. ✅ **Comprehensive API Docs**: OpenAPI/Swagger documentation

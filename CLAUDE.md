@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an **Nx monorepo** containing a full-stack dividends tracking application with:
 
 - **Backend API** (`apps/api`): NestJS application with Prisma ORM for PostgreSQL
-- **Frontend** (`apps/dividends`): Angular 20 standalone application
+- **Frontend** (`apps/dividends`): Angular 21 standalone application
 - **Shared Library** (`packages/shared`): Common code shared between frontend and backend
 - **E2E Tests** (`apps/api-e2e`): End-to-end tests for the API
 
@@ -181,12 +181,13 @@ nx graph
 ### Dividends (Angular)
 
 - Standalone components architecture (no NgModule)
-- Uses Angular 20 with the new application builder
+- Uses Angular 21 with the new application builder
 - Styling: SCSS
 - Entry point: `apps/dividends/src/main.ts`
 - Build output: `dist/apps/dividends`
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle
 - Proxies `/api` requests to `http://localhost:3000` via `proxy.conf.json`
+- Currently uses Zone.js for change detection (zoneless migration available - see issues)
 
 ### Shared Package
 

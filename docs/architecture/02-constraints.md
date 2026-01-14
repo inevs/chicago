@@ -38,7 +38,7 @@
 
 ### Technology Stack
 - **Backend**: NestJS 10+, Prisma 7, class-validator, axios
-- **Frontend**: Angular 20 (standalone components), RxJS, Signals
+- **Frontend**: Angular 21 (standalone components), RxJS, Signals
 - **Build Tools**: Nx 20+, Webpack 5, esbuild
 - **Database**: PostgreSQL 16
 - **Containerization**: Docker & Docker Compose for local development

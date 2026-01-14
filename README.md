@@ -5,7 +5,7 @@ A full-stack dividends tracking application built with NestJS, Angular, and Post
 ## Tech Stack
 
 - **Backend**: NestJS 11 with Prisma ORM 7
-- **Frontend**: Angular 20 (standalone components)
+- **Frontend**: Angular 21 (standalone components)
 - **Database**: PostgreSQL 16
 - **Monorepo**: Nx 22
 - **Styling**: SCSS with TailwindCSS
@@ -15,7 +15,7 @@ A full-stack dividends tracking application built with NestJS, Angular, and Post
 This monorepo contains:
 
 - **Backend API** (`apps/api`) - NestJS application with Prisma ORM for PostgreSQL
-- **Frontend** (`apps/dividends`) - Angular 20 standalone application
+- **Frontend** (`apps/dividends`) - Angular 21 standalone application
 - **Shared Library** (`packages/shared`) - Shared types and utilities (`@dividends/shared`)
 - **E2E Tests** (`apps/api-e2e`) - End-to-end tests for the API
 
