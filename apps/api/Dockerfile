@@ -9,7 +9,7 @@ COPY tsconfig*.json ./
 COPY nx.json ./
 
 # Install dependencies first (better caching)
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copy workspace configuration and source code
 COPY packages ./packages
@@ -43,10 +43,10 @@ COPY --from=builder /app/apps/api/prisma.config.ts ./prisma.config.ts
 COPY --from=builder /app/apps/api/generated ./generated
 
 # Install production dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Install Prisma CLI and tsx for migrations and seeding
-RUN npm install -g prisma@7.1.0 tsx@4.21.0
+RUN npm install -g prisma@7.2.0 tsx@4.21.0
 
 # Expose port
 EXPOSE 3000
