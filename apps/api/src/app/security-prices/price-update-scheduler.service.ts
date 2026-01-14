@@ -10,13 +10,13 @@ export class PriceUpdateSchedulerService {
 
   /**
    * Daily job to update security prices from the last update date to today.
-   * Runs every day at 8:00 AM local time.
+   * Runs every day at 7:00 AM UTC.
    * You can adjust the cron expression to fit your needs:
-   * - '0 0 8 * * *' - Daily at 8AM (current setting)
+   * - '0 0 7 * * *' - Daily at 7AM UTC (current setting)
    * - CronExpression.EVERY_DAY_AT_MIDNIGHT - Daily at midnight
    * - CronExpression.EVERY_DAY_AT_NOON - Daily at noon
    */
-  @Cron('0 0 8 * * *')
+  @Cron('0 0 7 * * *')
   async handleDailyPriceUpdate() {
     this.logger.log('Starting scheduled daily price update...');
 
