@@ -14,7 +14,7 @@ COPY packages ./packages
 COPY apps/dividends ./apps/dividends
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Build the application for production
 RUN npx nx build dividends --configuration=production
