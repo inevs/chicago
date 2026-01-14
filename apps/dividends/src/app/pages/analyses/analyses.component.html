@@ -3,6 +3,15 @@
   <p class="page-subtitle">Visualisierung Ihrer Dividenden-Performance</p>
 
   <section class="chart-section">
+    <h2 class="section-header">Jährliche Dividenden</h2>
+    <app-yearly-dividends-chart
+      [transactions]="appState.filteredDividends()"
+      [isDarkMode]="appState.isDarkMode()"
+      [currentRange]="appState.selectedTimeRange()"
+    />
+  </section>
+
+  <section class="chart-section">
     <h2 class="section-header">Monatliche Dividenden</h2>
     <app-monthly-dividends-chart
       [transactions]="appState.filteredDividends()"

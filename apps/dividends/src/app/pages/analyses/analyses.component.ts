@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { UiStateService } from '../../services/ui-state.service';
 import { MonthlyDividendsChartComponent } from './monthly-dividends-chart/monthly-dividends-chart.component';
+import { YearlyDividendsChartComponent } from './yearly-dividends-chart/yearly-dividends-chart.component';
 
 @Component({
   selector: 'app-analyses',
-  imports: [CommonModule, MonthlyDividendsChartComponent],
+  imports: [CommonModule, MonthlyDividendsChartComponent, YearlyDividendsChartComponent],
   templateUrl: './analyses.component.html',
   styleUrls: ['./analyses.component.scss'],
 })
