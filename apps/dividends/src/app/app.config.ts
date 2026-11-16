@@ -4,7 +4,7 @@ import {
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
@@ -18,7 +18,7 @@ export const appConfig: ApplicationConfig = {
       appRoutes,
       withInMemoryScrolling({ scrollPositionRestoration: 'top' })
     ),
-    provideHttpClient(withInterceptors([errorInterceptor,  authInterceptor])),
+    provideHttpClient(withXhr(), withInterceptors([errorInterceptor,  authInterceptor])),
     provideAnimations(),
   ],
 };

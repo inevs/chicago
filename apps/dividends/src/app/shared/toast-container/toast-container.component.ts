@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../../services/toast.service';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -163,6 +163,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
       }
     }
   `],
+  changeDetection: ChangeDetectionStrategy.Eager,
   animations: [
     trigger('slideIn', [
       transition(':enter', [

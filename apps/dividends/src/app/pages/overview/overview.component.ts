@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { UiStateService } from '../../services/ui-state.service';
@@ -9,6 +9,7 @@ import { AllocationChartComponent } from './allocation-chart/allocation-chart.co
   selector: 'app-overview',
   imports: [CommonModule, KpiCardsComponent, AllocationChartComponent],
   templateUrl: './overview.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./overview.component.scss'],
 })
 export class OverviewComponent {

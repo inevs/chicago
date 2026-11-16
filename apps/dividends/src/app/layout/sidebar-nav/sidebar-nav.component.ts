@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { UiStateService } from '../../services/ui-state.service';
@@ -24,6 +24,7 @@ interface NavItem {
   selector: 'app-sidebar-nav',
   imports: [CommonModule, RouterLink, RouterLinkActive, LucideAngularModule],
   templateUrl: './sidebar-nav.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./sidebar-nav.component.scss'],
 })
 export class SidebarNavComponent {

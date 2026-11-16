@@ -1,4 +1,4 @@
-import { Component, OnDestroy, effect, input } from '@angular/core';
+import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { SecurityTransactionWithSecurity, SecurityPrice, TransactionType } from '@dividends/shared';
@@ -10,6 +10,7 @@ Chart.register(...registerables);
   selector: 'app-allocation-chart',
   imports: [CommonModule],
   templateUrl: './allocation-chart.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./allocation-chart.component.scss'],
 })
 export class AllocationChartComponent implements OnDestroy {

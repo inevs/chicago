@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendTransaction } from '../../../models/dividend.model';
 
@@ -6,6 +6,7 @@ import { DividendTransaction } from '../../../models/dividend.model';
   selector: 'app-transaction-table',
   imports: [CommonModule],
   templateUrl: './transaction-table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./transaction-table.component.scss'],
 })
 export class TransactionTableComponent {

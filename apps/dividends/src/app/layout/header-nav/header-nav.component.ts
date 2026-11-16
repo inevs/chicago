@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild, ElementRef, computed } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -19,6 +19,7 @@ interface MenuOption {
   selector: 'app-header-nav',
   imports: [CommonModule],
   templateUrl: './header-nav.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./header-nav.component.scss'],
 })
 export class HeaderNavComponent {

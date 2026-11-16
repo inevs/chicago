@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { UiStateService } from '../../services/ui-state.service';
@@ -13,6 +13,7 @@ import { TransactionTableComponent } from '../../shared/tables/transaction-table
     TransactionTableComponent,
   ],
   templateUrl: './dividends.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./dividends.component.scss'],
 })
 export class DividendsComponent {

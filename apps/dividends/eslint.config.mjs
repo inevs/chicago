@@ -24,6 +24,9 @@ export default [
           style: 'kebab-case',
         },
       ],
+      // Angular 22 migration set ChangeDetectionStrategy.Eager to preserve the
+      // previous behaviour. Migrating components to OnPush is tracked separately.
+      '@angular-eslint/prefer-on-push-component-change-detection': 'warn',
     },
   },
   {

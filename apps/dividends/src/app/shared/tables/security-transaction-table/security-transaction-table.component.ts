@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
 
@@ -6,6 +6,7 @@ import { SecurityTransactionWithSecurity, TransactionType } from '@dividends/sha
   selector: 'app-security-transaction-table',
   imports: [CommonModule],
   templateUrl: './security-transaction-table.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./security-transaction-table.component.scss'],
 })
 export class SecurityTransactionTableComponent {

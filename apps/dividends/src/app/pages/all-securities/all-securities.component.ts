@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { TransactionFacadeService } from '../../services/transaction-facade.service';
@@ -12,6 +12,7 @@ type SortDirection = 'asc' | 'desc';
   selector: 'app-all-securities',
   imports: [CommonModule],
   templateUrl: './all-securities.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./all-securities.component.scss'],
 })
 export class AllSecuritiesComponent {

@@ -30,7 +30,9 @@
           />
         </svg>
       </div>
-      <span class="logo-text" *ngIf="!appState.sidebarCollapsed()">DiviTrack</span>
+      @if (!appState.sidebarCollapsed()) {
+        <span class="logo-text">DiviTrack</span>
+      }
     </div>
   </div>
 
@@ -46,7 +48,9 @@
         (click)="onNavItemClick()"
       >
         <lucide-icon [img]="item.icon" class="nav-icon" />
-        <span class="nav-label" *ngIf="!appState.sidebarCollapsed()">{{ item.label }}</span>
+        @if (!appState.sidebarCollapsed()) {
+          <span class="nav-label">{{ item.label }}</span>
+        }
       </a>
     }
   </nav>

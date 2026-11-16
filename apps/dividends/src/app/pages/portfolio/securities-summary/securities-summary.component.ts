@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
@@ -11,6 +11,7 @@ type SortDirection = 'asc' | 'desc';
   selector: 'app-securities-summary',
   imports: [CommonModule],
   templateUrl: './securities-summary.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./securities-summary.component.scss'],
 })
 export class SecuritiesSummaryComponent {

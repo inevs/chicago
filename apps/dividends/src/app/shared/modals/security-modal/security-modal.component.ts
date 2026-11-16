@@ -1,4 +1,4 @@
-import { Component, input, output, signal, computed, effect } from '@angular/core';
+import { Component, input, output, signal, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Currency, Security } from '@dividends/shared';
@@ -20,6 +20,7 @@ export interface SecurityForm {
   selector: 'app-security-modal',
   imports: [CommonModule, FormsModule],
   templateUrl: './security-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./security-modal.component.scss'],
 })
 export class SecurityModalComponent {

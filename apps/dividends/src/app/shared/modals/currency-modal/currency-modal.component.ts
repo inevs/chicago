@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -11,6 +11,7 @@ export interface CurrencyForm {
   selector: 'app-currency-modal',
   imports: [CommonModule, FormsModule],
   templateUrl: './currency-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./currency-modal.component.scss'],
 })
 export class CurrencyModalComponent {

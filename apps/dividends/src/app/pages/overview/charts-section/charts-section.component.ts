@@ -1,4 +1,4 @@
-import { Component, OnDestroy, effect, input } from '@angular/core';
+import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { DividendTransaction, TimeRange } from '../../../models/dividend.model';
@@ -9,6 +9,7 @@ Chart.register(...registerables);
   selector: 'app-charts-section',
   imports: [CommonModule],
   templateUrl: './charts-section.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./charts-section.component.scss'],
 })
 export class ChartsSectionComponent implements OnDestroy {

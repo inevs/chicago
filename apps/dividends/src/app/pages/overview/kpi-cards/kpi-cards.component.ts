@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export interface KPIData {
@@ -14,6 +14,7 @@ export interface KPIData {
   selector: 'app-kpi-cards',
   imports: [CommonModule],
   templateUrl: './kpi-cards.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./kpi-cards.component.scss'],
 })
 export class KpiCardsComponent {

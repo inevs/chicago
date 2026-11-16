@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export type ImportMode = 'replace' | 'merge' | 'cancel';
@@ -7,6 +7,7 @@ export type ImportMode = 'replace' | 'merge' | 'cancel';
   selector: 'app-import-confirm-modal',
   imports: [CommonModule],
   templateUrl: './import-confirm-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./import-confirm-modal.component.scss'],
 })
 export class ImportConfirmModalComponent {

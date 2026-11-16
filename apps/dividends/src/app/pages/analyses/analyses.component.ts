@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { UiStateService } from '../../services/ui-state.service';
@@ -9,6 +9,7 @@ import { YearlyDividendsChartComponent } from './yearly-dividends-chart/yearly-d
   selector: 'app-analyses',
   imports: [CommonModule, MonthlyDividendsChartComponent, YearlyDividendsChartComponent],
   templateUrl: './analyses.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./analyses.component.scss'],
 })
 export class AnalysesComponent {

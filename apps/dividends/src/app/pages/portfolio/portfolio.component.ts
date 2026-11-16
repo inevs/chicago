@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PortfolioStateService } from '../../services/portfolio-state.service';
 import { TransactionFacadeService } from '../../services/transaction-facade.service';
@@ -8,6 +8,7 @@ import { SecuritiesSummaryComponent } from './securities-summary/securities-summ
   selector: 'app-portfolio',
   imports: [CommonModule, SecuritiesSummaryComponent],
   templateUrl: './portfolio.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./portfolio.component.scss'],
 })
 export class PortfolioComponent {

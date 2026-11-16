@@ -1,4 +1,4 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
@@ -29,6 +29,7 @@ export interface TransactionForm {
   selector: 'app-transaction-modal',
   imports: [CommonModule, FormsModule, SecurityAutocompleteComponent],
   templateUrl: './transaction-modal.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./transaction-modal.component.scss'],
 })
 export class TransactionModalComponent implements OnChanges {

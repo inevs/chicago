@@ -5,8 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  // The API is compiled to CommonJS. Without this, the generated client uses
+  // `import.meta.url`, which webpack >= 5.105 treats as an ES module marker
+  // and breaks the CommonJS exports at runtime.
+  moduleFormat = "cjs"
 }
 
 datasource db {
@@ -28,22 +32,22 @@ enum TransactionType {
 
 // Security model - represents stocks, ETFs, and bonds
 model Security {
-  id        String   @id @default(uuid())
-  name      String   // Company/fund name (e.g., "Apple Inc.")
-  symbol    String   @unique // Ticker symbol (e.g., "AAPL")
-  isin      String?  // International Securities Identification Number
-  wkn       String?  // Wertpapierkennnummer (German security identifier)
+  id        String       @id @default(uuid())
+  name      String // Company/fund name (e.g., "Apple Inc.")
+  symbol    String       @unique // Ticker symbol (e.g., "AAPL")
+  isin      String? // International Securities Identification Number
+  wkn       String? // Wertpapierkennnummer (German security identifier)
   type      SecurityType // STOCK, ETF, or BOND
-  exchange  String   // Stock exchange (e.g., "NASDAQ", "NYSE", "XETRA")
-  currency  String   // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  exchange  String // Stock exchange (e.g., "NASDAQ", "NYSE", "XETRA")
+  currency  String // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   // Relations
-  currencyRef          Currency            @relation("SecurityCurrency", fields: [currency], references: [code])
-  dividendPayments      DividendPayment[]
-  securityTransactions  SecurityTransaction[]
-  securityPrices        SecurityPrice[]
+  currencyRef          Currency              @relation("SecurityCurrency", fields: [currency], references: [code])
+  dividendPayments     DividendPayment[]
+  securityTransactions SecurityTransaction[]
+  securityPrices       SecurityPrice[]
 
   // Indexes for common queries
   @@index([isin])
@@ -53,35 +57,35 @@ model Security {
 
 // DividendPayment model - represents individual dividend payments
 model DividendPayment {
-  id              String   @id @default(uuid())
+  id String @id @default(uuid())
 
   // Dates
-  exDate          DateTime // Ex-dividend date
-  payoutDate      DateTime // Actual payment/settlement date
+  exDate     DateTime // Ex-dividend date
+  payoutDate DateTime // Actual payment/settlement date
 
   // Security relationship
-  securityId      String
-  security        Security @relation(fields: [securityId], references: [id], onDelete: Cascade)
+  securityId        String
+  security          Security @relation(fields: [securityId], references: [id], onDelete: Cascade)
   originCurrencyRef Currency @relation("DividendOriginCurrency", fields: [originCurrency], references: [code])
   destCurrencyRef   Currency @relation("DividendDestCurrency", fields: [destCurrency], references: [code])
 
   // Fundamental amounts (other amounts can be computed)
-  shares          Decimal  @db.Decimal(19, 8) // Number of shares held at ex-date
-  dividendYield   Decimal  @db.Decimal(19, 4) // Dividend per share
-  taxAmount       Decimal  @db.Decimal(19, 4) // Tax withheld
+  shares        Decimal @db.Decimal(19, 8) // Number of shares held at ex-date
+  dividendYield Decimal @db.Decimal(19, 4) // Dividend per share
+  taxAmount     Decimal @db.Decimal(19, 4) // Tax withheld
 
   // Currency conversion
-  originCurrency  String   // Currency of original dividend (ISO 4217 code, e.g., "USD")
-  destCurrency    String   // Destination/account currency (ISO 4217 code, e.g., "EUR")
-  conversionRate  Decimal  @db.Decimal(19, 8) // Exchange rate used for conversion
-  finalPayment    Decimal  @db.Decimal(19, 4) // Final payment in destination currency
+  originCurrency String // Currency of original dividend (ISO 4217 code, e.g., "USD")
+  destCurrency   String // Destination/account currency (ISO 4217 code, e.g., "EUR")
+  conversionRate Decimal @db.Decimal(19, 8) // Exchange rate used for conversion
+  finalPayment   Decimal @db.Decimal(19, 4) // Final payment in destination currency
 
   // Optional fields
-  note            String?  @db.Text // User notes about this payment
+  note String? @db.Text // User notes about this payment
 
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Indexes for common queries
   @@index([securityId])
@@ -93,33 +97,33 @@ model DividendPayment {
 
 // SecurityTransaction model - represents buy/sell transactions for securities
 model SecurityTransaction {
-  id              String          @id @default(uuid())
+  id String @id @default(uuid())
 
   // Transaction metadata
-  date            DateTime        // Transaction date
-  type            TransactionType // BUY or SELL
+  date DateTime // Transaction date
+  type TransactionType // BUY or SELL
 
   // Security relationship
-  securityId      String
-  security        Security        @relation(fields: [securityId], references: [id], onDelete: Cascade)
-  currencyRef     Currency        @relation("SecurityTransactionCurrency", fields: [currency], references: [code])
+  securityId  String
+  security    Security @relation(fields: [securityId], references: [id], onDelete: Cascade)
+  currencyRef Currency @relation("SecurityTransactionCurrency", fields: [currency], references: [code])
 
   // Transaction details
-  quantity        Decimal         @db.Decimal(19, 8) // Number of shares/units
-  pricePerShare   Decimal         @db.Decimal(19, 4) // Price per share/unit
-  fees            Decimal         @db.Decimal(19, 4) // Fees and commissions
+  quantity      Decimal @db.Decimal(19, 8) // Number of shares/units
+  pricePerShare Decimal @db.Decimal(19, 4) // Price per share/unit
+  fees          Decimal @db.Decimal(19, 4) // Fees and commissions
 
   // Currency conversion
-  currency        String          // Transaction currency (ISO 4217 code, e.g., "USD", "EUR")
-  exchangeRate    Decimal         @db.Decimal(19, 8) // Exchange rate to base currency (EUR)
-  totalValue      Decimal         @db.Decimal(19, 4) // Total value in base currency (EUR)
+  currency     String // Transaction currency (ISO 4217 code, e.g., "USD", "EUR")
+  exchangeRate Decimal @db.Decimal(19, 8) // Exchange rate to base currency (EUR)
+  totalValue   Decimal @db.Decimal(19, 4) // Total value in base currency (EUR)
 
   // Optional fields
-  note            String?         @db.Text // User notes/comments
+  note String? @db.Text // User notes/comments
 
   // Timestamps
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Indexes for common queries
   @@index([securityId])
@@ -140,8 +144,8 @@ model SecurityPrice {
   low        Decimal  @db.Decimal(19, 6)
   close      Decimal  @db.Decimal(19, 6)
   volume     Decimal? @db.Decimal(22, 4)
-  currency   String   // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
-  provider   String   // Data provider identifier
+  currency   String // Trading currency (ISO 4217 code, e.g., "USD", "EUR")
+  provider   String // Data provider identifier
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -156,16 +160,16 @@ model SecurityPrice {
 model Currency {
   id        String   @id @default(uuid())
   code      String   @unique // ISO 4217 code (EUR, USD, etc.)
-  name      String   // Display name (Euro, US Dollar, etc.)
+  name      String // Display name (Euro, US Dollar, etc.)
   isDefault Boolean  @default(false) // Whether this is the default currency
   createdAt DateTime @default(now())
 
-  securities              Security[]           @relation("SecurityCurrency")
-  dividendPaymentsOrigin  DividendPayment[]    @relation("DividendOriginCurrency")
-  dividendPaymentsDest    DividendPayment[]    @relation("DividendDestCurrency")
-  securityTransactions    SecurityTransaction[] @relation("SecurityTransactionCurrency")
-  exchangeRatesBase       ExchangeRate[]       @relation("ExchangeRateBaseCurrency")
-  exchangeRatesTarget     ExchangeRate[]       @relation("ExchangeRateTargetCurrency")
+  securities             Security[]            @relation("SecurityCurrency")
+  dividendPaymentsOrigin DividendPayment[]     @relation("DividendOriginCurrency")
+  dividendPaymentsDest   DividendPayment[]     @relation("DividendDestCurrency")
+  securityTransactions   SecurityTransaction[] @relation("SecurityTransactionCurrency")
+  exchangeRatesBase      ExchangeRate[]        @relation("ExchangeRateBaseCurrency")
+  exchangeRatesTarget    ExchangeRate[]        @relation("ExchangeRateTargetCurrency")
 
   @@map("currencies")
 }
@@ -173,11 +177,11 @@ model Currency {
 // ExchangeRate model - stores historical currency exchange rates
 model ExchangeRate {
   id             String   @id @default(uuid())
-  baseCurrency   String   // Base currency (typically "EUR" for ECB data)
-  targetCurrency String   // Target currency to convert to (e.g., "USD", "GBP")
+  baseCurrency   String // Base currency (typically "EUR" for ECB data)
+  targetCurrency String // Target currency to convert to (e.g., "USD", "GBP")
   date           DateTime // Date of exchange rate
   rate           Decimal  @db.Decimal(19, 8) // Exchange rate (1 baseCurrency = rate targetCurrency)
-  provider       String   // Data provider identifier (e.g., "ecb")
+  provider       String // Data provider identifier (e.g., "ecb")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -197,8 +201,8 @@ model ExchangeRate {
 model User {
   id        String   @id @default(uuid())
   email     String   @unique // User email for login
-  password  String   // Hashed password
-  name      String   // Display name
+  password  String // Hashed password
+  name      String // Display name
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
