@@ -5,7 +5,7 @@
 | Constraint | Description | Impact |
 |------------|-------------|--------|
 | **Nx Monorepo** | Application is structured as an Nx monorepo | Enforces consistent tooling, shared dependencies, and modular architecture |
-| **Node.js v24** | Backend requires Node.js 24.12.0 | Limits deployment environments, benefits from latest Node.js features |
+| **Node.js v24** | Backend requires Node.js 24.22.3 | Limits deployment environments, benefits from latest Node.js features |
 | **PostgreSQL** | Database is PostgreSQL 16+ | Requires PostgreSQL in deployment, benefits from JSONB, robust indexing |
 | **TypeScript** | Entire codebase is TypeScript | Provides type safety but requires compilation step |
 | **Prisma ORM** | Database access via Prisma v7 | Schema-first approach, custom output directory required |

@@ -197,7 +197,7 @@ nx graph
 
 ## Environment Setup
 
-1. **Node Version**: This project uses Node.js v24.12.0 (specified in `.nvmrc`)
+1. **Node Version**: This project uses Node.js v24.22.3 (specified in `.nvmrc`)
 2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d`)
 3. **Environment Variables**: Copy `apps/api/.env.example` to create `.env` file in the root or `apps/api/.env`
 

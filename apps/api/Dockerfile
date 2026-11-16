@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:24.12.0-alpine AS builder
+FROM node:24.22.3-alpine AS builder
 
 WORKDIR /app
 
@@ -25,7 +25,7 @@ WORKDIR /app
 RUN npx nx build api
 
 # Stage 2: Production
-FROM node:24.12.0-alpine
+FROM node:24.22.3-alpine
 
 WORKDIR /app
 
@@ -46,7 +46,7 @@ COPY --from=builder /app/apps/api/generated ./generated
 RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Install Prisma CLI and tsx for migrations and seeding
-RUN npm install -g prisma@7.2.0 tsx@4.21.0
+RUN npm install -g prisma@7.10.1 tsx@4.23.15
 
 # Expose port
 EXPOSE 3000

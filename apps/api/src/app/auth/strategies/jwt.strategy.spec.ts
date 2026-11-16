@@ -4,8 +4,18 @@ import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
+  const originalSecret = process.env['JWT_SECRET'];
+
+  afterAll(() => {
+    if (originalSecret === undefined) {
+      delete process.env['JWT_SECRET'];
+    } else {
+      process.env['JWT_SECRET'] = originalSecret;
+    }
+  });
 
   beforeEach(async () => {
+    process.env['JWT_SECRET'] = 'test-secret';
     const module: TestingModule = await Test.createTestingModule({
       providers: [JwtStrategy],
     }).compile();
