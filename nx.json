@@ -38,6 +38,13 @@
         "targetName": "test"
       },
       "exclude": ["apps/api-e2e/**/*"]
+    },
+    {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "e2e"
+      },
+      "include": ["apps/api-e2e/**/*"]
     }
   ],
   "targetDefaults": {
@@ -54,5 +61,8 @@
       "style": "scss",
       "unitTestRunner": "none"
     }
+  },
+  "affected": {
+    "legacy": true
   }
 }
