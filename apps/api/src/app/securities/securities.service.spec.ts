@@ -694,6 +694,29 @@ Microsoft Corp.,MSFT,STOCK,NASDAQ,USD,US5949181045,870747`;
       expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledTimes(2);
     });
 
+    it('should import CSV files starting with a UTF-8 BOM (e.g. Excel export)', async () => {
+      const csvContent = `\uFEFFname,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
+      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+        { id: 'uuid-1', name: 'Apple Inc.', symbol: 'AAPL', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.created).toBe(1);
+      expect(result.errors).toBe(0);
+      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: [expect.objectContaining({ name: 'Apple Inc.', symbol: 'AAPL' })],
+        })
+      );
+    });
+
     it('should skip duplicate symbols', async () => {
       const csvContent = `name,symbol,type,exchange,currency
 Apple Inc.,AAPL,STOCK,NASDAQ,USD

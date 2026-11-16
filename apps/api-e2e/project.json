@@ -2,20 +2,16 @@
   "name": "api-e2e",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
-  "implicitDependencies": [
-    "api"
-  ],
+  "implicitDependencies": ["api"],
   "targets": {
     "e2e": {
-      "outputs": [
-        "{workspaceRoot}/coverage/api-e2e"
-      ],
-      "dependsOn": [
-        "api:build",
-        "api:serve"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/api-e2e"],
+      "dependsOn": ["api:build", "api:serve"],
       "options": {
-        "passWithNoTests": true
+        "passWithNoTests": true,
+        "env": {
+          "NODE_OPTIONS": "--experimental-vm-modules --disable-warning=ExperimentalWarning"
+        }
       }
     }
   }
