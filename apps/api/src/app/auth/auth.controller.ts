@@ -66,7 +66,11 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({
+    summary: 'Register a new user',
+    description:
+      'Disabled by default (single-user mode). Only available when the environment variable ALLOW_REGISTRATION=true is set.',
+  })
   @ApiBody({ type: RegisterDto })
   @ApiResponse({
     status: 201,
@@ -88,6 +92,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'User already exists' })
+  @ApiResponse({ status: 403, description: 'Registration is disabled' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }

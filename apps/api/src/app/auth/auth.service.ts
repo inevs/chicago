@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../prisma.service';
@@ -56,7 +56,21 @@ export class AuthService {
     };
   }
 
+  /**
+   * Self-registration is disabled by default because the application runs in
+   * single-user mode: data is not scoped per user, so every registered account
+   * can access all data. The initial user is created by the database seed.
+   * Set ALLOW_REGISTRATION=true to enable the endpoint (e.g. for local setups).
+   */
+  isRegistrationEnabled(): boolean {
+    return process.env['ALLOW_REGISTRATION']?.trim().toLowerCase() === 'true';
+  }
+
   async register(registerDto: RegisterDto) {
+    if (!this.isRegistrationEnabled()) {
+      throw new ForbiddenException('Registration is disabled');
+    }
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });

@@ -75,6 +75,9 @@ podman-compose down -v
   - `DATABASE_URL`: Connection string to PostgreSQL
   - `NODE_ENV`: `production`
   - `PORT`: `3000`
+  - `JWT_SECRET`: Secret for signing access tokens
+  - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`: Login user created by the seed
+  - `ALLOW_REGISTRATION`: Enables `POST /api/auth/register` (default `false`, single-user mode)
 - **Dependencies**: Waits for PostgreSQL to be healthy
 - **Startup Process**:
   1. Runs Prisma migrations (`prisma migrate deploy`)

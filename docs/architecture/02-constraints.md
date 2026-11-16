@@ -50,5 +50,5 @@
 | **EUR Base Currency** | Exchange rate provider (ECB) only provides EUR-based rates |
 | **Yahoo Finance Dependency** | Price data relies on Yahoo Finance API availability |
 | **No Real-time Data** | End-of-day prices only, no intraday quotes |
-| **No Authentication** | Currently no user authentication system (single-user assumed) |
+| **Single-User Mode** | JWT authentication, but data is not scoped per user; self-registration is disabled by default (`ALLOW_REGISTRATION`) |
 | **No Multi-tenancy** | Application designed for single user/household |

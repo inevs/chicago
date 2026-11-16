@@ -62,6 +62,8 @@ The default configuration works with the Docker Compose database:
 DATABASE_URL="postgresql://dividends:dividends@localhost:5432/dividends?schema=public"
 ```
 
+The application runs in single-user mode. The login user is created by the database seed from `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME`. Self-registration (`POST /api/auth/register`) is disabled by default and returns `403 Forbidden`; set `ALLOW_REGISTRATION=true` only if you need it, because data is not separated per user and every account can access all data.
+
 ### 4. Set up the database schema
 
 ```bash

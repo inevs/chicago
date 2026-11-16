@@ -13,6 +13,9 @@ export async function createTestApp(): Promise<INestApplication> {
   const originalDatabaseUrl = process.env.DATABASE_URL;
   process.env.DATABASE_URL = 'file:./test.db';
 
+  // Integration tests create users via POST /api/auth/register
+  process.env['ALLOW_REGISTRATION'] = 'true';
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
   })

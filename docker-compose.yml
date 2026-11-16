@@ -37,6 +37,7 @@ services:
       ADMIN_NAME: ${ADMIN_NAME}
       # Authentication
       JWT_SECRET: ${JWT_SECRET}
+      ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-false}
       # Currency
       DEFAULT_CURRENCY: ${DEFAULT_CURRENCY}
       DEFAULT_CURRENCY_NAME: ${DEFAULT_CURRENCY_NAME}

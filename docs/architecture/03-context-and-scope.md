@@ -90,7 +90,7 @@
 
 - **Protocol**: HTTP/REST over JSON
 - **Base URL**: `/api` (proxied in development via `proxy.conf.json`)
-- **Authentication**: None (currently open API)
+- **Authentication**: JWT bearer token; single-user mode, self-registration disabled unless `ALLOW_REGISTRATION=true`
 - **Error Handling**: HTTP status codes + structured error responses
 - **Content Type**: `application/json`
 

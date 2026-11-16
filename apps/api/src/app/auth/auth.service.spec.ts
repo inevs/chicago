@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma.service';
@@ -129,6 +129,54 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
+    const originalAllowRegistration = process.env['ALLOW_REGISTRATION'];
+
+    beforeEach(() => {
+      process.env['ALLOW_REGISTRATION'] = 'true';
+    });
+
+    afterAll(() => {
+      if (originalAllowRegistration === undefined) {
+        delete process.env['ALLOW_REGISTRATION'];
+      } else {
+        process.env['ALLOW_REGISTRATION'] = originalAllowRegistration;
+      }
+    });
+
+    it.each([undefined, '', 'false', '1', 'yes'])(
+      'should reject registration when ALLOW_REGISTRATION is %p',
+      async (value) => {
+        if (value === undefined) {
+          delete process.env['ALLOW_REGISTRATION'];
+        } else {
+          process.env['ALLOW_REGISTRATION'] = value;
+        }
+
+        const registerDto = {
+          email: 'newuser@example.com',
+          password: 'password123',
+          name: 'New User',
+        };
+
+        await expect(service.register(registerDto)).rejects.toThrow(
+          ForbiddenException
+        );
+        await expect(service.register(registerDto)).rejects.toThrow(
+          'Registration is disabled'
+        );
+        expect(prismaService.user.findUnique).not.toHaveBeenCalled();
+        expect(prismaService.user.create).not.toHaveBeenCalled();
+      }
+    );
+
+    it.each(['true', 'TRUE', ' true '])(
+      'should treat ALLOW_REGISTRATION=%p as enabled',
+      (value) => {
+        process.env['ALLOW_REGISTRATION'] = value;
+        expect(service.isRegistrationEnabled()).toBe(true);
+      }
+    );
+
     it('should create new user and return access token', async () => {
       const registerDto = {
         email: 'newuser@example.com',
