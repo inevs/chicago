@@ -1,7 +1,7 @@
 import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration } from 'chart.js';
-import { setupChartDefaults } from '../../../shared/charts/chart-defaults';
+import { setupChartDefaults, CHART_PALETTE } from '../../../shared/charts/chart-defaults';
 import { SecurityTransactionWithSecurity, SecurityPrice, TransactionType } from '@dividends/shared';
 import { LatestExchangeRate } from '../../../services/exchange-rate.service';
 
@@ -142,18 +142,7 @@ export class AllocationChartComponent implements OnDestroy {
     const sortedCompanies = Object.entries(companies)
       .sort((a, b) => b[1] - a[1]);
 
-    const colors = [
-      '#16A34A', // Emerald (our accent)
-      '#3B82F6', // Blue
-      '#6366F1', // Indigo
-      '#8B5CF6', // Purple
-      '#EC4899', // Pink
-      '#F59E0B', // Amber
-      '#14B8A6', // Teal
-      '#EF4444', // Red
-      '#F97316', // Orange
-      '#84CC16', // Lime
-    ];
+    const colors = CHART_PALETTE;
 
     const config: ChartConfiguration<'doughnut'> = {
       type: 'doughnut',

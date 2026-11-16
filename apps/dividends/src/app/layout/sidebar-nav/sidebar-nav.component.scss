@@ -62,7 +62,7 @@
 }
 
 .logo-icon {
-  background: #2563eb;
+  background: var(--sidebar-accent);
   color: white;
   padding: 0.5rem;
   border-radius: 0.5rem;
@@ -103,8 +103,6 @@
   font-family: var(--app-font-sans);
   font-size: 0.875rem;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
   transition: all 0.2s ease;
   cursor: pointer;
 
@@ -115,7 +113,7 @@
 
   &.active {
     color: var(--sidebar-accent);
-    background: rgba(22, 163, 74, 0.08);
+    background: var(--sidebar-accent-bg);
 
     // Active indicator bar
     &::before {

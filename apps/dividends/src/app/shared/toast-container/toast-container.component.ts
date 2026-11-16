@@ -105,8 +105,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
     }
 
     .toast-info {
-      background-color: rgba(59, 130, 246, 0.95);
-      border-color: rgba(37, 99, 235, 0.5);
+      background-color: rgba(31, 106, 103, 0.95);
+      border-color: rgba(26, 86, 84, 0.5);
       color: white;
     }
 

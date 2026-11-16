@@ -160,17 +160,17 @@ describe('AllSecuritiesComponent', () => {
 
   it('should return correct badge class for STOCK type', () => {
     const badgeClass = component.getSecurityTypeBadgeClass(SecurityType.STOCK);
-    expect(badgeClass).toBe('bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300');
+    expect(badgeClass).toBe('bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200');
   });
 
   it('should return correct badge class for ETF type', () => {
     const badgeClass = component.getSecurityTypeBadgeClass(SecurityType.ETF);
-    expect(badgeClass).toBe('bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300');
+    expect(badgeClass).toBe('bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-100');
   });
 
   it('should return correct badge class for BOND type', () => {
     const badgeClass = component.getSecurityTypeBadgeClass(SecurityType.BOND);
-    expect(badgeClass).toBe('bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300');
+    expect(badgeClass).toBe('bg-white text-slate-700 ring-1 ring-inset ring-slate-300 dark:bg-transparent dark:text-slate-300 dark:ring-slate-600');
   });
 
   it('should return correct label for STOCK type', () => {

@@ -1,7 +1,7 @@
 import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration } from 'chart.js';
-import { setupChartDefaults } from '../../../shared/charts/chart-defaults';
+import { setupChartDefaults, chartAccent, CHART_PALETTE } from '../../../shared/charts/chart-defaults';
 import { DividendTransaction, TimeRange } from '../../../models/dividend.model';
 
 setupChartDefaults();
@@ -112,7 +112,7 @@ export class ChartsSectionComponent implements OnDestroy {
           {
             label: 'Netto Dividende (€)',
             data: Object.values(months),
-            backgroundColor: '#3b82f6',
+            backgroundColor: chartAccent(isDark),
             borderRadius: 4,
           },
         ],
@@ -163,18 +163,7 @@ export class ChartsSectionComponent implements OnDestroy {
     const sortedCompanies = Object.entries(companies)
       .sort((a, b) => b[1] - a[1]);
 
-    const colors = [
-      '#10B981',
-      '#3B82F6',
-      '#6366F1',
-      '#8B5CF6',
-      '#EC4899',
-      '#F59E0B',
-      '#14B8A6',
-      '#EF4444',
-      '#F97316',
-      '#84CC16',
-    ];
+    const colors = CHART_PALETTE;
 
     const config: ChartConfiguration<'doughnut'> = {
       type: 'doughnut',

@@ -12,7 +12,7 @@
         type="text"
         placeholder="Suchen..."
         (input)="onSearchChange($event)"
-        class="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg pl-4 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
+        class="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg pl-4 pr-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-hidden placeholder-slate-400 dark:placeholder-slate-500 transition-colors"
       />
     </div>
   </div>
@@ -27,9 +27,7 @@
           <th class="px-6 py-4 text-right">Anteile</th>
           <th class="px-6 py-4 text-right">Div/Aktie</th>
           <th class="px-6 py-4 text-right">Steuer (EUR)</th>
-          <th
-            class="px-6 py-4 text-right text-emerald-600 dark:text-emerald-400 font-bold"
-          >
+          <th class="px-6 py-4 text-right">
             Netto (EUR)
           </th>
           <th class="px-6 py-4 text-right">Aktionen</th>
@@ -56,7 +54,7 @@
             {{ formatCurrency(calculateTaxInEur(transaction)) }}
           </td>
           <td
-            class="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400"
+            class="px-6 py-4 text-right font-semibold text-slate-900 dark:text-white"
           >
             {{ formatCurrency(transaction.finalPayment) }}
           </td>
@@ -90,7 +88,7 @@
         id="pageSize"
         [value]="currentPageSize()"
         (change)="onPageSizeChange($event)"
-        class="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+        class="border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-hidden"
       >
         <option value="5">5</option>
         <option value="10">10</option>

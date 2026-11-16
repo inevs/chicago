@@ -1,7 +1,7 @@
 import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration } from 'chart.js';
-import { setupChartDefaults } from '../../../shared/charts/chart-defaults';
+import { setupChartDefaults, chartAccent } from '../../../shared/charts/chart-defaults';
 import { DividendTransaction, TimeRange } from '../../../models/dividend.model';
 
 setupChartDefaults();
@@ -101,7 +101,7 @@ export class MonthlyDividendsChartComponent implements OnDestroy {
           {
             label: 'Netto Dividende (€)',
             data: Object.values(months),
-            backgroundColor: '#16A34A', // Emerald green to match our accent color
+            backgroundColor: chartAccent(isDark),
             borderRadius: 4,
           },
         ],

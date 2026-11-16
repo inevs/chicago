@@ -19,6 +19,24 @@
   --font-display: var(--app-font-display);
 }
 
+/*
+  Brand accent (muted petrol). Use brand-* for interactive elements, focus rings and
+  highlights. Green/red (emerald-*, red-*) are reserved for gains and losses.
+*/
+@theme {
+  --color-brand-50: #eef7f6;
+  --color-brand-100: #d5ecea;
+  --color-brand-200: #aed8d5;
+  --color-brand-300: #7dbdb9;
+  --color-brand-400: #4b9e9a;
+  --color-brand-500: #2f827e;
+  --color-brand-600: #1f6a67;
+  --color-brand-700: #1a5654;
+  --color-brand-800: #174645;
+  --color-brand-900: #143b3a;
+  --color-brand-950: #0a2524;
+}
+
 @theme {
   --color-slate-850: #1e293b;
   --color-slate-900: #0f172a;
@@ -55,6 +73,11 @@
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+
+  /* Amounts are always right-aligned, including in input fields */
+  input[type='number'] {
+    text-align: right;
+  }
 }
 
 @utility transition-all {
@@ -70,7 +93,8 @@
     --sidebar-bg: #fafaf9;
     --sidebar-text: #27272a;
     --sidebar-text-muted: #71717a;
-    --sidebar-accent: #16a34a;
+    --sidebar-accent: #1f6a67; /* brand-600 */
+    --sidebar-accent-bg: rgba(31, 106, 103, 0.08);
     --sidebar-hover-bg: #f4f4f5;
 
     --bg-primary: #ffffff;
@@ -83,7 +107,8 @@
     --sidebar-bg: #18181b;
     --sidebar-text: #fafafa;
     --sidebar-text-muted: #a1a1aa;
-    --sidebar-accent: #22c55e;
+    --sidebar-accent: #7dbdb9; /* brand-300 */
+    --sidebar-accent-bg: rgba(125, 189, 185, 0.12);
     --sidebar-hover-bg: #27272a;
 
     --bg-primary: #09090b;
