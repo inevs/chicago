@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `apps/api`: NestJS backend with Prisma (schema in `apps/api/prisma/schema.prisma`, generated client in `apps/api/generated/prisma`).
-- `apps/dividends`: Angular 20 frontend (standalone components, SCSS, API proxy in `apps/dividends/proxy.conf.json`).
+- `apps/dividends`: Angular 22 frontend (standalone components, SCSS, API proxy in `apps/dividends/proxy.conf.json`).
 - `apps/api-e2e`: API end-to-end tests (Jest).
 - `packages/shared`: Shared types/utilities, imported via `@dividends/shared`.
 - `docs`, `scripts`, `mock`, `dist`: documentation, tooling scripts, fixtures, and build outputs.

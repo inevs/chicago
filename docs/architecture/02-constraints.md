@@ -37,9 +37,9 @@
 - **ECB (European Central Bank)** (`data-api.ecb.europa.eu`): EUR-based exchange rates
 
 ### Technology Stack
-- **Backend**: NestJS 10+, Prisma 7, class-validator, axios
-- **Frontend**: Angular 21 (standalone components), RxJS, Signals
-- **Build Tools**: Nx 20+, Webpack 5, esbuild
+- **Backend**: NestJS 12, Prisma 7, class-validator, axios
+- **Frontend**: Angular 22 (standalone components), RxJS, Signals
+- **Build Tools**: Nx 24, Webpack 5, esbuild
 - **Database**: PostgreSQL 16
 - **Containerization**: Docker & Docker Compose for local development
 

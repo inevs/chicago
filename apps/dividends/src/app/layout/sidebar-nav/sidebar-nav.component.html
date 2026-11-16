@@ -47,7 +47,7 @@
         [title]="item.label"
         (click)="onNavItemClick()"
       >
-        <lucide-icon [img]="item.icon" class="nav-icon" />
+        <svg [lucideIcon]="item.icon" class="nav-icon"></svg>
         @if (!appState.sidebarCollapsed()) {
           <span class="nav-label">{{ item.label }}</span>
         }
@@ -62,9 +62,9 @@
     [title]="appState.sidebarCollapsed() ? 'Sidebar erweitern' : 'Sidebar einklappen'"
     aria-label="Sidebar ein-/ausklappen"
   >
-    <lucide-icon
-      [img]="appState.sidebarCollapsed() ? ChevronRight : ChevronLeft"
+    <svg
+      [lucideIcon]="appState.sidebarCollapsed() ? ChevronRight : ChevronLeft"
       class="collapse-icon"
-    />
+    ></svg>
   </button>
 </aside>

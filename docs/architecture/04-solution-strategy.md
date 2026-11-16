@@ -6,7 +6,7 @@
 |----------|-----------|------------|
 | **Nx Monorepo** | Unified tooling, shared code, consistent build process | Learning curve, tooling complexity |
 | **NestJS** | Enterprise-grade Node.js framework, excellent TypeScript support, built-in DI | Opinionated structure, learning curve |
-| **Angular 21 (Standalone)** | Modern reactive patterns (Signals), no NgModules, excellent TypeScript support | Breaking changes from older Angular, ecosystem maturity |
+| **Angular 22 (Standalone)** | Modern reactive patterns (Signals), no NgModules, excellent TypeScript support | Breaking changes from older Angular, ecosystem maturity |
 | **Prisma ORM** | Type-safe database access, excellent migrations, schema-first approach | Limited to specific databases, generated code bulk |
 | **PostgreSQL** | ACID compliance, robust indexing, JSONB support for flexibility | Requires PostgreSQL knowledge, more complex than SQLite |
 | **Signals (Angular)** | Fine-grained reactivity, better performance than Zones, simpler than RxJS for state | Relatively new API, less ecosystem maturity |

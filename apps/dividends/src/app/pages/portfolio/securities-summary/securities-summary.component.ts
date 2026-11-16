@@ -293,7 +293,7 @@ export class SecuritiesSummaryComponent {
     const direction = this.sortDirection();
 
     return securities.sort((a, b) => {
-      let comparison = 0;
+      let comparison: number;
 
       if (column === 'name') {
         comparison = a.name.localeCompare(b.name);

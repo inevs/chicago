@@ -55,7 +55,7 @@
 
 | Aspect | Technology/Pattern |
 |--------|-------------------|
-| **Framework** | Angular 21 (standalone components) |
+| **Framework** | Angular 22 (standalone components) |
 | **State Management** | Signals + centralized AppStateService |
 | **HTTP Client** | Angular HttpClient |
 | **Routing** | Angular Router (lazy-loaded routes) |
@@ -66,7 +66,7 @@
 
 | Aspect | Technology/Pattern |
 |--------|-------------------|
-| **Framework** | NestJS 10+ (Express-based) |
+| **Framework** | NestJS 12 (Express-based) |
 | **Architecture** | Modular (feature-based modules) |
 | **Database ORM** | Prisma 7 (schema-first) |
 | **Validation** | class-validator decorators |

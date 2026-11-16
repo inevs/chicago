@@ -194,7 +194,7 @@ export class SecurityPricesService {
       synced: boolean;
       currencies?: Record<string, { synced: number; skipped: number }>;
       error?: string;
-    } = { synced: false };
+    };
 
     try {
       this.logger.log('Auto-syncing exchange rates for security currencies...');

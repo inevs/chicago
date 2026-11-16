@@ -3,26 +3,27 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { UiStateService } from '../../services/ui-state.service';
 import {
-  LucideAngularModule,
-  LayoutDashboard,
-  Briefcase,
-  DollarSign,
-  ArrowLeftRight,
-  LineChart,
-  ChevronLeft,
-  ChevronRight,
-  Library,
-} from 'lucide-angular';
+  LucideDynamicIcon,
+  LucideIcon,
+  LucideLayoutDashboard,
+  LucideBriefcase,
+  LucideDollarSign,
+  LucideArrowLeftRight,
+  LucideChartLine,
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucideLibrary,
+} from '@lucide/angular';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: LucideIcon;
 }
 
 @Component({
   selector: 'app-sidebar-nav',
-  imports: [CommonModule, RouterLink, RouterLinkActive, LucideAngularModule],
+  imports: [CommonModule, RouterLink, RouterLinkActive, LucideDynamicIcon],
   templateUrl: './sidebar-nav.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./sidebar-nav.component.scss'],
@@ -36,16 +37,16 @@ export class SidebarNavComponent {
   }
 
   // Lucide icons
-  protected readonly ChevronLeft = ChevronLeft;
-  protected readonly ChevronRight = ChevronRight;
+  protected readonly ChevronLeft = LucideChevronLeft;
+  protected readonly ChevronRight = LucideChevronRight;
 
   navItems: NavItem[] = [
-    { path: '/uebersicht', label: 'Übersicht', icon: LayoutDashboard },
-    { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
-    { path: '/alle-wertpapiere', label: 'Alle Wertpapiere', icon: Library },
-    { path: '/dividenden', label: 'Dividenden', icon: DollarSign },
-    { path: '/wertpapiere', label: 'Käufe & Verkäufe', icon: ArrowLeftRight },
-    { path: '/analysen', label: 'Analysen', icon: LineChart },
+    { path: '/uebersicht', label: 'Übersicht', icon: LucideLayoutDashboard },
+    { path: '/portfolio', label: 'Portfolio', icon: LucideBriefcase },
+    { path: '/alle-wertpapiere', label: 'Alle Wertpapiere', icon: LucideLibrary },
+    { path: '/dividenden', label: 'Dividenden', icon: LucideDollarSign },
+    { path: '/wertpapiere', label: 'Käufe & Verkäufe', icon: LucideArrowLeftRight },
+    { path: '/analysen', label: 'Analysen', icon: LucideChartLine },
   ];
 
   toggleSidebar() {
