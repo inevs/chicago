@@ -8,7 +8,7 @@ A full-stack dividends tracking application built with NestJS, Angular, and Post
 - **Frontend**: Angular 22 (standalone components)
 - **Database**: PostgreSQL 16
 - **Monorepo**: Nx 24
-- **Styling**: SCSS with TailwindCSS
+- **Styling**: Tailwind CSS v4 and SCSS
 
 ## Architecture
 

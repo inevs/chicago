@@ -38,7 +38,7 @@
             [class.dark:bg-slate-600]="appState.selectedTimeRange() === 'M'"
             [class.text-slate-900]="appState.selectedTimeRange() === 'M'"
             [class.dark:text-white]="appState.selectedTimeRange() === 'M'"
-            [class.shadow-sm]="appState.selectedTimeRange() === 'M'"
+            [class.shadow-xs]="appState.selectedTimeRange() === 'M'"
             [class.font-semibold]="appState.selectedTimeRange() === 'M'"
             [class.text-slate-500]="appState.selectedTimeRange() !== 'M'"
             [class.dark:text-slate-300]="appState.selectedTimeRange() !== 'M'"
@@ -52,7 +52,7 @@
             [class.dark:bg-slate-600]="appState.selectedTimeRange() === 'Y'"
             [class.text-slate-900]="appState.selectedTimeRange() === 'Y'"
             [class.dark:text-white]="appState.selectedTimeRange() === 'Y'"
-            [class.shadow-sm]="appState.selectedTimeRange() === 'Y'"
+            [class.shadow-xs]="appState.selectedTimeRange() === 'Y'"
             [class.font-semibold]="appState.selectedTimeRange() === 'Y'"
             [class.text-slate-500]="appState.selectedTimeRange() !== 'Y'"
             [class.dark:text-slate-300]="appState.selectedTimeRange() !== 'Y'"
@@ -66,7 +66,7 @@
             [class.dark:bg-slate-600]="appState.selectedTimeRange() === '5Y'"
             [class.text-slate-900]="appState.selectedTimeRange() === '5Y'"
             [class.dark:text-white]="appState.selectedTimeRange() === '5Y'"
-            [class.shadow-sm]="appState.selectedTimeRange() === '5Y'"
+            [class.shadow-xs]="appState.selectedTimeRange() === '5Y'"
             [class.font-semibold]="appState.selectedTimeRange() === '5Y'"
             [class.text-slate-500]="appState.selectedTimeRange() !== '5Y'"
             [class.dark:text-slate-300]="appState.selectedTimeRange() !== '5Y'"
@@ -80,7 +80,7 @@
             [class.dark:bg-slate-600]="appState.selectedTimeRange() === 'ALL'"
             [class.text-slate-900]="appState.selectedTimeRange() === 'ALL'"
             [class.dark:text-white]="appState.selectedTimeRange() === 'ALL'"
-            [class.shadow-sm]="appState.selectedTimeRange() === 'ALL'"
+            [class.shadow-xs]="appState.selectedTimeRange() === 'ALL'"
             [class.font-semibold]="appState.selectedTimeRange() === 'ALL'"
             [class.text-slate-500]="appState.selectedTimeRange() !== 'ALL'"
             [class.dark:text-slate-300]="appState.selectedTimeRange() !== 'ALL'"
@@ -130,7 +130,7 @@
         <div class="relative">
           <button
             (click)="onMenuToggle()"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center gap-2 whitespace-nowrap"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-xs flex items-center gap-2 whitespace-nowrap"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

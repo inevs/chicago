@@ -59,7 +59,7 @@
 | **State Management** | Signals + centralized AppStateService |
 | **HTTP Client** | Angular HttpClient |
 | **Routing** | Angular Router (lazy-loaded routes) |
-| **Styling** | SCSS, TailwindCSS-like utility classes |
+| **Styling** | Tailwind CSS v4, SCSS |
 | **Build** | Angular Build (application builder) |
 
 ### Backend (NestJS)

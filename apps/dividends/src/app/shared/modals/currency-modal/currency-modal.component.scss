@@ -1,7 +1,10 @@
+/* Tailwind CSS v4: make theme and custom variants (e.g. dark) available to @apply */
+@reference "../../../../styles.css";
+
 .modal-input {
   @apply w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg;
   @apply bg-white dark:bg-slate-700 text-slate-900 dark:text-white;
-  @apply focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400;
+  @apply focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400;
   @apply placeholder-slate-400 dark:placeholder-slate-500;
   @apply transition-colors;
 }

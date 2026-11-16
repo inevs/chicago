@@ -1,6 +1,6 @@
 @if (show()) {
 <div
-  class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity"
+  class="fixed inset-0 bg-slate-900/50 dark:bg-black/70 z-50 flex items-center justify-center backdrop-blur-xs transition-opacity"
   (click)="onCancel()"
   (keydown.escape)="onCancel()"
   tabindex="-1"
@@ -37,7 +37,7 @@
     <div class="space-y-3">
       <button
         (click)="onReplace()"
-        class="w-full px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-sm text-left"
+        class="w-full px-4 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition shadow-xs text-left"
       >
         <div class="font-semibold">Ersetzen</div>
         <div class="text-sm text-red-100">Alle bestehenden Daten werden gelöscht und durch die importierten Daten ersetzt</div>
@@ -45,7 +45,7 @@
 
       <button
         (click)="onMerge()"
-        class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-sm text-left"
+        class="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-xs text-left"
       >
         <div class="font-semibold">Zusammenführen</div>
         <div class="text-sm text-blue-100">Daten werden zusammengeführt, bestehende Einträge werden aktualisiert</div>

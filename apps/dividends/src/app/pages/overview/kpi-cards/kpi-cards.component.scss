@@ -16,10 +16,12 @@
   // Adjust font sizes for mobile
   .text-3xl {
     font-size: 2rem;
+    line-height: 2.25rem; // keep Tailwind v3 line height
   }
 
   .text-sm {
     font-size: 0.8125rem;
+    line-height: 1.25rem; // keep Tailwind v3 line height
   }
 }
 
@@ -27,5 +29,6 @@
 @media (max-width: 400px) {
   .text-3xl {
     font-size: 1.75rem;
+    line-height: 2.25rem; // keep Tailwind v3 line height
   }
 }

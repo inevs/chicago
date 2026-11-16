@@ -4,6 +4,7 @@
 @media (max-width: 1024px) {
   table {
     font-size: 0.8125rem;
+    line-height: 1.25rem; // keep Tailwind v3 text-sm line height
 
     th,
     td {
@@ -35,6 +36,7 @@
 
     .text-lg {
       font-size: 1rem;
+      line-height: 1.75rem; // keep Tailwind v3 line height
     }
 
     // Stack pagination controls

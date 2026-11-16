@@ -22,7 +22,7 @@ This is an **Nx monorepo** containing a full-stack dividends tracking applicatio
 **Build Configuration**:
 
 - The API uses a custom Webpack configuration (`apps/api/webpack.config.js`) with the Nx Webpack plugin
-- The Angular app uses Angular Build (application builder) with SCSS styling
+- The Angular app uses Angular Build (application builder) with SCSS component styles and Tailwind CSS v4 (configured CSS-first in `apps/dividends/src/styles.css`, wired up via `.postcssrc.json`)
 - The API build generates a `package.json` for deployment via `generatePackageJson: true`
 
 ## Common Development Commands
@@ -182,7 +182,7 @@ nx graph
 
 - Standalone components architecture (no NgModule)
 - Uses Angular 22 with the new application builder
-- Styling: SCSS
+- Styling: Tailwind CSS v4 (global `src/styles.css`, no `tailwind.config.js`) plus SCSS component styles; component styles that use `@apply` need `@reference` to `styles.css`
 - Entry point: `apps/dividends/src/main.ts`
 - Build output: `dist/apps/dividends`
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle

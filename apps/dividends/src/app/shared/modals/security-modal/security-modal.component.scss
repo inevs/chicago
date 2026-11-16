@@ -1,5 +1,8 @@
+/* Tailwind CSS v4: make theme and custom variants (e.g. dark) available to @apply */
+@reference "../../../../styles.css";
+
 .modal-input {
-  @apply w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors;
+  @apply w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors;
 }
 
 // Mobile responsive styles
@@ -18,6 +21,7 @@
   // Make modal title smaller on mobile
   h2.text-xl {
     font-size: 1.125rem;
+    line-height: 1.75rem; // keep Tailwind v3 line height
   }
 
   // Stack buttons on very small screens

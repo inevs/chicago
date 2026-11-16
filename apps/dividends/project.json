@@ -22,7 +22,7 @@
             "input": "apps/dividends/public"
           }
         ],
-        "styles": ["apps/dividends/src/styles.scss"]
+        "styles": ["apps/dividends/src/styles.css"]
       },
       "configurations": {
         "production": {

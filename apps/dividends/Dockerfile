@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nx.json ./
-COPY tailwind.config.js ./
+COPY .postcssrc.json ./
 
 # Copy workspace configuration
 COPY packages ./packages
