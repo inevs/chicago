@@ -1,9 +1,10 @@
 import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { Chart, ChartConfiguration } from 'chart.js';
+import { setupChartDefaults } from '../../../shared/charts/chart-defaults';
 import { DividendTransaction, TimeRange } from '../../../models/dividend.model';
 
-Chart.register(...registerables);
+setupChartDefaults();
 
 @Component({
   selector: 'app-yearly-dividends-chart',

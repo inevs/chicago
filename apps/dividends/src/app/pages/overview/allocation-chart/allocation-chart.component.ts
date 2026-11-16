@@ -1,10 +1,11 @@
 import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import { Chart, ChartConfiguration } from 'chart.js';
+import { setupChartDefaults } from '../../../shared/charts/chart-defaults';
 import { SecurityTransactionWithSecurity, SecurityPrice, TransactionType } from '@dividends/shared';
 import { LatestExchangeRate } from '../../../services/exchange-rate.service';
 
-Chart.register(...registerables);
+setupChartDefaults();
 
 @Component({
   selector: 'app-allocation-chart',

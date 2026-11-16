@@ -1,12 +1,23 @@
 /* You can add global styles to this file, and also import other style files */
 
-/* Import custom fonts */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;500;600&display=swap')
-layer(base);
-
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
+
+/*
+  Typography: Inter for UI text, Inter Tight for headings.
+  Fonts are loaded in index.html. Use var(--app-font-sans) / var(--app-font-display)
+  in component styles, or the Tailwind utilities font-sans / font-display.
+*/
+:root {
+  --app-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --app-font-display: 'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@theme inline {
+  --font-sans: var(--app-font-sans);
+  --font-display: var(--app-font-display);
+}
 
 @theme {
   --color-slate-850: #1e293b;
@@ -83,7 +94,11 @@ layer(base);
 
 @layer base {
   body {
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: var(--app-font-sans);
+    /* Tabular figures keep amounts and decimal places aligned in tables and KPI cards */
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     background: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -91,23 +106,24 @@ layer(base);
 
   /* Page-level typography */
   .page-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 2.5rem;
-    font-weight: 700;
+    font-family: var(--app-font-display);
+    font-size: 2.25rem;
+    font-weight: 650;
+    line-height: 1.15;
     letter-spacing: -0.02em;
     margin-bottom: 0.5rem;
     color: var(--text-primary);
   }
 
   .page-subtitle {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--app-font-sans);
     font-size: 1rem;
     color: var(--text-muted);
     margin-bottom: 2rem;
   }
 
   .section-header {
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--app-font-sans);
     font-size: 0.875rem;
     font-weight: 600;
     text-transform: uppercase;
