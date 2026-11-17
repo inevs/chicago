@@ -45,8 +45,13 @@ COPY --from=builder /app/apps/api/generated ./generated
 # Install production dependencies
 RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
 
-# Install Prisma CLI and tsx for migrations and seeding
-RUN npm install -g prisma@7.10.1 tsx@4.23.15
+# Install Prisma CLI and tsx for migrations and seeding.
+# prisma must be installed locally (not with -g): prisma.config.ts imports
+# 'prisma/config', which Node resolves from /app/node_modules only.
+# Keep the versions in sync with package.json.
+RUN npm install --no-save --legacy-peer-deps prisma@7.10.1 \
+  && npm install -g tsx@4.23.15 \
+  && npm cache clean --force
 
 # Expose port
 EXPOSE 3000
