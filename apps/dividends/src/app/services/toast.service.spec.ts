@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { ToastService } from './toast.service';
 
 interface ToastServiceInternal {
@@ -10,9 +10,14 @@ describe('ToastService', () => {
   let serviceInternal: ToastServiceInternal;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     TestBed.configureTestingModule({});
     service = TestBed.inject(ToastService);
     serviceInternal = service as unknown as ToastServiceInternal;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should be created', () => {
@@ -54,29 +59,29 @@ describe('ToastService', () => {
   });
 
   describe('Auto-dismiss', () => {
-    it('should auto-remove toast after default duration', fakeAsync(() => {
+    it('should auto-remove toast after default duration', () => {
       service.success('Test'); // Default 5000ms
       expect(service.toasts().length).toBe(1);
 
-      tick(5000);
+      vi.advanceTimersByTime(5000);
       expect(service.toasts().length).toBe(0);
-    }));
+    });
 
-    it('should auto-remove toast after custom duration', fakeAsync(() => {
+    it('should auto-remove toast after custom duration', () => {
       service.success('Test', 3000);
       expect(service.toasts().length).toBe(1);
 
-      tick(3000);
+      vi.advanceTimersByTime(3000);
       expect(service.toasts().length).toBe(0);
-    }));
+    });
 
-    it('should not auto-remove toast with 0 duration', fakeAsync(() => {
+    it('should not auto-remove toast with 0 duration', () => {
       service.success('Test', 0);
       expect(service.toasts().length).toBe(1);
 
-      tick(10000);
+      vi.advanceTimersByTime(10000);
       expect(service.toasts().length).toBe(1);
-    }));
+    });
   });
 
   describe('Manual Removal', () => {
@@ -90,7 +95,7 @@ describe('ToastService', () => {
       expect(service.toasts()[0].message).toBe('Test 2');
     });
 
-    it('should clear timeout when manually removing toast', fakeAsync(() => {
+    it('should clear timeout when manually removing toast', () => {
       service.success('Test', 5000);
       const toastId = service.toasts()[0].id;
 
@@ -99,9 +104,9 @@ describe('ToastService', () => {
       expect(service.toasts().length).toBe(0);
 
       // Timeout should not try to remove again
-      tick(5000);
+      vi.advanceTimersByTime(5000);
       expect(service.toasts().length).toBe(0);
-    }));
+    });
 
     it('should handle removing non-existent toast', () => {
       service.success('Test');
@@ -121,7 +126,7 @@ describe('ToastService', () => {
       expect(service.toasts().length).toBe(0);
     });
 
-    it('should clear all pending timeouts', fakeAsync(() => {
+    it('should clear all pending timeouts', () => {
       service.success('Test 1', 5000);
       service.success('Test 2', 5000);
       service.success('Test 3', 5000);
@@ -130,9 +135,9 @@ describe('ToastService', () => {
       expect(service.toasts().length).toBe(0);
 
       // Timeouts should not try to remove toasts
-      tick(5000);
+      vi.advanceTimersByTime(5000);
       expect(service.toasts().length).toBe(0);
-    }));
+    });
   });
 
   describe('Memory Leak Prevention', () => {
@@ -151,18 +156,18 @@ describe('ToastService', () => {
       expect(serviceInternal.timeouts.size).toBe(initialTimeoutsCount);
     });
 
-    it('should clean up timeouts after auto-dismiss', fakeAsync(() => {
+    it('should clean up timeouts after auto-dismiss', () => {
       const initialTimeoutsCount = serviceInternal.timeouts.size;
 
       service.success('Test', 100);
       expect(serviceInternal.timeouts.size).toBe(initialTimeoutsCount + 1);
 
       // Wait for auto-dismiss
-      tick(100);
+      vi.advanceTimersByTime(100);
 
       // Timeout should be cleared from map after firing
       expect(serviceInternal.timeouts.size).toBe(initialTimeoutsCount);
-    }));
+    });
 
     it('should clear all timeouts when clearing all toasts', () => {
       service.success('Test 1', 5000);
@@ -183,30 +188,34 @@ describe('ToastService', () => {
       expect(service.toasts().length).toBe(10);
 
       // Remove every other toast
-      const toastsToRemove = [...service.toasts()].filter((_, i) => i % 2 === 0);
-      toastsToRemove.forEach(toast => service.remove(toast.id));
+      const toastsToRemove = [...service.toasts()].filter(
+        (_, i) => i % 2 === 0
+      );
+      toastsToRemove.forEach((toast) => service.remove(toast.id));
 
       expect(service.toasts().length).toBe(5);
       expect(serviceInternal.timeouts.size).toBe(5);
     });
 
-    it('should handle mixed manual and auto removal', fakeAsync(() => {
+    it('should handle mixed manual and auto removal', () => {
       service.success('Auto 1', 100);
       service.success('Manual 1', 5000);
       service.success('Auto 2', 200);
       service.success('Manual 2', 5000);
 
       // Manually remove one
-      const manualToast = service.toasts().find(t => t.message === 'Manual 1');
+      const manualToast = service
+        .toasts()
+        .find((t) => t.message === 'Manual 1');
       if (manualToast) {
         service.remove(manualToast.id);
       }
       expect(service.toasts().length).toBe(3);
 
       // Wait for auto-dismiss
-      tick(200);
+      vi.advanceTimersByTime(200);
       expect(service.toasts().length).toBe(1);
       expect(service.toasts()[0].message).toBe('Manual 2');
-    }));
+    });
   });
 });

@@ -11,6 +11,8 @@ This is an **Nx monorepo** containing a full-stack dividends tracking applicatio
 - **Shared Library** (`packages/shared`): Common code shared between frontend and backend
 - **E2E Tests** (`apps/api-e2e`): End-to-end tests for the API
 
+**Test runners**: The API and API e2e tests use Jest (`jest.config.ts`, `jest.preset.js`, `@nx/jest/plugin`); the Angular app uses Vitest through the Angular unit-test builder.
+
 ### Key Architectural Details
 
 **Database**: Uses PostgreSQL with Prisma ORM v7. The Prisma schema is located at `apps/api/prisma/schema.prisma` with a custom output directory for the generated client (`apps/api/generated/prisma`). A Docker Compose file provides a local PostgreSQL instance.
@@ -198,6 +200,7 @@ nx graph
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle
 - Proxies `/api` requests to `http://localhost:3000` via `proxy.conf.json`
 - Currently uses Zone.js for change detection (zoneless migration available - see issues)
+- Unit tests run with Vitest via the `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom, `isolate: true`); there is no `jest.config.ts` or `test-setup.ts`, the builder initializes TestBed and Zone.js itself. Use `vi.*` APIs and Vitest fake timers (`fakeAsync` is not supported with Vitest). Spec files are type-checked during the test build.
 
 ### Shared Package
 

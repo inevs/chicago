@@ -134,7 +134,7 @@
 | **Data Integrity** | Multi-layer validation, database constraints | ✅ Good validation, ⚠️ Limited transactions |
 | **Extensibility** | Feature modules, shared library, dependency injection | ✅ Good foundation, ⚠️ Some tight coupling |
 | **Performance** | Indexes, signal-based reactivity, connection pooling | ✅ Good DB indexes, ⚠️ No caching strategy |
-| **Testability** | Jest configured, service injection, test factories | ⚠️ Coverage not measured (unit, integration and e2e tests exist) |
+| **Testability** | Jest (API) and Vitest (frontend) configured, service injection, test factories | ⚠️ Coverage not measured (unit, integration and e2e tests exist) |
 | **Security** | Input validation, parameterized queries (Prisma) | ✅ JWT authentication (single-user mode), ❌ No rate limiting |
 
 ## 4.5 Organizational Strategy

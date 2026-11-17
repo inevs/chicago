@@ -73,6 +73,16 @@
         "buildTarget": "dividends:build"
       }
     },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "outputs": ["{workspaceRoot}/coverage/{projectName}"],
+      "options": {
+        "runner": "vitest",
+        "buildTarget": "dividends:build:development",
+        "tsConfig": "apps/dividends/tsconfig.spec.json",
+        "isolate": true
+      }
+    },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",

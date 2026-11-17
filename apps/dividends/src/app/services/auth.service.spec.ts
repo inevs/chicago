@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { AuthService, LoginResponse, User } from './auth.service';
 
@@ -8,7 +11,7 @@ describe('AuthService', () => {
   let httpMock: HttpTestingController;
 
   const mockRouter = {
-    navigate: jest.fn(),
+    navigate: vi.fn(),
   };
 
   beforeEach(() => {
@@ -16,10 +19,7 @@ describe('AuthService', () => {
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [
-        AuthService,
-        { provide: Router, useValue: mockRouter },
-      ],
+      providers: [AuthService, { provide: Router, useValue: mockRouter }],
     });
 
     service = TestBed.inject(AuthService);
@@ -29,7 +29,7 @@ describe('AuthService', () => {
   afterEach(() => {
     httpMock.verify();
     localStorage.clear();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('initialization', () => {
@@ -52,10 +52,7 @@ describe('AuthService', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         imports: [HttpClientTestingModule],
-        providers: [
-          AuthService,
-          { provide: Router, useValue: mockRouter },
-        ],
+        providers: [AuthService, { provide: Router, useValue: mockRouter }],
       });
 
       const newService = TestBed.inject(AuthService);
@@ -71,44 +68,52 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('should login user and store token', (done) => {
-      const credentials = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-
-      const mockResponse: LoginResponse = {
-        access_token: 'mock-jwt-token',
-        user: {
-          id: '1',
+    it('should login user and store token', () =>
+      new Promise<void>((done) => {
+        const credentials = {
           email: 'test@example.com',
-          name: 'Test User',
-        },
-      };
+          password: 'password123',
+        };
 
-      service.login(credentials).subscribe((response) => {
-        expect(response).toEqual(mockResponse);
-        expect(localStorage.getItem('auth_token')).toBe('mock-jwt-token');
-        expect(localStorage.getItem('auth_user')).toBe(
-          JSON.stringify(mockResponse.user)
-        );
-        expect(service.currentUser()).toEqual(mockResponse.user);
-        expect(service.isAuthenticated()).toBe(true);
-        done();
-      });
+        const mockResponse: LoginResponse = {
+          access_token: 'mock-jwt-token',
+          user: {
+            id: '1',
+            email: 'test@example.com',
+            name: 'Test User',
+          },
+        };
 
-      const req = httpMock.expectOne('/api/auth/login');
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(credentials);
-      req.flush(mockResponse);
-    });
+        service.login(credentials).subscribe((response) => {
+          expect(response).toEqual(mockResponse);
+          expect(localStorage.getItem('auth_token')).toBe('mock-jwt-token');
+          expect(localStorage.getItem('auth_user')).toBe(
+            JSON.stringify(mockResponse.user)
+          );
+          expect(service.currentUser()).toEqual(mockResponse.user);
+          expect(service.isAuthenticated()).toBe(true);
+          done();
+        });
+
+        const req = httpMock.expectOne('/api/auth/login');
+        expect(req.request.method).toBe('POST');
+        expect(req.request.body).toEqual(credentials);
+        req.flush(mockResponse);
+      }));
   });
 
   describe('logout', () => {
     it('should clear token and user data and navigate to login', () => {
       localStorage.setItem('auth_token', 'mock-token');
-      localStorage.setItem('auth_user', JSON.stringify({ id: '1', email: 'test@example.com', name: 'Test' }));
-      service.currentUser.set({ id: '1', email: 'test@example.com', name: 'Test' });
+      localStorage.setItem(
+        'auth_user',
+        JSON.stringify({ id: '1', email: 'test@example.com', name: 'Test' })
+      );
+      service.currentUser.set({
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test',
+      });
       service.isAuthenticated.set(true);
 
       service.logout();
@@ -122,8 +127,15 @@ describe('AuthService', () => {
 
     it('should clear token and user data but skip navigation when skipNavigation is true', () => {
       localStorage.setItem('auth_token', 'mock-token');
-      localStorage.setItem('auth_user', JSON.stringify({ id: '1', email: 'test@example.com', name: 'Test' }));
-      service.currentUser.set({ id: '1', email: 'test@example.com', name: 'Test' });
+      localStorage.setItem(
+        'auth_user',
+        JSON.stringify({ id: '1', email: 'test@example.com', name: 'Test' })
+      );
+      service.currentUser.set({
+        id: '1',
+        email: 'test@example.com',
+        name: 'Test',
+      });
       service.isAuthenticated.set(true);
 
       service.logout(true);
@@ -150,7 +162,13 @@ describe('AuthService', () => {
   describe('isTokenValid', () => {
     function createMockJWT(expirationTime: number): string {
       const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      const payload = btoa(JSON.stringify({ exp: expirationTime, sub: '1', email: 'test@example.com' }));
+      const payload = btoa(
+        JSON.stringify({
+          exp: expirationTime,
+          sub: '1',
+          email: 'test@example.com',
+        })
+      );
       const signature = 'mock-signature';
       return `${header}.${payload}.${signature}`;
     }
@@ -193,7 +211,9 @@ describe('AuthService', () => {
 
     it('should return false for token without expiration field', () => {
       const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-      const payload = btoa(JSON.stringify({ sub: '1', email: 'test@example.com' })); // No exp field
+      const payload = btoa(
+        JSON.stringify({ sub: '1', email: 'test@example.com' })
+      ); // No exp field
       const signature = 'mock-signature';
       const tokenWithoutExp = `${header}.${payload}.${signature}`;
       localStorage.setItem('auth_token', tokenWithoutExp);
@@ -202,7 +222,9 @@ describe('AuthService', () => {
     });
 
     it('should handle base64 decoding errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       const invalidBase64Token = 'header.@invalid@base64@.signature';
       localStorage.setItem('auth_token', invalidBase64Token);
 

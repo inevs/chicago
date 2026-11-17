@@ -11,7 +11,7 @@
 - `nx serve dividends`: Run full stack (API + frontend dev server).
 - `nx serve api`: Run API only.
 - `nx build api|dividends`: Build a single project.
-- `nx test api|dividends|shared`: Run unit tests (Jest).
+- `nx test api|dividends|shared`: Run unit tests (Jest for `api`, Vitest for `dividends`).
 - `nx e2e api-e2e`: Run API e2e tests.
 - `nx lint <project>` or `nx run-many -t lint`: Run linting.
 - `nx run-many -t build|test` or `nx affected -t build|test|lint`: Batch or affected-only targets.
@@ -24,7 +24,7 @@
 - Test files live under `src/` and use `*.spec.ts` or `*.test.ts`.
 
 ## Testing Guidelines
-- Jest is the primary test runner; e2e tests live in `apps/api-e2e`.
+- The API (`apps/api`) and the e2e tests (`apps/api-e2e`) use Jest; the Angular frontend (`apps/dividends`) uses Vitest via the `@angular/build:unit-test` builder (use `vi.fn()`, `vi.spyOn()` and Vitest fake timers instead of `fakeAsync`).
 - Run relevant unit tests with `nx test <project>` and e2e with `nx e2e api-e2e`.
 - When changing API endpoints, shared types, or UI flows, update or add tests to match.
 

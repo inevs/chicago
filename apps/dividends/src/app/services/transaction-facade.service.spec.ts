@@ -1,4 +1,6 @@
+import type { Mocked } from 'vitest';
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { TransactionFacadeService } from './transaction-facade.service';
 import { DividendPaymentService } from './dividend-payment.service';
@@ -13,105 +15,125 @@ import { TransactionForm } from '../shared/modals/transaction-modal/transaction-
 import { SecurityForm } from '../shared/modals/security-modal/security-modal.component';
 import { SecurityTransactionForm } from '../shared/modals/security-transaction-modal/security-transaction-modal.component';
 import { DividendTransaction } from '../models/dividend.model';
-import { Security, SecurityTransactionWithSecurity } from '@dividends/shared';
+import {
+  Security,
+  SecurityTransactionWithSecurity,
+  TransactionType,
+} from '@dividends/shared';
 
 describe('TransactionFacadeService', () => {
   let service: TransactionFacadeService;
-  let mockDividendPaymentService: jest.Mocked<Partial<DividendPaymentService>>;
-  let mockSecurityTransactionService: jest.Mocked<Partial<SecurityTransactionService>>;
-  let mockSecurityService: jest.Mocked<Partial<SecurityService>>;
-  let mockCurrencyService: jest.Mocked<Partial<CurrencyService>>;
-  let mockDataService: jest.Mocked<Partial<DataService>>;
-  let mockToastService: jest.Mocked<Partial<ToastService>>;
-  let mockUiState: jest.Mocked<Partial<UiStateService>>;
-  let mockPortfolioState: jest.Mocked<Partial<PortfolioStateService>>;
+  let mockDividendPaymentService: Mocked<Partial<DividendPaymentService>>;
+  let mockSecurityTransactionService: Mocked<
+    Partial<SecurityTransactionService>
+  >;
+  let mockSecurityService: Mocked<Partial<SecurityService>>;
+  let mockCurrencyService: Mocked<Partial<CurrencyService>>;
+  let mockDataService: Mocked<Partial<DataService>>;
+  let mockToastService: Mocked<Partial<ToastService>>;
+  let mockUiState: Mocked<Partial<UiStateService>>;
+  let mockPortfolioState: Mocked<Partial<PortfolioStateService>>;
 
   beforeEach(() => {
-    jest.spyOn(console, 'error').mockImplementation(() => { /* ignore */ });
-    jest.spyOn(console, 'log').mockImplementation(() => { /* ignore */ });
+    vi.spyOn(console, 'error').mockImplementation(() => {
+      /* ignore */
+    });
+    vi.spyOn(console, 'log').mockImplementation(() => {
+      /* ignore */
+    });
 
     mockDividendPaymentService = {
-      createDividendPayment: jest.fn().mockReturnValue(of({})),
-      updateDividendPayment: jest.fn().mockReturnValue(of({})),
-      deleteDividendPayment: jest.fn().mockReturnValue(of({})),
+      createDividendPayment: vi.fn().mockReturnValue(of({})),
+      updateDividendPayment: vi.fn().mockReturnValue(of({})),
+      deleteDividendPayment: vi.fn().mockReturnValue(of({})),
     };
 
     mockSecurityTransactionService = {
-      createSecurityTransaction: jest.fn().mockReturnValue(of({})),
-      updateSecurityTransaction: jest.fn().mockReturnValue(of({})),
-      deleteSecurityTransaction: jest.fn().mockReturnValue(of({})),
+      createSecurityTransaction: vi.fn().mockReturnValue(of({})),
+      updateSecurityTransaction: vi.fn().mockReturnValue(of({})),
+      deleteSecurityTransaction: vi.fn().mockReturnValue(of({})),
     };
 
     mockSecurityService = {
-      createSecurity: jest.fn().mockReturnValue(of({})),
-      updateSecurity: jest.fn().mockReturnValue(of({})),
-      getSecurity: jest.fn().mockReturnValue(of({})),
+      createSecurity: vi.fn().mockReturnValue(of({})),
+      updateSecurity: vi.fn().mockReturnValue(of({})),
+      getSecurity: vi.fn().mockReturnValue(of({})),
     };
 
     mockCurrencyService = {
-      createCurrency: jest.fn().mockReturnValue(of({
-        id: '1',
-        code: 'USD',
-        name: 'US Dollar',
-        symbol: '$',
-        isDefault: false,
-      })),
+      createCurrency: vi.fn().mockReturnValue(
+        of({
+          id: '1',
+          code: 'USD',
+          name: 'US Dollar',
+          symbol: '$',
+          isDefault: false,
+        })
+      ),
     };
 
     mockDataService = {
-      exportData: jest.fn().mockReturnValue(of(new Blob())),
-      importData: jest.fn().mockReturnValue(of({
-        currenciesImported: 1,
-        securitiesImported: 1,
-        dividendPaymentsImported: 1,
-        securityTransactionsImported: 1,
-        securityPricesImported: 1,
-      })),
-      downloadExport: jest.fn(),
+      exportData: vi.fn().mockReturnValue(of(new Blob())),
+      importData: vi.fn().mockReturnValue(
+        of({
+          currenciesImported: 1,
+          securitiesImported: 1,
+          dividendPaymentsImported: 1,
+          securityTransactionsImported: 1,
+          securityPricesImported: 1,
+        })
+      ),
+      downloadExport: vi.fn(),
     };
 
     mockToastService = {
-      success: jest.fn(),
-      error: jest.fn(),
-      warning: jest.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+      warning: vi.fn(),
     };
 
     mockUiState = {
-      editingTransaction: jest.fn().mockReturnValue(null),
-      setEditingTransaction: jest.fn(),
-      setDeletingTransaction: jest.fn(),
-      deletingTransaction: jest.fn().mockReturnValue(null),
-      editingSecurityTransaction: jest.fn().mockReturnValue(null),
-      setEditingSecurityTransaction: jest.fn(),
-      deletingSecurityTransaction: jest.fn().mockReturnValue(null),
-      setDeletingSecurityTransaction: jest.fn(),
-      setEditingSecurity: jest.fn(),
-      toggleTransactionModal: jest.fn(),
-      toggleSecurityModal: jest.fn(),
-      toggleSecurityTransactionModal: jest.fn(),
-      toggleCurrencyModal: jest.fn(),
-      setPendingImportFile: jest.fn(),
-      pendingImportFile: jest.fn().mockReturnValue(null),
-      closeImportConfirmModal: jest.fn(),
+      editingTransaction: vi.fn().mockReturnValue(null),
+      setEditingTransaction: vi.fn(),
+      setDeletingTransaction: vi.fn(),
+      deletingTransaction: vi.fn().mockReturnValue(null),
+      editingSecurityTransaction: vi.fn().mockReturnValue(null),
+      setEditingSecurityTransaction: vi.fn(),
+      deletingSecurityTransaction: vi.fn().mockReturnValue(null),
+      setDeletingSecurityTransaction: vi.fn(),
+      setEditingSecurity: vi.fn(),
+      toggleTransactionModal: vi.fn(),
+      toggleSecurityModal: vi.fn(),
+      toggleSecurityTransactionModal: vi.fn(),
+      toggleCurrencyModal: vi.fn(),
+      setPendingImportFile: vi.fn(),
+      pendingImportFile: vi.fn().mockReturnValue(null),
+      closeImportConfirmModal: vi.fn(),
       showMenu: {
-        set: jest.fn(),
+        set: vi.fn(),
       },
-    } as unknown as jest.Mocked<Partial<UiStateService>>;
+    } as unknown as Mocked<Partial<UiStateService>>;
 
     mockPortfolioState = {
-      loadAllData: jest.fn(),
-      loadDividends: jest.fn(),
-      loadSecurityTransactions: jest.fn(),
+      loadAllData: vi.fn(),
+      loadDividends: vi.fn(),
+      loadSecurityTransactions: vi.fn(),
       currencies: {
-        update: jest.fn(),
+        update: vi.fn(),
       },
-    } as unknown as jest.Mocked<Partial<PortfolioStateService>>;
+    } as unknown as Mocked<Partial<PortfolioStateService>>;
 
     TestBed.configureTestingModule({
       providers: [
         TransactionFacadeService,
-        { provide: DividendPaymentService, useValue: mockDividendPaymentService },
-        { provide: SecurityTransactionService, useValue: mockSecurityTransactionService },
+        {
+          provide: DividendPaymentService,
+          useValue: mockDividendPaymentService,
+        },
+        {
+          provide: SecurityTransactionService,
+          useValue: mockSecurityTransactionService,
+        },
         { provide: SecurityService, useValue: mockSecurityService },
         { provide: CurrencyService, useValue: mockCurrencyService },
         { provide: DataService, useValue: mockDataService },
@@ -155,7 +177,9 @@ describe('TransactionFacadeService', () => {
     it('should create new dividend payment', () => {
       service.handleTransactionSubmit(mockTransactionForm);
 
-      expect(mockDividendPaymentService.createDividendPayment).toHaveBeenCalledWith(
+      expect(
+        mockDividendPaymentService.createDividendPayment
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           securityId: 'sec1',
           shares: 10,
@@ -168,11 +192,15 @@ describe('TransactionFacadeService', () => {
 
     it('should update existing dividend payment', () => {
       const editForm = { ...mockTransactionForm, id: '1' };
-      mockUiState.editingTransaction = jest.fn().mockReturnValue({ id: '1' } as DividendTransaction);
+      mockUiState.editingTransaction = signal({
+        id: '1',
+      } as DividendTransaction);
 
       service.handleTransactionSubmit(editForm);
 
-      expect(mockDividendPaymentService.updateDividendPayment).toHaveBeenCalledWith(
+      expect(
+        mockDividendPaymentService.updateDividendPayment
+      ).toHaveBeenCalledWith(
         '1',
         expect.objectContaining({
           securityId: 'sec1',
@@ -183,7 +211,7 @@ describe('TransactionFacadeService', () => {
 
     it('should handle error when creating dividend payment', () => {
       const error = new Error('Create failed');
-      mockDividendPaymentService.createDividendPayment = jest
+      mockDividendPaymentService.createDividendPayment = vi
         .fn()
         .mockReturnValue(throwError(() => error));
 
@@ -195,11 +223,15 @@ describe('TransactionFacadeService', () => {
     });
 
     it('should confirm delete transaction', () => {
-      mockUiState.deletingTransaction = jest.fn().mockReturnValue({ id: '1' } as DividendTransaction);
+      mockUiState.deletingTransaction = signal({
+        id: '1',
+      } as DividendTransaction);
 
       service.confirmDeleteTransaction();
 
-      expect(mockDividendPaymentService.deleteDividendPayment).toHaveBeenCalledWith('1');
+      expect(
+        mockDividendPaymentService.deleteDividendPayment
+      ).toHaveBeenCalledWith('1');
       expect(mockPortfolioState.loadDividends).toHaveBeenCalled();
       expect(mockUiState.setDeletingTransaction).toHaveBeenCalledWith(null);
     });
@@ -231,7 +263,9 @@ describe('TransactionFacadeService', () => {
           symbol: 'TEST',
         })
       );
-      expect(mockToastService.success).toHaveBeenCalledWith('Wertpapier erfolgreich angelegt');
+      expect(mockToastService.success).toHaveBeenCalledWith(
+        'Wertpapier erfolgreich angelegt'
+      );
       expect(mockUiState.toggleSecurityModal).toHaveBeenCalled();
     });
 
@@ -245,12 +279,16 @@ describe('TransactionFacadeService', () => {
           name: 'Test Security',
         })
       );
-      expect(mockToastService.success).toHaveBeenCalledWith('Wertpapier erfolgreich aktualisiert');
+      expect(mockToastService.success).toHaveBeenCalledWith(
+        'Wertpapier erfolgreich aktualisiert'
+      );
     });
 
     it('should open edit security modal', () => {
       const mockSecurity = { id: 'sec1', name: 'Test' } as Security;
-      mockSecurityService.getSecurity = jest.fn().mockReturnValue(of(mockSecurity));
+      mockSecurityService.getSecurity = vi
+        .fn()
+        .mockReturnValue(of(mockSecurity));
 
       service.openEditSecurityModal('sec1');
 
@@ -260,7 +298,9 @@ describe('TransactionFacadeService', () => {
 
     it('should handle error when fetching security for edit', () => {
       const error = new Error('Fetch failed');
-      mockSecurityService.getSecurity = jest.fn().mockReturnValue(throwError(() => error));
+      mockSecurityService.getSecurity = vi
+        .fn()
+        .mockReturnValue(throwError(() => error));
 
       service.openEditSecurityModal('sec1');
 
@@ -274,8 +314,9 @@ describe('TransactionFacadeService', () => {
     const mockSecurityTransactionForm: SecurityTransactionForm = {
       id: undefined,
       securityId: 'sec1',
+      securityName: 'Test Security',
       date: '2024-01-01',
-      type: 'BUY',
+      type: TransactionType.BUY,
       quantity: 10,
       pricePerShare: 100,
       fees: 5,
@@ -296,7 +337,9 @@ describe('TransactionFacadeService', () => {
     it('should create new security transaction', () => {
       service.handleSecurityTransactionSubmit(mockSecurityTransactionForm);
 
-      expect(mockSecurityTransactionService.createSecurityTransaction).toHaveBeenCalledWith(
+      expect(
+        mockSecurityTransactionService.createSecurityTransaction
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           securityId: 'sec1',
           type: 'BUY',
@@ -309,46 +352,56 @@ describe('TransactionFacadeService', () => {
 
     it('should update existing security transaction', () => {
       const editForm = { ...mockSecurityTransactionForm, id: '1' };
-      mockUiState.editingSecurityTransaction = jest
-        .fn()
-        .mockReturnValue({ id: '1' } as SecurityTransactionWithSecurity);
+      mockUiState.editingSecurityTransaction = signal({
+        id: '1',
+      } as SecurityTransactionWithSecurity);
 
       service.handleSecurityTransactionSubmit(editForm);
 
-      expect(mockSecurityTransactionService.updateSecurityTransaction).toHaveBeenCalledWith(
+      expect(
+        mockSecurityTransactionService.updateSecurityTransaction
+      ).toHaveBeenCalledWith(
         '1',
         expect.objectContaining({
           securityId: 'sec1',
         })
       );
-      expect(mockUiState.setEditingSecurityTransaction).toHaveBeenCalledWith(null);
+      expect(mockUiState.setEditingSecurityTransaction).toHaveBeenCalledWith(
+        null
+      );
     });
 
     it('should confirm delete security transaction', () => {
-      mockUiState.deletingSecurityTransaction = jest
-        .fn()
-        .mockReturnValue({ id: '1' } as SecurityTransactionWithSecurity);
+      mockUiState.deletingSecurityTransaction = signal({
+        id: '1',
+      } as SecurityTransactionWithSecurity);
 
       service.confirmDeleteSecurityTransaction();
 
-      expect(mockSecurityTransactionService.deleteSecurityTransaction).toHaveBeenCalledWith('1');
+      expect(
+        mockSecurityTransactionService.deleteSecurityTransaction
+      ).toHaveBeenCalledWith('1');
       expect(mockPortfolioState.loadSecurityTransactions).toHaveBeenCalled();
-      expect(mockUiState.setDeletingSecurityTransaction).toHaveBeenCalledWith(null);
+      expect(mockUiState.setDeletingSecurityTransaction).toHaveBeenCalledWith(
+        null
+      );
     });
 
     it('should cancel delete security transaction', () => {
       service.cancelDeleteSecurityTransaction();
-      expect(mockUiState.setDeletingSecurityTransaction).toHaveBeenCalledWith(null);
+      expect(mockUiState.setDeletingSecurityTransaction).toHaveBeenCalledWith(
+        null
+      );
     });
   });
 
   describe('Currency Methods', () => {
     it('should add currency successfully', () => {
-      const dto = { code: 'USD', name: 'US Dollar', symbol: '$' };
+      const dto = { code: 'USD', name: 'US Dollar' };
       service.addCurrency(dto);
 
       expect(mockCurrencyService.createCurrency).toHaveBeenCalledWith(dto);
-      expect(mockPortfolioState.currencies.update).toHaveBeenCalled();
+      expect(mockPortfolioState.currencies?.update).toHaveBeenCalled();
       expect(mockToastService.success).toHaveBeenCalledWith(
         expect.stringContaining('USD')
       );
@@ -357,9 +410,11 @@ describe('TransactionFacadeService', () => {
 
     it('should handle error when adding currency', () => {
       const error = { error: { message: 'Currency exists' }, message: 'Error' };
-      mockCurrencyService.createCurrency = jest.fn().mockReturnValue(throwError(() => error));
+      mockCurrencyService.createCurrency = vi
+        .fn()
+        .mockReturnValue(throwError(() => error));
 
-      service.addCurrency({ code: 'USD', name: 'US Dollar', symbol: '$' });
+      service.addCurrency({ code: 'USD', name: 'US Dollar' });
 
       expect(mockToastService.error).toHaveBeenCalled();
     });
@@ -369,14 +424,16 @@ describe('TransactionFacadeService', () => {
     it('should export data successfully', () => {
       service.handleExportData();
 
-      expect(mockUiState.showMenu.set).toHaveBeenCalledWith(false);
+      expect(mockUiState.showMenu?.set).toHaveBeenCalledWith(false);
       expect(mockDataService.exportData).toHaveBeenCalled();
       expect(mockDataService.downloadExport).toHaveBeenCalled();
     });
 
     it('should handle error when exporting data', () => {
       const error = new Error('Export failed');
-      mockDataService.exportData = jest.fn().mockReturnValue(throwError(() => error));
+      mockDataService.exportData = vi
+        .fn()
+        .mockReturnValue(throwError(() => error));
 
       service.handleExportData();
 
@@ -386,23 +443,23 @@ describe('TransactionFacadeService', () => {
     });
 
     it('should handle file selected for import', () => {
-      const mockFile = new File(['test'], 'test.json', { type: 'application/json' });
-      const mockEvent = {
-        target: {
-          files: [mockFile],
-          value: 'test.json',
-        },
-      } as unknown as Event;
+      const mockFile = new File(['test'], 'test.json', {
+        type: 'application/json',
+      });
+      const target = { files: [mockFile], value: 'test.json' };
+      const mockEvent = { target } as unknown as Event;
 
       service.onFileSelected(mockEvent);
 
       expect(mockUiState.setPendingImportFile).toHaveBeenCalledWith(mockFile);
-      expect(mockEvent.target.value).toBe('');
+      expect(target.value).toBe('');
     });
 
     it('should import data in replace mode', () => {
-      const mockFile = new File(['test'], 'test.json', { type: 'application/json' });
-      mockUiState.pendingImportFile = jest.fn().mockReturnValue(mockFile);
+      const mockFile = new File(['test'], 'test.json', {
+        type: 'application/json',
+      });
+      mockUiState.pendingImportFile = signal(mockFile);
 
       service.handleImportConfirm('replace');
 
@@ -413,8 +470,10 @@ describe('TransactionFacadeService', () => {
     });
 
     it('should import data in merge mode', () => {
-      const mockFile = new File(['test'], 'test.json', { type: 'application/json' });
-      mockUiState.pendingImportFile = jest.fn().mockReturnValue(mockFile);
+      const mockFile = new File(['test'], 'test.json', {
+        type: 'application/json',
+      });
+      mockUiState.pendingImportFile = signal(mockFile);
 
       service.handleImportConfirm('merge');
 
@@ -429,11 +488,15 @@ describe('TransactionFacadeService', () => {
     });
 
     it('should handle error when importing data', () => {
-      const mockFile = new File(['test'], 'test.json', { type: 'application/json' });
-      mockUiState.pendingImportFile = jest.fn().mockReturnValue(mockFile);
+      const mockFile = new File(['test'], 'test.json', {
+        type: 'application/json',
+      });
+      mockUiState.pendingImportFile = signal(mockFile);
 
       const error = new Error('Import failed');
-      mockDataService.importData = jest.fn().mockReturnValue(throwError(() => error));
+      mockDataService.importData = vi
+        .fn()
+        .mockReturnValue(throwError(() => error));
 
       service.handleImportConfirm('merge');
 

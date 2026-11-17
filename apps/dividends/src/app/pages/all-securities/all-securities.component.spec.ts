@@ -58,7 +58,7 @@ describe('AllSecuritiesComponent', () => {
     };
 
     mockTransactionFacade = {
-      openEditSecurityModal: jest.fn(),
+      openEditSecurityModal: vi.fn(),
     };
 
     mockUiState = {};
@@ -155,22 +155,30 @@ describe('AllSecuritiesComponent', () => {
 
   it('should call openEditSecurityModal when row is clicked', () => {
     component.onRowClick(mockSecurities[0]);
-    expect(mockTransactionFacade.openEditSecurityModal).toHaveBeenCalledWith('1');
+    expect(mockTransactionFacade.openEditSecurityModal).toHaveBeenCalledWith(
+      '1'
+    );
   });
 
   it('should return correct badge class for STOCK type', () => {
     const badgeClass = component.getSecurityTypeBadgeClass(SecurityType.STOCK);
-    expect(badgeClass).toBe('bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200');
+    expect(badgeClass).toBe(
+      'bg-brand-100 text-brand-800 dark:bg-brand-900 dark:text-brand-200'
+    );
   });
 
   it('should return correct badge class for ETF type', () => {
     const badgeClass = component.getSecurityTypeBadgeClass(SecurityType.ETF);
-    expect(badgeClass).toBe('bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-100');
+    expect(badgeClass).toBe(
+      'bg-slate-200 text-slate-800 dark:bg-slate-600 dark:text-slate-100'
+    );
   });
 
   it('should return correct badge class for BOND type', () => {
     const badgeClass = component.getSecurityTypeBadgeClass(SecurityType.BOND);
-    expect(badgeClass).toBe('bg-white text-slate-700 ring-1 ring-inset ring-slate-300 dark:bg-transparent dark:text-slate-300 dark:ring-slate-600');
+    expect(badgeClass).toBe(
+      'bg-white text-slate-700 ring-1 ring-inset ring-slate-300 dark:bg-transparent dark:text-slate-300 dark:ring-slate-600'
+    );
   });
 
   it('should return correct label for STOCK type', () => {

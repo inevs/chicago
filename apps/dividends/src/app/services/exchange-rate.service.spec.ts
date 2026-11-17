@@ -3,7 +3,10 @@ import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { ExchangeRateService, LatestExchangeRate } from './exchange-rate.service';
+import {
+  ExchangeRateService,
+  LatestExchangeRate,
+} from './exchange-rate.service';
 
 describe('ExchangeRateService', () => {
   let service: ExchangeRateService;
@@ -36,10 +39,12 @@ describe('ExchangeRateService', () => {
         rate: 1.0845,
       };
 
-      service.getExchangeRate(baseCurrency, targetCurrency, date).subscribe((response) => {
-        expect(response).toEqual(mockResponse);
-        expect(response.rate).toBe(1.0845);
-      });
+      service
+        .getExchangeRate(baseCurrency, targetCurrency, date)
+        .subscribe((response) => {
+          expect(response).toEqual(mockResponse);
+          expect(response.rate).toBe(1.0845);
+        });
 
       const req = httpMock.expectOne(
         (request) =>
@@ -64,10 +69,12 @@ describe('ExchangeRateService', () => {
         rate: 0.8567,
       };
 
-      service.getExchangeRate(baseCurrency, targetCurrency, date).subscribe((response) => {
-        expect(response.targetCurrency).toBe('GBP');
-        expect(response.rate).toBe(0.8567);
-      });
+      service
+        .getExchangeRate(baseCurrency, targetCurrency, date)
+        .subscribe((response) => {
+          expect(response.targetCurrency).toBe('GBP');
+          expect(response.rate).toBe(0.8567);
+        });
 
       const req = httpMock.expectOne(
         (request) =>
@@ -80,10 +87,12 @@ describe('ExchangeRateService', () => {
     });
 
     it('should handle 404 not found error', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       service.getExchangeRate('EUR', 'INVALID', '2025-01-03').subscribe({
-        next: () => fail('Should have failed with 404'),
+        next: () => expect.unreachable('Should have failed with 404'),
         error: (error) => {
           expect(error.message).toBe('Exchange rate not found');
         },
@@ -101,10 +110,12 @@ describe('ExchangeRateService', () => {
     });
 
     it('should handle server error', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       service.getExchangeRate('EUR', 'USD', '2025-01-03').subscribe({
-        next: () => fail('Should have failed with 500'),
+        next: () => expect.unreachable('Should have failed with 500'),
         error: (error) => {
           expect(error.message).toContain('Server error');
         },
@@ -122,19 +133,25 @@ describe('ExchangeRateService', () => {
     });
 
     it('should handle client-side error', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       service.getExchangeRate('EUR', 'USD', '2025-01-03').subscribe({
-        next: () => fail('Should have failed with network error'),
+        next: () => expect.unreachable('Should have failed with network error'),
         error: (error) => {
-          expect(error.message).toContain('Error');
+          expect(error.message).toBe('Error: Connection failed');
         },
       });
 
       const req = httpMock.expectOne(
         (request) => request.url === '/api/exchange-rates/rate'
       );
-      req.error(new ProgressEvent('Network error'));
+      req.error(
+        new ErrorEvent('Network error', {
+          message: 'Connection failed',
+        }) as unknown as ProgressEvent
+      );
 
       consoleSpy.mockRestore();
     });
@@ -207,10 +224,12 @@ describe('ExchangeRateService', () => {
     });
 
     it('should handle 404 not found error', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       service.getLatestRates().subscribe({
-        next: () => fail('Should have failed with 404'),
+        next: () => expect.unreachable('Should have failed with 404'),
         error: (error) => {
           expect(error.message).toBe('Exchange rate not found');
         },
@@ -226,10 +245,12 @@ describe('ExchangeRateService', () => {
     });
 
     it('should handle server error', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       service.getLatestRates().subscribe({
-        next: () => fail('Should have failed with 500'),
+        next: () => expect.unreachable('Should have failed with 500'),
         error: (error) => {
           expect(error.message).toContain('Server error');
         },
@@ -245,17 +266,23 @@ describe('ExchangeRateService', () => {
     });
 
     it('should handle network error', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       service.getLatestRates().subscribe({
-        next: () => fail('Should have failed with network error'),
+        next: () => expect.unreachable('Should have failed with network error'),
         error: (error) => {
-          expect(error.message).toContain('Error');
+          expect(error.message).toBe('Error: Connection failed');
         },
       });
 
       const req = httpMock.expectOne('/api/exchange-rates/latest');
-      req.error(new ProgressEvent('Network error'));
+      req.error(
+        new ErrorEvent('Network error', {
+          message: 'Connection failed',
+        }) as unknown as ProgressEvent
+      );
 
       consoleSpy.mockRestore();
     });

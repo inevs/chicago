@@ -14,21 +14,21 @@ describe('LoginComponent', () => {
   let toastService: ToastService;
 
   const mockAuthService = {
-    login: jest.fn(),
+    login: vi.fn(),
   };
 
   const mockRouter = {
-    navigate: jest.fn(),
+    navigate: vi.fn(),
   };
 
   const mockToastService = {
-    success: jest.fn(),
-    error: jest.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
   };
 
   beforeEach(async () => {
     // Suppress console.error during tests
-    jest.spyOn(console, 'error').mockImplementation(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {
       // Intentionally empty to suppress console errors during tests
     });
 
@@ -50,8 +50,8 @@ describe('LoginComponent', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.restoreAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should create', () => {
@@ -108,78 +108,87 @@ describe('LoginComponent', () => {
       expect(authService.login).not.toHaveBeenCalled();
     });
 
-    it('should login successfully and navigate to home', (done) => {
-      const mockResponse = {
-        access_token: 'mock-token',
-        user: {
-          id: '1',
-          email: 'test@example.com',
-          name: 'Test User',
-        },
-      };
+    it('should login successfully and navigate to home', () =>
+      new Promise<void>((done) => {
+        const mockResponse = {
+          access_token: 'mock-token',
+          user: {
+            id: '1',
+            email: 'test@example.com',
+            name: 'Test User',
+          },
+        };
 
-      mockAuthService.login.mockReturnValue(of(mockResponse));
+        mockAuthService.login.mockReturnValue(of(mockResponse));
 
-      component.loginForm.patchValue({
-        email: 'test@example.com',
-        password: 'password123',
-      });
-
-      component.onSubmit();
-
-      setTimeout(() => {
-        expect(authService.login).toHaveBeenCalledWith({
+        component.loginForm.patchValue({
           email: 'test@example.com',
           password: 'password123',
         });
-        expect(toastService.success).toHaveBeenCalledWith('Login successful!');
-        expect(router.navigate).toHaveBeenCalledWith(['/']);
-        expect(component.isLoading()).toBe(false);
-        done();
-      }, 0);
-    });
 
-    it('should handle login error', (done) => {
-      const errorResponse = {
-        error: { message: 'Invalid credentials' },
-      };
+        component.onSubmit();
 
-      mockAuthService.login.mockReturnValue(throwError(() => errorResponse));
+        setTimeout(() => {
+          expect(authService.login).toHaveBeenCalledWith({
+            email: 'test@example.com',
+            password: 'password123',
+          });
+          expect(toastService.success).toHaveBeenCalledWith(
+            'Login successful!'
+          );
+          expect(router.navigate).toHaveBeenCalledWith(['/']);
+          expect(component.isLoading()).toBe(false);
+          done();
+        }, 0);
+      }));
 
-      component.loginForm.patchValue({
-        email: 'test@example.com',
-        password: 'wrongpassword',
-      });
+    it('should handle login error', () =>
+      new Promise<void>((done) => {
+        const errorResponse = {
+          error: { message: 'Invalid credentials' },
+        };
 
-      component.onSubmit();
+        mockAuthService.login.mockReturnValue(throwError(() => errorResponse));
 
-      setTimeout(() => {
-        expect(component.error()).toBe('Invalid credentials');
-        expect(toastService.error).toHaveBeenCalledWith('Invalid credentials');
-        expect(component.isLoading()).toBe(false);
-        expect(router.navigate).not.toHaveBeenCalled();
-        done();
-      }, 0);
-    });
+        component.loginForm.patchValue({
+          email: 'test@example.com',
+          password: 'wrongpassword',
+        });
 
-    it('should use default error message when error message is not provided', (done) => {
-      const errorResponse = {};
+        component.onSubmit();
 
-      mockAuthService.login.mockReturnValue(throwError(() => errorResponse));
+        setTimeout(() => {
+          expect(component.error()).toBe('Invalid credentials');
+          expect(toastService.error).toHaveBeenCalledWith(
+            'Invalid credentials'
+          );
+          expect(component.isLoading()).toBe(false);
+          expect(router.navigate).not.toHaveBeenCalled();
+          done();
+        }, 0);
+      }));
 
-      component.loginForm.patchValue({
-        email: 'test@example.com',
-        password: 'password123',
-      });
+    it('should use default error message when error message is not provided', () =>
+      new Promise<void>((done) => {
+        const errorResponse = {};
 
-      component.onSubmit();
+        mockAuthService.login.mockReturnValue(throwError(() => errorResponse));
 
-      setTimeout(() => {
-        expect(component.error()).toBe('Invalid credentials');
-        expect(toastService.error).toHaveBeenCalledWith('Invalid credentials');
-        done();
-      }, 0);
-    });
+        component.loginForm.patchValue({
+          email: 'test@example.com',
+          password: 'password123',
+        });
+
+        component.onSubmit();
+
+        setTimeout(() => {
+          expect(component.error()).toBe('Invalid credentials');
+          expect(toastService.error).toHaveBeenCalledWith(
+            'Invalid credentials'
+          );
+          done();
+        }, 0);
+      }));
 
     it('should set isLoading to true during login', () => {
       const subject = new Subject();

@@ -76,6 +76,8 @@ describe('SecurityService', () => {
       const mockResponse: Security = {
         id: 'uuid-123',
         ...request,
+        isin: 'US0378331005',
+        wkn: '865985',
         type: SecurityType.STOCK,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -100,7 +102,7 @@ describe('SecurityService', () => {
       };
 
       service.createSecurity(request).subscribe({
-        next: () => fail('Should have failed with 409'),
+        next: () => expect.unreachable('Should have failed with 409'),
         error: (error) => {
           expect(error.message).toContain('already exists');
         },
@@ -123,7 +125,7 @@ describe('SecurityService', () => {
       };
 
       service.createSecurity(request).subscribe({
-        next: () => fail('Should have failed with 400'),
+        next: () => expect.unreachable('Should have failed with 400'),
         error: (error) => {
           expect(error.message).toContain('Invalid');
         },
@@ -214,7 +216,7 @@ describe('SecurityService', () => {
 
     it('should handle 404 not found error', () => {
       service.getSecurityById('invalid-id').subscribe({
-        next: () => fail('Should have failed with 404'),
+        next: () => expect.unreachable('Should have failed with 404'),
         error: (error) => {
           expect(error.message).toContain('not found');
         },
@@ -299,8 +301,13 @@ describe('SecurityService', () => {
 
       const mockResponse: Security = {
         id: 'uuid-123',
-        ...updateRequest,
+        name: 'Apple Inc. Updated',
+        symbol: 'AAPL2',
+        isin: 'US0378331005',
+        wkn: '865985',
         type: SecurityType.ETF,
+        exchange: 'XETRA',
+        currency: 'EUR',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -347,7 +354,7 @@ describe('SecurityService', () => {
       };
 
       service.updateSecurity('invalid-id', updateRequest).subscribe({
-        next: () => fail('Should have failed with 404'),
+        next: () => expect.unreachable('Should have failed with 404'),
         error: (error) => {
           expect(error.message).toContain('not found');
         },
@@ -366,7 +373,7 @@ describe('SecurityService', () => {
       };
 
       service.updateSecurity('uuid-123', updateRequest).subscribe({
-        next: () => fail('Should have failed with 409'),
+        next: () => expect.unreachable('Should have failed with 409'),
         error: (error) => {
           expect(error.message).toContain('already exists');
         },
