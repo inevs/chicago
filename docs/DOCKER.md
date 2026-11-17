@@ -68,7 +68,7 @@ podman-compose down -v
 
 - **Image**: `postgres:16-alpine`
 - **Container Name**: `dividends-postgres`
-- **Port**: `5432` (exposed on host)
+- **Port**: `5432` (bound to `127.0.0.1` on the host, not reachable from the network)
 - **Credentials**:
   - User: `dividends`
   - Password: `dividends`
@@ -81,7 +81,7 @@ podman-compose down -v
 - **Build Context**: Root directory
 - **Dockerfile**: `apps/api/Dockerfile`
 - **Container Name**: `dividends-api`
-- **Port**: `3000` (exposed on host)
+- **Port**: `3000` (bound to `127.0.0.1` on the host; other machines reach the API through the frontend under `/api`)
 - **Environment Variables** (values come from `.env`, see Quick Start):
 
   | Variable | Required | Description |
@@ -108,10 +108,19 @@ podman-compose down -v
 - **Build Context**: Root directory
 - **Dockerfile**: `apps/dividends/Dockerfile`
 - **Container Name**: `dividends-frontend`
-- **Port**: `80` (exposed on host)
+- **Port**: `80` (exposed on all host interfaces)
 - **Nginx Configuration**: `apps/dividends/nginx.conf`
 - **API Proxy**: Proxies `/api/*` requests to the backend API service
 - **Dependencies**: Waits for API service to start
+
+## Access from Other Machines
+
+Only the frontend (port 80) listens on all network interfaces. PostgreSQL and the API are bound to `127.0.0.1` and can only be reached from the Docker host itself. The frontend proxies `/api` to the API, so other machines only need port 80.
+
+- **Home network (LAN)**: `http://<lan-ip-of-host>`, for example `http://192.168.178.30`
+- **Tailscale**: if Tailscale runs on the Docker host, the app is reachable from every device in the tailnet via `http://<host-name>` (MagicDNS) or `http://<tailscale-ip>`
+
+The connection is plain HTTP. Traffic over Tailscale is encrypted by WireGuard; in the LAN it is not. For access from untrusted networks, bind the frontend to `127.0.0.1` as well (`'127.0.0.1:80:80'`) and publish it via `tailscale serve --bg 80`, which provides HTTPS under `https://<host-name>.<tailnet>.ts.net` (requires MagicDNS and HTTPS certificates to be enabled in the Tailscale admin console).
 
 ## Building Individual Services
 
@@ -153,11 +162,11 @@ To change the exposed ports, modify the `ports` section in `docker-compose.yml`:
 ```yaml
 frontend:
   ports:
-    - '8080:80'  # Access frontend on http://localhost:8080
+    - '8080:80'  # Access frontend on http://<host>:8080
 
 api:
   ports:
-    - '3001:3000'  # Access API on http://localhost:3001
+    - '127.0.0.1:3001:3000'  # Access API on http://localhost:3001 (host only)
 ```
 
 ## Database Management
