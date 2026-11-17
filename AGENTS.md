@@ -34,5 +34,5 @@
 - PRs should include a brief summary, tests run, and screenshots for UI changes; link related issues when available.
 
 ## Environment & Configuration
-- Use Node `v25.2.1` from `.nvmrc`.
+- Use Node `v24.22.3` from `.nvmrc`.
 - Copy `.env.example` to `.env` for local configuration.
