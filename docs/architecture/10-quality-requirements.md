@@ -86,20 +86,21 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 **Scenario**: Developer needs to add comprehensive tests for DividendPaymentsService
 
 **Current State**:
-- Jest configured
-- No existing tests for this service
+- Jest configured, `jest-mock-extended` available for mocking Prisma
+- Service specs exist for the API services, plus integration tests (`*.integration.spec.ts`) for auth, securities and dividend payments
+- Test data factories in `apps/api/src/testing/factories` (currency, security, dividend payment, user)
+- `apps/api/src/testing/integration-test.helper.ts` creates a test application for integration tests
 - Service uses Prisma directly
 
 **Challenges**:
-- ⚠️ Mocking Prisma requires setup
-- ❌ No test database utilities
-- ❌ No test data factories
+- ⚠️ Mocking Prisma still requires per-test setup (no repository abstraction)
+- ⚠️ No coverage thresholds enforced
 
-**Effort**: ~4 hours (including setup)
+**Effort**: ~1-2 hours (infrastructure already in place)
 
-**Assessment**: ⚠️ Moderate difficulty
+**Assessment**: ✅ Good testability
 
-**Recommendation**: Add test utilities and factories
+**Recommendation**: Enforce coverage thresholds in Jest configuration
 
 ### Reliability Scenarios
 
@@ -109,15 +110,16 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 
 **Current Behavior**:
 - Prisma throws connection error
-- API returns 500 errors
+- API returns 500 errors (consistent format via global exception filter)
+- Health endpoints `GET /api/health` and `GET /api/health/db` (`@nestjs/terminus`, `SELECT 1` ping) report the database status
 - No retry logic
 - No circuit breaker
 - No degraded mode
 
-**Impact**: ❌ Total service failure
+**Impact**: ❌ Total service failure (but detectable via health check)
 
 **Recommendation**:
-1. Health check endpoint
+1. ~~Health check endpoint~~ (implemented for the database; ECB/Yahoo checks open)
 2. Connection retry with exponential backoff
 3. Graceful degradation where possible
 4. User-friendly error messages
@@ -147,18 +149,17 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 
 **Current Behavior**:
 - Validation on DTOs
-- Transaction support in DataService
-- May partially import before failure
+- JSON import (`DataService.importAllData`) runs entirely inside `prisma.$transaction` and is rolled back on any error
+- CSV imports (`importFromCsv` in securities and dividend payments services) do not use a transaction and may import partially
 
-**Impact**: ⚠️ Inconsistent state possible
+**Impact**: ✅ JSON import atomic; ⚠️ CSV imports may leave partial state
 
-**Assessment**: ⚠️ Needs improvement
+**Assessment**: ⚠️ Partially addressed
 
 **Recommendation**:
 1. Validate entire file before import
-2. Wrap entire import in transaction
-3. Rollback on any error
-4. Return detailed error report
+2. Wrap CSV imports in a transaction as well
+3. Return detailed error report
 
 ### Security Scenarios
 
@@ -167,17 +168,19 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 **Scenario**: Attacker tries to access API endpoints
 
 **Current Behavior**:
-- ❌ **CRITICAL**: No authentication
-- ❌ **CRITICAL**: All endpoints open
-- ❌ No rate limiting
+- ✅ JWT authentication (`apps/api/src/app/auth/`)
+- ✅ `JwtAuthGuard` on all domain controllers (health endpoints are public)
+- ✅ Self-registration disabled by default (`ALLOW_REGISTRATION`)
+- ❌ No per-user data ownership (any authenticated account can access all data)
+- ❌ No rate limiting (including login endpoint)
 - ❌ No request logging
 
-**Impact**: ❌ **CRITICAL** - Full data access
+**Impact**: ✅ Unauthenticated access blocked; ⚠️ brute-force attempts on login not throttled
 
-**Recommendation** (HIGH PRIORITY):
-1. Implement JWT authentication
-2. Add guards to all endpoints
-3. Add rate limiting (e.g., 100 requests/minute)
+**Recommendation**:
+1. ~~Implement JWT authentication~~ (done)
+2. ~~Add guards to all endpoints~~ (done)
+3. Add rate limiting (e.g., 100 requests/minute, stricter on login)
 4. Add request audit logging
 
 #### S2: SQL Injection Attempt
@@ -186,7 +189,7 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 
 **Current Behavior**:
 - ✅ Prisma uses parameterized queries
-- ✅ No raw SQL
+- ✅ Raw SQL only via `$queryRaw` tagged templates (parameterized), no `$queryRawUnsafe`
 - ✅ Input validation
 
 **Impact**: ✅ Protected
@@ -199,7 +202,7 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 
 **Current Behavior**:
 - ✅ Angular auto-escaping
-- ✅ No innerHTML usage (assumed)
+- ✅ No `innerHTML` / `bypassSecurityTrust*` usage in application code
 - ✅ Input validation
 
 **Impact**: ✅ Mitigated
@@ -235,14 +238,15 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 - Sequential processing
 - 500-row batch inserts
 - No progress indicator
-- No background processing
+- Manual sync (`POST /api/security-prices/sync`) runs synchronously within the request
+- Daily incremental update runs as cron job at 07:00 (`price-update-scheduler.service.ts`, `@Cron('0 0 7 * * *')`)
 
-**Impact**: ⚠️ Long-running request (minutes)
+**Impact**: ⚠️ Long-running request (minutes) for manual sync
 
 **Assessment**: ⚠️ Functional but not optimal
 
 **Recommendation**:
-1. Background job processing
+1. Background job processing for manual syncs
 2. WebSocket or SSE for progress updates
 3. Parallel processing where safe
 
@@ -311,14 +315,14 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 | Quality Attribute | Score | Justification |
 |------------------|-------|---------------|
 | **Modularity** | 4/5 | Good module separation, some services too large |
-| **Testability** | 2/5 | Limited tests, some tight coupling |
+| **Testability** | 3/5 | Unit, integration tests and factories exist; no coverage thresholds, direct Prisma coupling |
 | **Analyzability** | 4/5 | Clean code, TypeScript, some missing docs |
 | **Modifiability** | 3/5 | Easy for simple changes, harder for architectural changes |
-| **Data Integrity** | 4/5 | Good validation, limited transactions |
-| **Fault Tolerance** | 2/5 | No retry logic, no circuit breakers |
+| **Data Integrity** | 4/5 | Good validation, JSON import transactional, CSV imports not |
+| **Fault Tolerance** | 2/5 | Retry with backoff only for Yahoo rate limits; no circuit breakers |
 | **Recoverability** | 3/5 | Export/import available, no automated backups |
-| **Authentication** | 1/5 | ❌ Not implemented |
-| **Authorization** | 1/5 | ❌ Not implemented |
+| **Authentication** | 4/5 | JWT, guards on all domain controllers; no rate limiting on login |
+| **Authorization** | 2/5 | Authenticated access only; no roles, no per-user data ownership |
 | **Data Protection** | 3/5 | Self-hosted (good), no encryption at rest |
 | **Response Time** | 4/5 | Fast for current scale, no pagination |
 | **Resource Utilization** | 4/5 | Efficient, no major leaks |
@@ -330,19 +334,19 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 ### Priority Improvements
 
 **Critical (Security)**:
-1. Add authentication & authorization
+1. ~~Add authentication~~ (done); add authorization / per-user data ownership
 2. Add rate limiting
 3. Add audit logging
 
 **High (Reliability)**:
-1. Add centralized error handling
-2. Add health checks
-3. Improve transaction management
+1. ~~Add centralized error handling~~ (done)
+2. ~~Add health checks~~ (done for the database); add checks for ECB/Yahoo
+3. Improve transaction management (CSV imports)
 
 **Medium (Maintainability)**:
-1. Refactor large services (AppStateService)
+1. ~~Refactor AppStateService~~ (done); `TransactionFacadeService` (~585 lines) is now the largest service
 2. Add repository pattern abstraction
-3. Increase test coverage to 80%
+3. Enforce coverage thresholds (target 80%)
 
 **Low (Performance)**:
 1. Add pagination

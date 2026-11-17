@@ -18,10 +18,9 @@ The application implements defense-in-depth validation across three layers:
 
 **Example** (Currency Modal):
 ```typescript
-// Code must be exactly 3 letters
-if (code.length !== 3 || !/^[A-Z]+$/.test(code)) {
-  // Show error
-}
+// Code must be exactly 3 letters (currency-modal.component.ts)
+if (!data.code || data.code.length !== 3) { /* show error */ }
+if (!/^[A-Za-z]{3}$/.test(data.code)) { /* show error */ }
 ```
 
 **Limitation**: Can be bypassed by users (not security-critical)
@@ -39,7 +38,7 @@ if (code.length !== 3 || !/^[A-Z]+$/.test(code)) {
 ```typescript
 @IsString()
 @Length(3, 3)
-@Matches(/^[A-Z]+$/)
+@Matches(/^[A-Za-z]{3}$/)
 @Transform(({ value }) => value?.toUpperCase().trim())
 @IsISO4217Code()  // Custom validator
 code: string;
@@ -94,32 +93,30 @@ if (!security) {
 }
 ```
 
+**Global Exception Filter** (`apps/api/src/app/common/filters/global-exception.filter.ts`, registered in `main.ts` via `app.useGlobalFilters`):
+- Catches all exceptions (`@Catch()`)
+- Returns a consistent response format: `statusCode`, `message`, `error`, `correlationId`, `timestamp`, `path`
+- Generates a `correlationId` (UUID) per error response and includes it in the log entry
+- Logs 5xx as errors (with stack trace) and 4xx as warnings, including the user ID if authenticated
+- Hides messages of non-HTTP errors when `NODE_ENV=production`
+
 **Limitations**:
-- ❌ No centralized exception filter
-- ❌ Inconsistent error response format
-- ❌ Limited error logging
-- ❌ No error tracking/monitoring
+- ❌ No error tracking/monitoring (e.g. external error aggregation)
 
 #### Frontend Error Handling
 
-**HTTP Errors**:
-```typescript
-this.service.create(dto).subscribe({
-  next: (result) => { /* success */ },
-  error: (error) => {
-    // Extract message from error.error.message
-    this.toastService.error(message);
-  }
-});
-```
+**HTTP Error Interceptor** (`apps/dividends/src/app/interceptors/error.interceptor.ts`, functional `HttpInterceptorFn`):
+- Extracts the message from the API error response (including array messages)
+- Shows a toast, appending the first 8 characters of the `correlationId` if present
+- Deduplicates identical toasts within a 1-second window
+- On `401`: shows a session-expired message, logs out and redirects to `/login` with `returnUrl`
+- Re-throws the error so components can still react to it
 
 **Limitations**:
-- ❌ Error handling duplicated across components
-- ❌ No centralized HTTP interceptor
-- ❌ Limited error recovery
+- ❌ Limited error recovery (no retry)
 - ❌ No offline detection
 
-### Recommended Improvements
+### Implemented Pattern
 
 #### 1. Centralized Exception Filter (Backend)
 
@@ -127,9 +124,10 @@ this.service.create(dto).subscribe({
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
-    // Transform all exceptions to consistent format
-    // Log errors
-    // Return structured response
+    const correlationId = randomUUID();
+    // Map HttpException / Error to status, message, error
+    // Log with correlationId (error for 5xx, warn for 4xx)
+    // Respond with { statusCode, message, error, correlationId, timestamp, path }
   }
 }
 ```
@@ -137,18 +135,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 #### 2. HTTP Interceptor (Frontend)
 
 ```typescript
-export class ErrorInterceptor implements HttpInterceptor {
-  intercept(req: HttpRequest<any>, next: HttpHandler) {
-    return next.handle(req).pipe(
-      catchError(error => {
-        // Centralized error handling
-        // Toast notifications
-        // Error logging
-        return throwError(() => error);
-      })
-    );
-  }
-}
+export const errorInterceptor: HttpInterceptorFn = (req, next) => {
+  const toastService = inject(ToastService);
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => {
+      // Extract message + correlationId, handle 401, show deduplicated toast
+      return throwError(() => error);
+    })
+  );
+};
 ```
 
 ## 8.3 Logging Strategy
@@ -156,8 +151,8 @@ export class ErrorInterceptor implements HttpInterceptor {
 ### Current Implementation
 
 **Backend**:
-- NestJS Logger used in some services
-- Manual `console.log` in some places
+- NestJS Logger used in some services and in the global exception filter
+- Manual `console.log`/`console.error` still used in some places (e.g. `securities.service.ts`, `security-transactions.service.ts`)
 - Inconsistent logging levels
 
 **Example**:
@@ -170,7 +165,8 @@ this.logger.error('Sync failed');
 **Limitations**:
 - ❌ No structured logging
 - ❌ No log aggregation
-- ❌ No correlation IDs
+- ⚠️ Correlation IDs only per error response (generated in the exception filter), no per-request IDs
+- ❌ No request/access logging
 - ❌ Inconsistent usage across modules
 
 ### Recommended Improvements
@@ -202,13 +198,19 @@ this.logger.log({
 
 **Environment Variables**:
 - `DATABASE_URL`: PostgreSQL connection
-- `PORT`: API server port
+- `PORT`: API server port (default `3000`)
+- `DEFAULT_CURRENCY` / `DEFAULT_CURRENCY_NAME`: Default currency (served via `GET /api/currencies/default`)
 - `SECURITY_PRICE_HISTORY_START`: Default sync start date
+- `JWT_SECRET`: Secret for signing JWTs
+- `ALLOW_REGISTRATION`: Enables self-registration via `POST /api/auth/register` (default: disabled)
+- `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`: Initial user created by the database seed
+
+See `.env.example` in the project root. Variables are read directly via `process.env`.
 
 **Limitations**:
-- ❌ No validation of environment variables at startup
+- ❌ No validation of environment variables at startup (`@nestjs/config` is not used)
 - ❌ No type-safe configuration
-- ❌ Hardcoded values in code (e.g., EUR base currency)
+- ❌ Hardcoded values in code (e.g., EUR base currency in `exchange-rates.service.ts`)
 
 ### Recommended Improvements
 
@@ -277,33 +279,35 @@ code: string;
 
 **SQL Injection Prevention**:
 - ✅ Prisma ORM with parameterized queries
-- ✅ No raw SQL
+- ✅ Raw SQL only via Prisma `$queryRaw` tagged templates (parameterized), e.g. in `security-prices.service.ts`, `exchange-rates.service.ts` and the health indicator; no `$queryRawUnsafe`
 
 **XSS Prevention**:
 - ✅ Angular automatic escaping
-- ✅ No `innerHTML` usage (assumed)
+- ✅ No `innerHTML` / `bypassSecurityTrust*` usage in application code
 
 **CSRF Prevention**:
-- ❌ Not implemented (no authentication)
+- ⚠️ No explicit CSRF protection; the risk is reduced because the JWT is stored in `localStorage` and sent as `Authorization: Bearer` header by the functional `authInterceptor` (no cookie-based session)
 
 **Input Validation**:
 - ✅ Multi-layer validation
 
 **Authentication/Authorization**:
-- ❌ **CRITICAL**: No authentication
-- ❌ **CRITICAL**: No authorization
-- ❌ Open API
+- ✅ JWT authentication (`apps/api/src/app/auth/`, Passport local + JWT strategies)
+- ✅ `JwtAuthGuard` on all domain controllers (health endpoints are public)
+- ✅ Self-registration disabled by default (`ALLOW_REGISTRATION`)
+- ❌ No role-based authorization
+- ❌ No per-user data ownership (single-user mode: every account can access all data)
 
 ### Recommended Security Improvements
 
 **Priority 1 (Critical)**:
-1. **Add Authentication**: JWT or session-based
-2. **Add Authorization**: Role-based access control
-3. **Rate Limiting**: Prevent abuse
-4. **CORS Configuration**: Restrict origins
+1. ~~**Add Authentication**~~: Implemented (JWT)
+2. **Add Authorization**: Role-based access control / per-user data ownership (open)
+3. **Rate Limiting**: Prevent abuse, especially on `/api/auth/login` (open)
+4. **CORS Configuration**: Restrict origins (not configured)
 
 **Priority 2 (High)**:
-1. **Request Size Limits**: Already configured (200MB - possibly too high)
+1. **Request Size Limits**: Configured in `main.ts` (200MB for JSON and urlencoded - possibly too high)
 2. **Helmet.js**: Security headers
 3. **HTTPS Enforcement**: In production
 4. **Secrets Management**: Vault or env encryption
@@ -319,16 +323,17 @@ code: string;
 
 **Backend**:
 - Jest configured
-- Some unit tests (e.g., ISO 4217 validator)
-- E2E tests configured (`api-e2e` project)
+- Unit tests for services, controllers, validators, auth strategies, the exception filter and health checks
+- Integration tests (`*.integration.spec.ts`) for auth, securities and dividend payments, using `apps/api/src/testing/integration-test.helper.ts`
+- Test data factories in `apps/api/src/testing/factories` (`@faker-js/faker`)
+- `api-e2e` project with an end-to-end test for the securities endpoints (`securities.e2e.spec.ts`)
 
 **Frontend**:
 - Jest configured
-- Limited test coverage
+- Unit tests for state services, the facade, interceptors and selected components
 
 **Limitations**:
-- ⚠️ Low test coverage
-- ❌ No integration tests for critical flows
+- ⚠️ No coverage thresholds (`coverageThreshold`) enforced
 - ❌ No API contract tests
 - ❌ No E2E tests for UI
 
@@ -363,11 +368,11 @@ code: string;
 **Frontend**:
 - ✅ Lazy-loaded routes
 - ✅ Signal-based reactivity (efficient change detection)
-- ✅ OnPush change detection (assumed)
+- ⚠️ Zone.js-based change detection (`provideZoneChangeDetection({ eventCoalescing: true })`); components explicitly set `ChangeDetectionStrategy.Eager` (no OnPush)
 
 **API**:
 - ⚠️ No caching
-- ⚠️ No pagination (except implicit TAKE 10 in search)
+- ⚠️ No pagination (except implicit TAKE 10 in search); the frontend paginates client-side only
 - ⚠️ Large payload support (200MB limit)
 
 ### Recommended Improvements

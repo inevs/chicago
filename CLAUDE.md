@@ -91,13 +91,18 @@ npm run db:format
 npm run db:validate
 ```
 
-### Docker Database
+### Docker
+
+`docker-compose.yml` defines three services: `postgres`, `api` and `frontend` (nginx). See `docs/DOCKER.md` for details.
 
 ```bash
-# Start PostgreSQL database
+# Start only the PostgreSQL database (for local development with nx serve)
+docker compose up -d postgres
+
+# Build and start the full stack (requires .env with JWT_SECRET, ADMIN_PASSWORD, DEFAULT_CURRENCY, DEFAULT_CURRENCY_NAME)
 docker compose up -d
 
-# Stop database
+# Stop all services
 docker compose down
 
 # Stop and remove volumes
@@ -198,8 +203,8 @@ nx graph
 ## Environment Setup
 
 1. **Node Version**: This project uses Node.js v24.22.3 (specified in `.nvmrc`)
-2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d`)
-3. **Environment Variables**: Copy `apps/api/.env.example` to create `.env` file in the root or `apps/api/.env`
+2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d postgres`)
+3. **Environment Variables**: Copy `.env.example` (project root) to `.env` in the root or `apps/api/.env`
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

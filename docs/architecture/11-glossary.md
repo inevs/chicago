@@ -9,11 +9,11 @@
 | **Payout Date** | The date when the dividend is actually paid to shareholders |
 | **Security** | A tradable financial asset (stock, bond, ETF) |
 | **ISIN** | International Securities Identification Number - unique 12-character identifier |
-| **WKN** | Wertpapierkennnummer - German 6-digit security identifier |
+| **WKN** | Wertpapierkennnummer - German 6-character alphanumeric security identifier |
 | **Ticker/Symbol** | Short alphabetic code identifying a security (e.g., AAPL for Apple) |
 | **EOD Price** | End-of-day price - closing price of a security |
 | **Exchange Rate** | Rate at which one currency can be exchanged for another |
-| **Base Currency** | The reference currency for conversions (EUR in this system) |
+| **Base Currency** | The reference currency for conversions (exchange-rate sync is EUR-based; the default currency is configurable via `DEFAULT_CURRENCY`) |
 | **Portfolio** | Collection of financial investments (securities) |
 | **KPI** | Key Performance Indicator - metrics for tracking performance |
 
@@ -234,8 +234,11 @@
 |------|------------|
 | **DiviTrack** | Name of this dividend tracking application |
 | **Chicago** | Internal code name for the project |
-| **AppStateService** | Central Angular service managing app-wide state (identified as God Object) |
-| **PriceUpdateSchedulerService** | Service for scheduled syncing of security prices |
+| **UiStateService** | Angular service for UI state (modals, theme, sidebar, time range) |
+| **PortfolioStateService** | Angular service holding portfolio data as signals |
+| **TransactionFacade** | Angular service orchestrating CRUD, import/export and CSV import workflows (replaces most of the former `AppStateService`) |
+| **PaginationStateService** | Angular service for client-side pagination state |
+| **PriceUpdateSchedulerService** | Service for the daily scheduled price update (07:00 server time) |
 | **@dividends/shared** | Shared library package with common types |
 | **api** | Backend NestJS application |
 | **dividends** | Frontend Angular application |

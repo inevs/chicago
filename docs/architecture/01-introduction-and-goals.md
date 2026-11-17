@@ -13,6 +13,8 @@ The DiviTrack application is a full-stack dividend tracking system designed to h
 - **Price History**: End-of-day (EOD) price tracking for securities via Yahoo Finance
 - **Analytics**: KPI calculation, time-range filtering, and portfolio performance analysis
 - **Data Management**: Import/export capabilities for backup and migration
+- **CSV Import**: Bulk import of securities, dividend payments and buy/sell transactions from CSV files (`POST /api/securities/import/csv`, `/api/dividend-payments/import/csv`, `/api/security-transactions/import/csv`)
+- **Authentication**: Login with JWT; single-user mode (self-registration disabled by default, enabled only via `ALLOW_REGISTRATION=true`)
 
 ## 1.2 Quality Goals
 

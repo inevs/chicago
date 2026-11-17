@@ -22,6 +22,9 @@
 api/
 ├── src/
 │   ├── app/
+│   │   ├── auth/                    # JWT authentication (guards, strategies, DTOs)
+│   │   ├── common/filters/          # GlobalExceptionFilter
+│   │   ├── health/                  # Health checks (@nestjs/terminus)
 │   │   ├── securities/              # Security management
 │   │   ├── dividend-payments/       # Dividend tracking
 │   │   ├── security-transactions/   # Buy/sell transactions
@@ -30,6 +33,7 @@ api/
 │   │   ├── security-prices/         # Price history
 │   │   ├── data/                    # Import/export
 │   │   └── app.module.ts
+│   ├── testing/                     # Test factories and integration test helper
 │   ├── prisma.service.ts            # Prisma client singleton
 │   └── main.ts                      # Application bootstrap
 └── prisma/
@@ -56,62 +60,90 @@ feature-name/
 
 ### Core Modules
 
+All domain controllers are protected with `@UseGuards(JwtAuthGuard)`; only `/api/auth/login`, `/api/auth/register` and `/api/health` are public.
+
+#### 0. Auth Module
+
+**Responsibility**: Authentication (single-user mode)
+
+**Components**:
+- `AuthController`: `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/profile`
+- `AuthService`: Credential validation with bcryptjs, JWT issuing
+- Strategies/Guards: `LocalStrategy`/`LocalAuthGuard`, `JwtStrategy`/`JwtAuthGuard`
+
+**Key Operations**:
+- Login with email and password, returns a JWT
+- Registration disabled by default (only with `ALLOW_REGISTRATION=true`)
+- `JWT_SECRET` is required; the module fails to start without it
+- No roles/RBAC; the `User` model has no relation to domain data
+
+#### Health Module
+
+**Responsibility**: Liveness and database checks
+
+**Components**:
+- `HealthController`: `GET /api/health`, `GET /api/health/db` (public)
+- `PrismaHealthIndicator`: Database connectivity check
+
 #### 1. Securities Module
 
 **Responsibility**: Manage securities (stocks, ETFs, bonds)
 
 **Components**:
-- `SecuritiesController`: CRUD endpoints
+- `SecuritiesController`: Create, read, update, search and CSV import endpoints (no DELETE)
 - `SecuritiesService`: Business logic, validation
-- DTOs: CreateSecurityDto, UpdateSecurityDto
+- DTOs: CreateSecurityDto, UpdateSecurityDto, ImportSecuritiesCsvDto
 
 **Key Operations**:
 - Create/update/read securities
 - Search by name, symbol, ISIN, WKN
 - Validate currency references
+- CSV import (`POST /api/securities/import/csv`)
 
 #### 2. Dividend Payments Module
 
 **Responsibility**: Track dividend payments
 
 **Components**:
-- `DividendPaymentsController`: CRUD endpoints
+- `DividendPaymentsController`: CRUD and CSV import endpoints
 - `DividendPaymentsService`: Dividend calculations
-- DTOs: CreateDividendPaymentDto, UpdateDividendPaymentDto
+- DTOs: CreateDividendPaymentDto, UpdateDividendPaymentDto, ImportDividendsCsvDto
 
 **Key Operations**:
 - Record dividend payments with multi-currency support
 - Calculate net payments after taxes
 - Link to securities
+- CSV import (`POST /api/dividend-payments/import/csv`)
 
 #### 3. Security Transactions Module
 
 **Responsibility**: Track buy/sell transactions
 
 **Components**:
-- `SecurityTransactionsController`: CRUD endpoints
+- `SecurityTransactionsController`: CRUD and CSV import endpoints
 - `SecurityTransactionsService`: Transaction logic
-- DTOs: CreateSecurityTransactionDto, UpdateSecurityTransactionDto
+- DTOs: CreateSecurityTransactionDto, UpdateSecurityTransactionDto, ImportSecurityTransactionsCsvDto
 
 **Key Operations**:
 - Record BUY/SELL transactions
 - Calculate total value with fees
 - Multi-currency support with exchange rates
+- CSV import (`POST /api/security-transactions/import/csv`)
 
 #### 4. Currencies Module
 
 **Responsibility**: Manage ISO 4217 currencies
 
 **Components**:
-- `CurrenciesController`: CRUD endpoints
+- `CurrenciesController`: List, create and default-currency endpoints
 - `CurrenciesService`: Currency validation
 - Custom Validator: `@IsISO4217Code()`
-- Constants: ISO 4217 whitelist (140+ codes)
+- Constants: ISO 4217 whitelist (124 codes, `iso-4217-codes.ts`)
 
 **Key Operations**:
-- Add currencies with ISO 4217 validation
+- Add currencies with ISO 4217 validation; exchange rates for the new currency are synced in the background
 - List all currencies
-- Get default currency (EUR)
+- Get default currency (`DEFAULT_CURRENCY`, fallback EUR)
 
 #### 5. Exchange Rates Module
 
@@ -135,10 +167,11 @@ feature-name/
 **Components**:
 - `SecurityPricesController`: Sync and query endpoints
 - `SecurityPricesService`: Yahoo Finance integration
-- `PriceUpdateSchedulerService`: Scheduled syncing (optional)
+- `PriceUpdateSchedulerService`: Daily scheduled price update (`@Cron`, 07:00 server time, always active)
 
 **Key Operations**:
-- Sync EOD prices from Yahoo Finance
+- Sync EOD prices from Yahoo Finance (retry with exponential backoff on rate limiting)
+- Auto-sync exchange rates after each price sync
 - Get latest price per security
 - Store OHLCV data
 
@@ -154,7 +187,7 @@ feature-name/
 
 **Key Operations**:
 - Export entire database to JSON
-- Import from JSON (merge or replace)
+- Import from JSON (merge, or replace via `clearExisting`)
 - Bulk operations with transaction support
 
 ## 5.3 Level 2: Frontend Structure
@@ -165,23 +198,33 @@ feature-name/
 dividends/
 ├── src/
 │   ├── app/
+│   │   ├── guards/                  # authGuard
+│   │   ├── interceptors/            # authInterceptor, errorInterceptor
 │   │   ├── layout/                  # Layout components
 │   │   │   ├── header-nav/
 │   │   │   ├── sidebar-nav/
 │   │   │   └── main-layout/
 │   │   ├── pages/                   # Route components (smart)
+│   │   │   ├── login/
 │   │   │   ├── overview/
 │   │   │   ├── portfolio/
+│   │   │   ├── all-securities/
 │   │   │   ├── dividends/
 │   │   │   ├── security-transactions/
-│   │   │   └── analyses/
+│   │   │   ├── analyses/
+│   │   │   └── transactions/        # Not routed (/transaktionen redirects to /dividenden)
 │   │   ├── shared/                  # Reusable components
-│   │   │   ├── modals/
+│   │   │   ├── charts/              # Chart.js defaults
+│   │   │   ├── modals/              # incl. import-confirm-modal
 │   │   │   ├── tables/
 │   │   │   ├── inputs/
 │   │   │   └── toast-container/
 │   │   ├── services/                # Angular services
-│   │   │   ├── app-state.service.ts
+│   │   │   ├── ui-state.service.ts
+│   │   │   ├── portfolio-state.service.ts
+│   │   │   ├── transaction-facade.service.ts
+│   │   │   ├── pagination-state.service.ts
+│   │   │   ├── auth.service.ts
 │   │   │   ├── security.service.ts
 │   │   │   ├── dividend-payment.service.ts
 │   │   │   └── ...
@@ -196,8 +239,10 @@ dividends/
 
 | Component | Responsibility |
 |-----------|---------------|
+| **LoginComponent** | Login form (reactive forms) |
 | **OverviewComponent** | Dashboard with KPIs, charts, recent activity |
 | **PortfolioComponent** | Securities summary with latest prices |
+| **AllSecuritiesComponent** | List of all securities with search and sorting |
 | **DividendsComponent** | Dividend payment list with filtering |
 | **SecurityTransactionsComponent** | Buy/sell transaction management |
 | **AnalysesComponent** | Charts and analytics |
@@ -210,6 +255,7 @@ dividends/
 | **SecurityModal** | Form for adding/editing securities |
 | **SecurityTransactionModal** | Form for buy/sell transactions |
 | **CurrencyModal** | Form for adding currencies |
+| **ImportConfirmModal** | Confirmation dialog for JSON data import (choice of import mode) |
 | **TransactionTable** | Display dividend payments |
 | **SecurityTransactionTable** | Display buy/sell transactions |
 | **SecurityAutocomplete** | Searchable security selector |
@@ -218,7 +264,12 @@ dividends/
 
 | Service | Responsibility |
 |---------|---------------|
-| **AppStateService** | Centralized app state (UI, modals, data) |
+| **UiStateService** | UI state (modals, theme, sidebar, time range, editing selections) |
+| **PortfolioStateService** | Portfolio data state as signals |
+| **TransactionFacade** | Orchestrates create/update/delete, JSON import/export and CSV import workflows (~585 lines) |
+| **PaginationStateService** | Client-side pagination state |
+| **AuthService** | Login/logout, token storage in localStorage |
+| **ExchangeRateService** | HTTP calls for exchange rates |
 | **SecurityService** | HTTP calls for securities |
 | **DividendPaymentService** | HTTP calls for dividends |
 | **SecurityTransactionService** | HTTP calls for transactions |
@@ -236,8 +287,10 @@ dividends/
 
 **Contents**:
 - Domain model interfaces (Security, DividendPayment, etc.)
-- DTOs (CreateSecurityDto, UpdateDividendPaymentDto, etc.)
+- DTOs (CreateCurrencyDto, CreateDividendPaymentDto, UpdateDividendPaymentDto, CreateSecurityTransactionDto, UpdateSecurityTransactionDto)
 - Enums (SecurityType, TransactionType)
+- CSV import result types (ImportCsvResponse, ImportTransactionsCsvResponse, ImportDividendsCsvResponse, etc.)
+- `CurrencyConverter` utility class and `CURRENCY_ERRORS` constants
 
 **Benefits**:
 - Type safety across the stack
@@ -265,6 +318,8 @@ DividendPayment (payment record)
 SecurityTransaction (buy/sell record)
 SecurityPrice (EOD price history)
 ExchangeRate (historical rates)
+
+User (login credentials; no relation to domain data)
 ```
 
 ### Key Database Patterns
@@ -283,4 +338,4 @@ ExchangeRate (historical rates)
 - `Decimal(19, 6)` for prices
 
 **Audit Fields**:
-- `createdAt`, `updatedAt` on all tables
+- `createdAt`, `updatedAt` on all tables except `Currency` (only `createdAt`)

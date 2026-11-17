@@ -1,96 +1,117 @@
-# Currency Management Feature
+# Currency Management
 
 ## Overview
 
-A complete currency management system has been implemented, allowing users to add new currencies through the frontend UI with full ISO 4217 validation on both client and server sides.
+Users can add new currencies through the frontend. Currency codes are validated against an ISO 4217 whitelist on the server. When a currency is added, the API starts a background sync of its exchange rates.
 
-## Features
+Additional backend details: `apps/api/src/app/currencies/README.md`.
 
-### 1. Backend Validation (API)
+## User Guide: Adding a Currency
+
+### 1. Open the Currency Dialog
+
+1. Click the **"Neu"** button in the header (top right).
+2. Select **"Neue Währung"** from the dropdown menu.
+
+The menu entries depend on the current page. "Neue Währung" is available on:
+
+| Page | Route | Entries in the "Neu" menu |
+|---|---|---|
+| Übersicht | `/uebersicht` | Neues Wertpapier, Neue Buchung, Neue Wertpapier-Transaktion, **Neue Währung** |
+| Analysen | `/analysen` | same as Übersicht |
+| Portfolio | `/portfolio` | Neues Wertpapier, Wertpapiere importieren (CSV), **Neue Währung** |
+
+On the pages "Alle Wertpapiere", "Dividenden" and "Wertpapiere" the menu shows only the entries for that page (incl. CSV import), not "Neue Währung".
+
+Source: `menuOptions` in `apps/dividends/src/app/layout/header-nav/header-nav.component.ts`.
+
+### 2. Enter the Currency Details
+
+**ISO-Code (3 Buchstaben)**
+- 3-letter ISO 4217 code, e.g. `CHF`, `SEK`, `NOK`, `DKK`, `JPY`
+- Converted to uppercase while typing
+
+**Name**
+- Full currency name, e.g. `Schweizer Franken`, `Schwedische Krone`
+
+### 3. Submit
+
+Click **"Hinzufügen"**. On success:
+
+- the dialog closes,
+- a success toast is shown,
+- the currency is added to the currency list (sorted alphabetically) and is available in all currency dropdowns,
+- the API fetches its exchange rates in the background.
+
+On a server error the dialog stays open and the error message is shown as an error toast. The dialog can be closed with **Escape** or **"Abbrechen"**.
+
+### Error Messages
+
+| Message | Origin | Cause |
+|---|---|---|
+| "ISO-Code muss genau 3 Buchstaben lang sein (z.B. CHF, SEK, JPY)" | Client | Code is not exactly 3 characters long |
+| "ISO-Code darf nur Buchstaben enthalten" | Client | Code contains digits or special characters |
+| "Bitte geben Sie einen Namen ein (z.B. Schweizer Franken, Schwedische Krone)" | Client | Name is empty |
+| "Currency code must be a valid ISO 4217 code (e.g., USD, EUR, CHF)" | Server | Code is not in the ISO 4217 whitelist (e.g. `ABC`) |
+| "Currency with code XXX already exists" | Server | Currency already exists |
+
+Client validation: `apps/dividends/src/app/shared/modals/currency-modal/currency-modal.component.ts`.
+
+## Architecture
+
+### Backend (`apps/api/src/app/currencies/`)
 
 **ISO 4217 Whitelist**
-- Comprehensive list of 140+ valid ISO 4217 currency codes
-- Location: `apps/api/src/app/currencies/constants/iso-4217-codes.ts`
-- Includes major currencies, regional currencies, and special codes (XDR, precious metals)
+- `constants/iso-4217-codes.ts`, 124 codes
+- Includes major and regional currencies as well as special codes (e.g. XDR, precious metals)
+- Note: The list still contains `HRK` (Croatian Kuna), which was replaced by EUR in 2023.
 
 **Custom Validator**
-- Location: `apps/api/src/app/currencies/validators/is-iso4217-code.validator.ts`
-- `@IsISO4217Code()` decorator for class-validator
-- Validates against the official ISO 4217 whitelist
-- Provides clear error messages
+- `validators/is-iso4217-code.validator.ts`: `@IsISO4217Code()` decorator for class-validator
+- Tests: `validators/is-iso4217-code.validator.spec.ts`
 
-**DTO Validation** (`apps/api/src/app/currencies/dto/create-currency.dto.ts`)
-- Multi-layer validation:
-  1. Type checking (must be string)
-  2. Length validation (exactly 3 characters)
-  3. Format validation (letters only)
-  4. Automatic transformation (uppercase + trim)
-  5. ISO 4217 whitelist validation
-- Server-side transformation ensures data consistency
+**DTO Validation** (`dto/create-currency.dto.ts`)
+1. `@IsString()`
+2. `@Length(3, 3)` – exactly 3 characters
+3. `@Matches(/^[A-Za-z]{3}$/)` – letters only
+4. `@Transform` – uppercase and trim
+5. `@IsISO4217Code()` – whitelist check
+6. `name`: `@IsNotEmpty()`, trimmed
 
-**Global ValidationPipe** (`apps/api/src/main.ts`)
-- Enabled with transformation support
-- Automatic type conversion
-- Whitelists known properties
+The global `ValidationPipe` in `apps/api/src/main.ts` enables transformation and whitelisting of known properties.
 
-**Comprehensive Tests**
-- Location: `apps/api/src/app/currencies/validators/is-iso4217-code.validator.spec.ts`
-- 7 test cases covering all validation scenarios
-- All tests passing ✓
+**Service** (`currencies.service.ts`)
+- Rejects duplicates with `409 Conflict` (message from `CURRENCY_ERRORS` in `packages/shared/src/lib/shared.ts`)
+- After creating a currency, starts `ExchangeRatesService.syncExchangeRates(code)` without awaiting it; the result is only logged
+- The default currency is taken from the `DEFAULT_CURRENCY` environment variable (fallback `EUR`); the seed creates it from `DEFAULT_CURRENCY` / `DEFAULT_CURRENCY_NAME`
 
-### 2. Frontend UI
+### Frontend
 
-**Currency Modal Component**
-- Location: `apps/dividends/src/app/components/dashboard/currency-modal/`
-- Clean, modern modal design with dark mode support
-- Real-time uppercase conversion as user types
-- Client-side validation with inline error messages
-- Accessible keyboard navigation (Escape to close)
+| Part | Location |
+|---|---|
+| Dialog | `apps/dividends/src/app/shared/modals/currency-modal/` |
+| Menu entry | `apps/dividends/src/app/layout/header-nav/header-nav.component.ts` |
+| HTTP calls | `apps/dividends/src/app/services/currency.service.ts` |
+| Flow and toasts | `TransactionFacadeService.addCurrency()` in `apps/dividends/src/app/services/transaction-facade.service.ts` |
 
-**Header Menu Integration**
-- Added "Neue Währung" button to the "Neu" dropdown menu in the header
-- Purple currency icon for visual distinction
-- Consistent styling with other menu items
+### Validation Flow
 
-**State Management**
-- Integrated with `AppStateService`
-- Automatic modal open/close
-- Currencies list automatically sorted alphabetically
-- Success/error notifications via alerts
-
-**Validation Flow**
 ```
-User Input → Client Validation → Backend Validation → Database
-     ↓              ↓                      ↓
-Uppercase      3 letters         ISO 4217 Check
-   Trim        Letters only     Duplicate Check
+User input  →  Client validation  →  Server validation      →  Database  →  Exchange-rate sync (background)
+Uppercase      3 characters          3 letters, ISO 4217       Currency      ExchangeRate
+               letters only          duplicate check
+               name not empty
 ```
 
-## User Flow
+## API Endpoints
 
-1. **Opening the Modal**
-   - Click "Neu" button in the header (top right)
-   - Select "Neue Währung" from the dropdown menu
-   - Modal appears with two input fields
+All endpoints require a JWT (`Authorization: Bearer <token>`).
 
-2. **Entering Currency Data**
-   - **ISO-Code**: 3-letter code (automatically converted to uppercase)
-     - Examples: CHF, SEK, JPY, NOK, DKK
-   - **Name**: Full currency name
-     - Examples: Schweizer Franken, Schwedische Krone
-
-3. **Validation**
-   - Client-side: Immediate feedback on format errors
-   - Server-side: ISO 4217 whitelist check, duplicate prevention
-   - Clear error messages in German
-
-4. **Success**
-   - Modal closes automatically
-   - Currency added to the system
-   - Available immediately in all dropdowns
-   - Success notification displayed
-
-## API Endpoint
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/currencies` | List all currencies |
+| `POST` | `/api/currencies` | Create a currency |
+| `GET` | `/api/currencies/default` | Default currency (from `DEFAULT_CURRENCY`) |
 
 ### POST /api/currencies
 
@@ -105,134 +126,59 @@ Uppercase      3 letters         ISO 4217 Check
 **Success Response (201):**
 ```json
 {
-  "id": "uuid",
   "code": "CHF",
-  "name": "Schweizer Franken",
-  "createdAt": "2025-01-01T12:00:00Z"
+  "name": "Schweizer Franken"
 }
 ```
 
-**Error Responses:**
+**Error Responses** (format of the `GlobalExceptionFilter`):
 
-- **400 Bad Request** - Invalid ISO 4217 code:
+- **400 Bad Request** – invalid code:
   ```json
   {
     "statusCode": 400,
     "message": ["Currency code must be a valid ISO 4217 code (e.g., USD, EUR, CHF)"],
-    "error": "Bad Request"
+    "error": "Bad Request",
+    "correlationId": "…",
+    "timestamp": "…",
+    "path": "/api/currencies"
   }
   ```
 
-- **409 Conflict** - Currency already exists:
+- **409 Conflict** – currency already exists:
   ```json
   {
     "statusCode": 409,
     "message": "Currency with code CHF already exists",
-    "error": "Conflict"
+    "error": "Conflict",
+    "correlationId": "…",
+    "timestamp": "…",
+    "path": "/api/currencies"
   }
   ```
 
-## Validation Rules
-
-### Client-Side (Frontend)
-- Code must be exactly 3 characters
-- Code must contain only letters
-- Name must not be empty
-- Automatic uppercase conversion
-- Automatic trimming of whitespace
-
-### Server-Side (Backend)
-- All client-side rules enforced
-- Code must be in ISO 4217 whitelist
-- No duplicate currency codes allowed
-- Server-side transformation (defensive programming)
-
-## Supported Currencies
-
-The system supports all standard ISO 4217 currency codes, including:
-
-**Major Currencies:**
-USD, EUR, GBP, JPY, CHF, CAD, AUD, NZD, CNY, HKD, SGD
-
-**European Currencies:**
-SEK, NOK, DKK, PLN, CZK, HUF, RON, BGN, HRK, ISK
-
-**Asian Currencies:**
-KRW, INR, THB, IDR, MYR, PHP, VND, BDT, PKR
-
-**And many more...**
-
-See `apps/api/src/app/currencies/constants/iso-4217-codes.ts` for the complete list.
-
-## Error Handling
-
-### Frontend Errors
-- Displayed inline in the modal with red styling
-- Clear, user-friendly messages in German
-- Form stays open for correction
-
-### Backend Errors
-- Validation errors extracted and displayed to user
-- Network errors handled gracefully
-- Console logging for debugging
-
-## Files Modified/Created
-
-### Backend (API)
-- ✨ `apps/api/src/app/currencies/constants/iso-4217-codes.ts` (new)
-- ✨ `apps/api/src/app/currencies/validators/is-iso4217-code.validator.ts` (new)
-- ✨ `apps/api/src/app/currencies/validators/is-iso4217-code.validator.spec.ts` (new)
-- ✨ `apps/api/src/app/currencies/README.md` (new)
-- 🔧 `apps/api/src/app/currencies/dto/create-currency.dto.ts` (enhanced)
-- 🔧 `apps/api/src/app/currencies/currencies.service.ts` (enhanced)
-- 🔧 `apps/api/src/main.ts` (added ValidationPipe)
-
-### Frontend (Dividends)
-- 🔧 `apps/dividends/src/app/components/dashboard/header-nav/header-nav.component.html` (added button)
-- 🔧 `apps/dividends/src/app/components/dashboard/header-nav/header-nav.component.ts` (added handler)
-- 🔧 `apps/dividends/src/app/components/dashboard/currency-modal/currency-modal.component.ts` (enhanced validation)
-- 🔧 `apps/dividends/src/app/components/dashboard/currency-modal/currency-modal.component.html` (added error display)
-- 🔧 `apps/dividends/src/app/services/app-state.service.ts` (enhanced error handling)
+Exchange-rate endpoints are provided by the separate module `apps/api/src/app/exchange-rates/`.
 
 ## Testing
 
-### Run Backend Tests
 ```bash
 nx test api -- --testPathPatterns=currencies
 ```
 
 ### Manual Testing Checklist
-- [ ] Open currency modal from header menu
-- [ ] Try adding a valid currency (e.g., CHF, SEK)
-- [ ] Try adding an invalid code (e.g., XXX, ABC)
-- [ ] Try adding a code with numbers (e.g., AB1)
-- [ ] Try adding a code that's too short (e.g., US)
-- [ ] Try adding a code that's too long (e.g., EURO)
-- [ ] Try adding a duplicate currency
-- [ ] Verify currency appears in all dropdowns
-- [ ] Test dark mode styling
-- [ ] Test keyboard navigation (Escape key)
+- [ ] Open the currency dialog from the "Neu" menu (e.g. on `/uebersicht`)
+- [ ] Add a valid currency (e.g. CHF, SEK)
+- [ ] Try an invalid code (e.g. ABC)
+- [ ] Try a code with digits (e.g. AB1)
+- [ ] Try a code that is too short (US) or too long (EURO)
+- [ ] Try a duplicate currency
+- [ ] Verify the currency appears in all dropdowns
+- [ ] Close the dialog with Escape
 
-## Benefits
+## Possible Enhancements
 
-1. **Data Integrity**: Only valid ISO 4217 codes accepted
-2. **User Experience**: Clear validation with helpful messages
-3. **Flexibility**: Users can add currencies as needed
-4. **Consistency**: Automatic normalization (uppercase, trim)
-5. **Reliability**: Multi-layer validation (client + server)
-6. **Maintainability**: Centralized currency code list
-7. **Testability**: Comprehensive test coverage
-8. **Security**: Server-side validation cannot be bypassed
-
-## Future Enhancements
-
-Potential improvements for future versions:
-
-1. **Currency List Page**: Dedicated page showing all currencies with edit/delete options
-2. **Exchange Rates**: Integration with currency exchange rate APIs
-3. **Currency Icons**: Add flag icons for better visual identification
-4. **Bulk Import**: Import multiple currencies at once
-5. **Currency Search**: Autocomplete with currency suggestions
-6. **Usage Statistics**: Show which currencies are actively used
-7. **Deprecation**: Mark currencies as inactive instead of deleting
-8. **Audit Trail**: Track who added which currencies and when
+1. Currency list page with edit/delete options
+2. Currency search with autocomplete
+3. Usage statistics per currency
+4. Mark currencies as inactive instead of deleting them
+5. Remove outdated codes (e.g. HRK) from the whitelist

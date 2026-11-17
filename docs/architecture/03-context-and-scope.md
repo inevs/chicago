@@ -48,6 +48,7 @@
 | **User Browser** | Bidirectional | Angular SPA communicates with NestJS API via REST |
 | **File System** | Outbound | Export data as JSON for backup |
 | **File System** | Inbound | Import data from JSON for migration/restore |
+| **File System** | Inbound | Import securities, dividend payments and transactions from CSV (multipart upload) |
 
 ## 3.2 Technical Context
 
@@ -56,9 +57,10 @@
 | Aspect | Technology/Pattern |
 |--------|-------------------|
 | **Framework** | Angular 22 (standalone components) |
-| **State Management** | Signals + centralized AppStateService |
+| **State Management** | Signals in focused state services (`UiStateService`, `PortfolioStateService`, `TransactionFacade`, `PaginationStateService`) |
 | **HTTP Client** | Angular HttpClient |
-| **Routing** | Angular Router (lazy-loaded routes) |
+| **Routing** | Angular Router (lazy-loaded routes, `authGuard`) |
+| **HTTP Interceptors** | `authInterceptor` (bearer token), `errorInterceptor` |
 | **Styling** | Tailwind CSS v4, SCSS |
 | **Build** | Angular Build (application builder) |
 
@@ -72,6 +74,9 @@
 | **Validation** | class-validator decorators |
 | **API Documentation** | OpenAPI/Swagger |
 | **Scheduling** | @nestjs/schedule (cron jobs) |
+| **Authentication** | Passport (JWT + local strategy), bcryptjs |
+| **Error Handling** | Global exception filter (`GlobalExceptionFilter`) |
+| **Health Checks** | @nestjs/terminus (`/api/health`, `/api/health/db`) |
 | **Build** | Webpack with Nx plugin |
 
 ### Data Layer
@@ -105,5 +110,5 @@
 
 - **Yahoo Finance**: HTTP GET requests to chart API
 - **ECB**: HTTP GET requests to data API (CSV response)
-- **Error Handling**: Retry logic absent, timeout: 30 seconds
-- **Rate Limiting**: Manual delays (1 second between ECB requests)
+- **Error Handling**: Yahoo Finance requests are retried with exponential backoff on rate limiting (HTTP 429); other errors are not retried; no retries for ECB; timeout: 30 seconds
+- **Rate Limiting**: Manual delays (1 second between requests, both for ECB and Yahoo Finance)

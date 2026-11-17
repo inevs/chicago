@@ -3,10 +3,14 @@
 > **Focus**: Maintainability and Extensibility
 >
 > This document provides prioritized, actionable recommendations to improve the codebase's maintainability and extensibility while addressing critical quality gaps.
+>
+> Each issue carries a **Status** line reflecting the current code: ✅ Implemented, ⚠️ Partial, ❌ Open. Problem descriptions and code examples reflect the state at the time of the original review and are kept for reference.
 
 ## 12.1 Critical Issues (Security & Reliability)
 
 ### Issue 1: No Authentication/Authorization ❌ CRITICAL
+
+**Status**: ✅ Authentication implemented / ❌ Authorization open — JWT authentication in `apps/api/src/app/auth/` (Passport local + JWT strategies), `JwtAuthGuard` on all domain controllers, self-registration disabled by default via `ALLOW_REGISTRATION`. Role-based access control and per-user data ownership are not implemented (single-user mode: every account can access all data).
 
 **Problem**:
 - All API endpoints are completely open
@@ -58,6 +62,8 @@ export class DataController {
 ---
 
 ### Issue 2: No Centralized Error Handling
+
+**Status**: ✅ Implemented — `apps/api/src/app/common/filters/global-exception.filter.ts` (registered globally in `main.ts`, consistent response format with a `correlationId` per error) and the functional `errorInterceptor` in `apps/dividends/src/app/interceptors/error.interceptor.ts`.
 
 **Problem**:
 - Error responses are inconsistent across controllers
@@ -152,6 +158,8 @@ export class ErrorInterceptor implements HttpInterceptor {
 
 ### Issue 3: Missing Health Checks
 
+**Status**: ⚠️ Partial — `apps/api/src/app/health/` with `@nestjs/terminus` provides `GET /api/health` and `GET /api/health/db` (database ping). Checks for the external providers (ECB, Yahoo Finance) are open.
+
 **Problem**:
 - No way to monitor API health
 - No database connection status endpoint
@@ -194,6 +202,8 @@ export class HealthController {
 ## 12.2 Maintainability Improvements
 
 ### Issue 4: AppStateService God Object Anti-Pattern
+
+**Status**: ✅ Implemented — `AppStateService` has been removed and split into `ui-state.service.ts`, `portfolio-state.service.ts`, `transaction-facade.service.ts` and `pagination-state.service.ts`. `TransactionFacadeService` (~585 lines) is now the largest frontend service and a candidate for further splitting.
 
 **Problem**:
 - AppStateService has 590+ lines
@@ -288,6 +298,8 @@ export class TransactionFacadeService {
 ---
 
 ### Issue 5: No Repository Pattern
+
+**Status**: ❌ Open — services still use `PrismaService` directly.
 
 **Problem**:
 - Services directly use Prisma
@@ -397,6 +409,8 @@ export class SecuritiesService {
 ---
 
 ### Issue 6: Limited Test Coverage
+
+**Status**: ⚠️ Largely implemented — every API service and controller has a spec, there are three `*.integration.spec.ts` files (auth, securities, dividend payments) using `apps/api/src/testing/integration-test.helper.ts`, test data factories in `apps/api/src/testing/factories`, and frontend specs for state services, interceptors and selected components. `api-e2e` contains an end-to-end test for the securities endpoints (`securities.e2e.spec.ts`). No `coverageThreshold` is configured, so the coverage goal is not enforced.
 
 **Problem**:
 - Few unit tests
@@ -510,6 +524,8 @@ export class SecurityFactory {
 
 ### Issue 7: Hardcoded Exchange Rate Provider
 
+**Status**: ❌ Open — ECB remains hardcoded in `exchange-rates.service.ts`.
+
 **Problem**:
 - ECB provider hardcoded in service
 - Cannot easily add/switch providers
@@ -606,6 +622,8 @@ export class ExchangeRatesService {
 
 ### Issue 8: Hardcoded EUR Base Currency
 
+**Status**: ⚠️ Partial — `DEFAULT_CURRENCY` / `DEFAULT_CURRENCY_NAME` and `GET /api/currencies/default` exist. EUR is still hardcoded as base currency in `exchange-rates.service.ts` and in several frontend services and tables.
+
 **Problem**:
 - EUR hardcoded in multiple places
 - Cannot change base currency
@@ -614,7 +632,8 @@ export class ExchangeRatesService {
 
 **Locations**:
 - `apps/api/src/app/exchange-rates/exchange-rates.service.ts:42` (baseCurrency = 'EUR')
-- `apps/dividends/src/app/services/app-state.service.ts:375` (destCurrency: 'EUR')
+- `apps/dividends/src/app/services/transaction-facade.service.ts` (`destCurrency: 'EUR'`; `app-state.service.ts` no longer exists)
+- `apps/dividends/src/app/services/dividend-data.service.ts`, `ui-state.service.ts`, table components (`currency: 'EUR'`)
 - Database constraints assume EUR
 
 **Recommendation**:
@@ -667,6 +686,8 @@ export class CurrencyService {
 
 ### Issue 9: No Price Provider Abstraction
 
+**Status**: ❌ Open — Yahoo Finance remains hardcoded.
+
 **Problem**:
 - Similar to exchange rate provider issue
 - Yahoo Finance hardcoded
@@ -707,6 +728,8 @@ export class AlphaVantageProvider implements IPriceProvider {
 ## 12.4 Performance & Scalability
 
 ### Issue 10: No Pagination
+
+**Status**: ❌ Open on the API — list endpoints still return all records. The frontend paginates client-side only (`pagination-state.service.ts`).
 
 **Problem**:
 - All list endpoints return all records
@@ -800,6 +823,8 @@ async findAll(@Query() pagination: PaginationDto) {
 
 ### Issue 11: No Caching Strategy
 
+**Status**: ❌ Open.
+
 **Problem**:
 - Currencies queried on every request
 - Exchange rates queried repeatedly
@@ -863,6 +888,8 @@ export class CurrenciesService {
 
 ### Issue 12: Inconsistent Error Messages
 
+**Status**: ❌ Open — backend messages are English, frontend messages German. Additionally, registration with an existing email returns `401 Unauthorized` instead of `409 Conflict` (`apps/api/src/app/auth/auth.service.ts`, `register()`).
+
 **Problem**:
 - Error messages in English and German mixed
 - No i18n strategy
@@ -897,6 +924,8 @@ throw new NotFoundException(
 ---
 
 ### Issue 13: No Request Logging
+
+**Status**: ❌ Open — only errors are logged (by the global exception filter); response compression is also not enabled.
 
 **Problem**:
 - No access logs
@@ -954,10 +983,10 @@ export class AppModule implements NestModule {
 
 **Priority**: P0 - Critical
 
-1. ✅ Add authentication & authorization (24h)
+1. ⚠️ Add authentication & authorization (24h) — authentication done, authorization open
 2. ✅ Add centralized error handling (8h)
-3. ✅ Add health checks (4h)
-4. ✅ Add request logging (2h)
+3. ⚠️ Add health checks (4h) — database done, external providers open
+4. ❌ Add request logging (2h)
 
 **Total**: ~38 hours
 
@@ -968,8 +997,8 @@ export class AppModule implements NestModule {
 **Priority**: P1 - High
 
 1. ✅ Refactor AppStateService (12h)
-2. ✅ Add unit tests (40h - spread over time)
-3. ✅ Add pagination (8h)
+2. ⚠️ Add unit tests (40h - spread over time) — largely done, no coverage threshold
+3. ❌ Add pagination (8h) — client-side only
 
 **Total**: ~60 hours
 
@@ -979,9 +1008,9 @@ export class AppModule implements NestModule {
 
 **Priority**: P2 - Medium
 
-1. ✅ Add repository pattern (16h)
-2. ✅ Add provider abstraction for exchange rates (8h)
-3. ✅ Add provider abstraction for prices (6h)
+1. ❌ Add repository pattern (16h)
+2. ❌ Add provider abstraction for exchange rates (8h)
+3. ❌ Add provider abstraction for prices (6h)
 
 **Total**: ~30 hours
 
@@ -991,10 +1020,10 @@ export class AppModule implements NestModule {
 
 **Priority**: P3 - Low
 
-1. ✅ Add caching (4h)
-2. ✅ Standardize error messages (4h)
-3. ✅ Make base currency configurable (6h)
-4. ✅ Add response compression (1h)
+1. ❌ Add caching (4h)
+2. ❌ Standardize error messages (4h)
+3. ⚠️ Make base currency configurable (6h) — default currency configurable, EUR base still hardcoded
+4. ❌ Add response compression (1h)
 
 **Total**: ~15 hours
 
@@ -1004,25 +1033,25 @@ export class AppModule implements NestModule {
 
 ### Quick Wins (< 4 hours each)
 
-1. Add health checks ✅
-2. Add request logging ✅
-3. Add caching for currencies ✅
-4. Add response compression ✅
-5. Standardize error messages ✅
+1. Add health checks ⚠️ (database done, external providers open)
+2. Add request logging ❌
+3. Add caching for currencies ❌
+4. Add response compression ❌
+5. Standardize error messages ❌
 
 ### High-Impact Changes
 
-1. **Authentication** (P0) - Enables multi-user, security
-2. **Error handling** (P0) - Better debugging, UX
-3. **Refactor AppStateService** (P1) - Maintainability
-4. **Add tests** (P1) - Confidence in refactoring
-5. **Pagination** (P2) - Scalability
+1. **Authentication** (P0) - Enables multi-user, security — ✅ done; authorization/data ownership open
+2. **Error handling** (P0) - Better debugging, UX — ✅ done
+3. **Refactor AppStateService** (P1) - Maintainability — ✅ done
+4. **Add tests** (P1) - Confidence in refactoring — ⚠️ largely done
+5. **Pagination** (P2) - Scalability — ❌ open
 
 ### Architecture Evolution
 
 ```
 Current State:
-- Monolithic services
+- Frontend state split into focused services (largest: TransactionFacadeService)
 - Direct Prisma usage
 - Hardcoded providers
 - No abstraction layers
@@ -1038,16 +1067,16 @@ Recommended State:
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| **Test Coverage** | ~10% | 80% |
-| **Avg Service Size** | 130 lines | <100 lines |
-| **Largest Service** | 590 lines | <200 lines |
-| **Authentication** | None | JWT |
-| **Error Handling** | Inconsistent | Centralized |
+| **Test Coverage** | Not measured (no `coverageThreshold` configured) | 80% |
+| **Avg Service Size** | Not re-measured | <100 lines |
+| **Largest Service** | ~585 lines (`transaction-facade.service.ts`) | <200 lines |
+| **Authentication** | JWT (no authorization/data ownership) | JWT + authorization |
+| **Error Handling** | Centralized (exception filter + interceptor) | Centralized |
 | **Caching** | None | Strategic |
-| **Pagination** | None | All lists |
+| **Pagination** | Client-side only (frontend) | All lists |
 
 ---
 
 **Document Version**: 1.0
-**Last Updated**: 2026-01-04
+**Last Updated**: 2026-11-17
 **Authors**: Architecture Review Team

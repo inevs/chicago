@@ -21,6 +21,7 @@ This architecture documentation is organized according to the Arc42 template:
 | [05](./05-building-blocks.md) | Building Block View | System decomposition and modules | ✅ Complete |
 | [08](./08-cross-cutting-concepts.md) | Cross-Cutting Concepts | Validation, error handling, security | ✅ Complete |
 | [10](./10-quality-requirements.md) | Quality Requirements | Quality scenarios and assessments | ✅ Complete |
+| [11](./11-glossary.md) | Glossary | Domain and technical terms | ✅ Complete |
 | [12](./12-improvement-recommendations.md) | **Improvement Recommendations** | **Actionable improvements for maintainability & extensibility** | ✅ Complete |
 
 ### Quick Start
@@ -44,47 +45,49 @@ This architecture documentation is organized according to the Arc42 template:
 5. ✅ **Comprehensive API Docs**: OpenAPI/Swagger documentation
 6. ✅ **Data Integrity**: Proper database constraints and indexes
 
-### Critical Issues
+### Open Security & Operations Issues
 
-1. ❌ **No Authentication/Authorization** (P0): All API endpoints completely open
-2. ❌ **No Centralized Error Handling** (P0): Inconsistent error responses
-3. ❌ **No Health Checks** (P1): Cannot monitor system health
+Authentication (JWT, single-user mode), centralized error handling (`GlobalExceptionFilter`) and health checks (`/api/health`, `/api/health/db`) are implemented. Still missing:
+
+1. ❌ **No Rate Limiting, Security Headers or Explicit CORS Configuration**: no throttling, no `helmet`
+2. ❌ **No Request Logging**: no request logging middleware
 
 ### Maintainability Concerns
 
-1. ⚠️ **AppStateService God Object** (590+ lines): Violates Single Responsibility Principle
-2. ⚠️ **Limited Test Coverage** (~10%): Difficult to refactor with confidence
+1. ⚠️ **Large TransactionFacade** (~585 lines): The former `AppStateService` was split into `UiStateService`, `PortfolioStateService`, `TransactionFacade` and `PaginationStateService`, but the facade is still large
+2. ⚠️ **Test Coverage Not Measured**: 44 `*.spec.ts` files (unit, integration and `api-e2e` tests), but no coverage figures are collected
 3. ⚠️ **No Repository Pattern**: Services tightly coupled to Prisma ORM
 4. ⚠️ **Hardcoded Providers**: Exchange rate and price providers not extensible
 
 ### Extensibility Gaps
 
-1. ⚠️ **Hardcoded EUR Base Currency**: Difficult to support other base currencies
+1. ⚠️ **EUR-Based Exchange Rates**: The default currency is configurable (`DEFAULT_CURRENCY`), but exchange-rate sync (ECB) is still EUR-based
 2. ⚠️ **Provider Coupling**: Cannot easily swap external API providers
-3. ⚠️ **No Pagination**: Will not scale beyond ~1000 records
+3. ⚠️ **No Server-Side Pagination**: The API returns complete lists; the frontend paginates client-side
 4. ⚠️ **No Caching Strategy**: Repeated queries for static data
 
 ## 🚀 Improvement Roadmap
 
 ### Phase 1: Security & Stability (Week 1-2)
-- Add authentication & authorization
-- Add centralized error handling
-- Add health checks
-- Add request logging
+- Add authentication & authorization (done: JWT, single-user mode)
+- Add centralized error handling (done)
+- Add health checks (done)
+- Add request logging (open)
+- Add rate limiting and security headers (open)
 
 **Impact**: Enables production deployment with proper security
 
 ### Phase 2: Maintainability (Week 3-4)
-- Refactor AppStateService into focused services
-- Add comprehensive unit and integration tests
-- Add pagination to list endpoints
+- Refactor AppStateService into focused services (done; `TransactionFacade` remains large)
+- Add comprehensive unit and integration tests (in progress: unit, integration and e2e tests exist)
+- Add pagination to list endpoints (open; currently client-side only)
 
 **Impact**: Easier to maintain and extend codebase
 
 ### Phase 3: Extensibility (Week 5-6)
 - Implement repository pattern
 - Add provider abstractions (strategy pattern)
-- Make base currency configurable
+- Make base currency configurable (partially done: `DEFAULT_CURRENCY`; exchange-rate sync still EUR-based)
 
 **Impact**: Easier to add new features and providers
 
@@ -99,10 +102,10 @@ This architecture documentation is organized according to the Arc42 template:
 
 | Quality Attribute | Current Score | Target | Priority |
 |------------------|---------------|--------|----------|
-| **Security** | 1/5 ❌ | 4/5 | P0 |
+| **Security** | 3/5 ⚠️ | 4/5 | P1 |
 | **Error Handling** | 2/5 ⚠️ | 4/5 | P0 |
 | **Maintainability** | 3/5 ⚠️ | 4/5 | P1 |
-| **Testability** | 2/5 ⚠️ | 4/5 | P1 |
+| **Testability** | 3/5 ⚠️ | 4/5 | P1 |
 | **Extensibility** | 3/5 ⚠️ | 4/5 | P2 |
 | **Performance** | 4/5 ✅ | 4/5 | P3 |
 | **Data Integrity** | 4/5 ✅ | 4/5 | - |
@@ -134,10 +137,10 @@ This architecture documentation is organized according to the Arc42 template:
 ### Recommended Improvements
 
 **Backend**: Add repository pattern for better abstraction
-**Frontend**: Split AppStateService into focused services
-**Security**: Add JWT authentication with guards
-**Monitoring**: Add health checks and structured logging
-**Scaling**: Add pagination and caching
+**Frontend**: Further split `TransactionFacade` into smaller units
+**Security**: Add rate limiting, security headers (`helmet`) and explicit CORS configuration
+**Monitoring**: Add request logging and structured logging (health checks exist)
+**Scaling**: Add server-side pagination and caching
 
 ## 📖 Related Documentation
 
@@ -147,7 +150,6 @@ This architecture documentation is organized according to the Arc42 template:
 - [Toast Notification System](../TOAST_NOTIFICATION_SYSTEM.md)
 
 ### How-To Guides
-- [How to Add a Currency](../HOW_TO_ADD_CURRENCY.md)
 - [Docker Setup](../DOCKER.md)
 
 ### Root Documentation
@@ -168,7 +170,7 @@ When making architectural changes:
 
 | Aspect | Details |
 |--------|---------|
-| **Last Review** | 2026-01-04 |
+| **Last Review** | 2026-11-17 |
 | **Review Frequency** | Quarterly or after major changes |
 | **Owners** | Development Team |
 | **Template** | [Arc42](https://arc42.org/) |
@@ -184,6 +186,7 @@ When making architectural changes:
 - Validation, errors, security → [Section 08](./08-cross-cutting-concepts.md)
 - Quality goals → [Section 10](./10-quality-requirements.md)
 - What to improve → [Section 12](./12-improvement-recommendations.md)
+- Terminology → [Section 11](./11-glossary.md)
 
 ---
 

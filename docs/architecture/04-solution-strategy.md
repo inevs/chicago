@@ -9,7 +9,7 @@
 | **Angular 22 (Standalone)** | Modern reactive patterns (Signals), no NgModules, excellent TypeScript support | Breaking changes from older Angular, ecosystem maturity |
 | **Prisma ORM** | Type-safe database access, excellent migrations, schema-first approach | Limited to specific databases, generated code bulk |
 | **PostgreSQL** | ACID compliance, robust indexing, JSONB support for flexibility | Requires PostgreSQL knowledge, more complex than SQLite |
-| **Signals (Angular)** | Fine-grained reactivity, better performance than Zones, simpler than RxJS for state | Relatively new API, less ecosystem maturity |
+| **Signals (Angular)** | Fine-grained reactivity, better performance than Zones, simpler than RxJS for state | Relatively new API, less ecosystem maturity; the app still uses Zone.js (`provideZoneChangeDetection`), zoneless change detection is not yet enabled |
 
 ## 4.2 Architectural Patterns
 
@@ -36,7 +36,7 @@
 
 **Current Implementation Gaps**:
 - ❌ No repository abstraction (services directly use Prisma)
-- ❌ No centralized exception handling
+- ✅ Centralized exception handling via `GlobalExceptionFilter` (registered in `main.ts`)
 - ❌ Limited transaction management
 - ❌ No caching layer
 
@@ -53,7 +53,7 @@
 │           (UI Components)               │
 ├─────────────────────────────────────────┤
 │          Services Layer                 │  (HTTP, state, business logic)
-│      (AppStateService + domain services)│
+│   (state services + domain services)    │
 ├─────────────────────────────────────────┤
 │            HTTP Client                  │  (API communication)
 └─────────────────────────────────────────┘
@@ -65,7 +65,7 @@
 - Clear data flow
 
 **Current Implementation Gaps**:
-- ⚠️ AppStateService is too large (God Object anti-pattern)
+- ⚠️ `TransactionFacade` is still large (~585 lines) after `AppStateService` was split into focused services
 - ❌ No state persistence beyond localStorage
 - ❌ Limited error recovery mechanisms
 - ❌ No optimistic UI updates
@@ -77,33 +77,35 @@
 **Decision**: ISO 4217 validation with EUR as base currency
 
 **Implementation**:
-- Whitelist-based validation on both client and server
+- Whitelist-based ISO 4217 validation on the server; the client only checks for a 3-letter code
 - EUR-based exchange rates from ECB
 - Currency conversion stored with transactions (immutable)
 
 **Rationale**: Ensures data integrity, provides audit trail, supports multiple currencies
 
-**Trade-off**: EUR-only base currency limits flexibility
+**Trade-off**: Exchange-rate sync is EUR-only; the default currency can be set via `DEFAULT_CURRENCY`
 
 ### 2. Data Synchronization Strategy
 
-**Decision**: Pull-based synchronization with manual triggers
+**Decision**: Pull-based synchronization with manual triggers and a daily scheduled price update
 
 **Implementation**:
 - `/api/security-prices/sync` endpoint
 - `/api/exchange-rates/sync` endpoint
-- Optional scheduling via @nestjs/schedule
+- `PriceUpdateSchedulerService`: daily `@Cron` job at 07:00 server time (always active) that updates security prices
+- Each price sync also syncs exchange rates for the same date range
+- Exchange rates for a newly added currency are synced in the background
 
 **Rationale**: User control over data fetches, avoids API rate limits
 
-**Trade-off**: Data may be stale, requires user action
+**Trade-off**: End-of-day data only; prices and rates may be up to one day old
 
 ### 3. Validation Strategy
 
 **Decision**: Multi-layer validation (client + server)
 
 **Implementation**:
-- Client: Template-driven validation in Angular forms
+- Client: Template-driven validation (`ngModel`) in the modal forms, reactive forms on the login page
 - Server: class-validator decorators on DTOs
 - Database: Constraints and unique indexes
 
@@ -113,16 +115,16 @@
 
 ### 4. State Management
 
-**Decision**: Signal-based reactive state with centralized service
+**Decision**: Signal-based reactive state split into focused services
 
 **Implementation**:
-- `AppStateService` holds all app-wide state as signals
+- `UiStateService` (UI/modal state), `PortfolioStateService` (portfolio data), `TransactionFacade` (CRUD orchestration), `PaginationStateService` (client-side pagination) hold state as signals
 - Computed signals for derived data
 - Services for HTTP and domain logic
 
 **Rationale**: Modern Angular pattern, fine-grained reactivity, better performance
 
-**Trade-off**: Large centralized service, potential for tight coupling
+**Trade-off**: `TransactionFacade` is still large, potential for tight coupling
 
 ## 4.4 Quality Approaches
 
@@ -132,8 +134,8 @@
 | **Data Integrity** | Multi-layer validation, database constraints | ✅ Good validation, ⚠️ Limited transactions |
 | **Extensibility** | Feature modules, shared library, dependency injection | ✅ Good foundation, ⚠️ Some tight coupling |
 | **Performance** | Indexes, signal-based reactivity, connection pooling | ✅ Good DB indexes, ⚠️ No caching strategy |
-| **Testability** | Jest configured, service injection | ⚠️ Limited test coverage |
-| **Security** | Input validation, parameterized queries (Prisma) | ❌ No authentication, ❌ No rate limiting |
+| **Testability** | Jest configured, service injection, test factories | ⚠️ Coverage not measured (unit, integration and e2e tests exist) |
+| **Security** | Input validation, parameterized queries (Prisma) | ✅ JWT authentication (single-user mode), ❌ No rate limiting |
 
 ## 4.5 Organizational Strategy
 
@@ -145,6 +147,6 @@
 
 **Deployment Strategy**:
 - Self-hosted deployment model
-- Docker Compose for local development
+- Dockerfiles for API and frontend (nginx), `docker-compose.yml` with `postgres`, `api` and `frontend` services
 - Production: Manual deployment (no CI/CD configured)
 - Database migrations: Manual via `prisma migrate deploy`

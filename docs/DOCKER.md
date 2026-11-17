@@ -19,7 +19,18 @@ All services communicate over a dedicated bridge network (`dividends-network`).
 
 ## Quick Start
 
-### Using Docker Compose
+### 1. Configure Environment Variables
+
+Docker Compose reads `${...}` variables from a `.env` file in the project root. Create it from the template before the first start:
+
+```bash
+cp .env.example .env
+# Edit .env: set at least JWT_SECRET, ADMIN_PASSWORD, DEFAULT_CURRENCY and DEFAULT_CURRENCY_NAME
+```
+
+> **Important:** The API container runs the database seed on every start. The seed aborts if `ADMIN_PASSWORD`, `DEFAULT_CURRENCY` or `DEFAULT_CURRENCY_NAME` is missing, and the API refuses to start without `JWT_SECRET`. In both cases the `api` container does not come up.
+
+### 2. Using Docker Compose
 
 ```bash
 # Build and start all services
@@ -35,7 +46,7 @@ docker compose down
 docker compose down -v
 ```
 
-### Using Podman Compose
+### Alternative: Using Podman Compose
 
 ```bash
 # Build and start all services
@@ -71,17 +82,25 @@ podman-compose down -v
 - **Dockerfile**: `apps/api/Dockerfile`
 - **Container Name**: `dividends-api`
 - **Port**: `3000` (exposed on host)
-- **Environment Variables**:
-  - `DATABASE_URL`: Connection string to PostgreSQL
-  - `NODE_ENV`: `production`
-  - `PORT`: `3000`
-  - `JWT_SECRET`: Secret for signing access tokens
-  - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`: Login user created by the seed
-  - `ALLOW_REGISTRATION`: Enables `POST /api/auth/register` (default `false`, single-user mode)
+- **Environment Variables** (values come from `.env`, see Quick Start):
+
+  | Variable | Required | Description |
+  |---|---|---|
+  | `DATABASE_URL` | set in compose | Connection string to PostgreSQL |
+  | `NODE_ENV` | set in compose | `production` |
+  | `PORT` | set in compose | `3000` |
+  | `JWT_SECRET` | yes | Secret for signing access tokens; the API does not start without it |
+  | `ADMIN_PASSWORD` | yes | Password of the login user created by the seed |
+  | `ADMIN_EMAIL`, `ADMIN_NAME` | no | Login user created by the seed (defaults: `admin@example.com`, `Admin User`) |
+  | `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`) |
+  | `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (default `false`, single-user mode) |
+  | `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (default `2017-01-01`) |
+
 - **Dependencies**: Waits for PostgreSQL to be healthy
-- **Startup Process**:
+- **Startup Process** (`CMD` in `apps/api/Dockerfile`):
   1. Runs Prisma migrations (`prisma migrate deploy`)
-  2. Starts the NestJS server
+  2. Seeds the database (`prisma db seed`): creates the admin user and the default currency if they do not exist yet. Existing records are not changed, so changing `ADMIN_PASSWORD` later does not update the password.
+  3. Starts the NestJS server
 - **Health Check**: HTTP GET to `/api/health` every 30 seconds
 
 ### Frontend Service
@@ -113,15 +132,18 @@ docker compose up -d postgres api
 
 ### Production Environment Variables
 
-For production deployments, create a `.env.production` file or modify the `docker-compose.yml` environment section:
+Docker Compose only reads `.env` from the project root automatically. To use a different file (e.g. `.env.production`), pass it explicitly:
+
+```bash
+docker compose --env-file .env.production up -d
+```
+
+Values that are not taken from variables, such as the database credentials in `DATABASE_URL`, are set directly in `docker-compose.yml`:
 
 ```yaml
 api:
   environment:
     DATABASE_URL: postgresql://your_user:your_password@postgres:5432/dividends
-    NODE_ENV: production
-    PORT: 3000
-    # Add other environment variables as needed
 ```
 
 ### Custom Ports
@@ -155,7 +177,7 @@ docker compose exec postgres psql -U dividends -d dividends
 Migrations run automatically when the API container starts. To run migrations manually:
 
 ```bash
-docker compose exec api npx prisma migrate deploy
+docker compose exec api npx prisma migrate deploy --config=prisma.config.ts
 ```
 
 ### Backup and Restore
@@ -215,10 +237,11 @@ docker compose exec postgres sh
 
 ### API Container Fails to Start
 
-1. Check if migrations are failing:
+1. Check if migrations or the seed are failing:
    ```bash
    docker compose logs api
    ```
+   Typical cause: `ADMIN_PASSWORD`, `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` or `JWT_SECRET` is not set in `.env`.
 
 2. Verify database connection:
    ```bash
@@ -227,7 +250,7 @@ docker compose exec postgres sh
 
 3. Manually run migrations:
    ```bash
-   docker compose exec api npx prisma migrate deploy
+   docker compose exec api npx prisma migrate deploy --config=prisma.config.ts
    ```
 
 ### Frontend Cannot Connect to API
@@ -270,7 +293,8 @@ docker compose exec postgres sh
 Before deploying to production:
 
 - [ ] Change default database credentials in `docker-compose.yml`
-- [ ] Set up proper environment variables (use `.env` file or secrets)
+- [ ] Set up proper environment variables (use `.env` file or secrets); use a strong, random `JWT_SECRET` and `ADMIN_PASSWORD`
+- [ ] Keep `ALLOW_REGISTRATION=false` unless an additional account is needed
 - [ ] Configure proper volumes for persistent data
 - [ ] Set up SSL/TLS certificates (use a reverse proxy like Traefik or Nginx)
 - [ ] Configure proper logging and monitoring
