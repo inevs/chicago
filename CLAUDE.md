@@ -228,3 +228,4 @@ nx graph
 - update the test suites after changes to prevent regressions
 - create new tests for new functionality
 - always run 'nx run-many -t test' to ensure the tests still run successfully
+- after changes to code, configuration, Docker setup, environment variables, scripts or dependencies, and always before creating a commit, run the `update-docs` skill (`.claude/skills/update-docs/SKILL.md`) to check and update the affected documentation (`docs/`, `README.md`, `CLAUDE.md`, `AGENTS.md`)
