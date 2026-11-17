@@ -11,6 +11,8 @@ This is an **Nx monorepo** containing a full-stack dividends tracking applicatio
 - **Shared Library** (`packages/shared`): Common code shared between frontend and backend
 - **E2E Tests** (`apps/api-e2e`): End-to-end tests for the API
 
+**Test runners**: The API and API e2e tests use Jest (`jest.config.ts`, `jest.preset.js`, `@nx/jest/plugin`); the Angular app uses Vitest through the Angular unit-test builder.
+
 ### Key Architectural Details
 
 **Database**: Uses PostgreSQL with Prisma ORM v7. The Prisma schema is located at `apps/api/prisma/schema.prisma` with a custom output directory for the generated client (`apps/api/generated/prisma`). A Docker Compose file provides a local PostgreSQL instance.
@@ -198,6 +200,7 @@ nx graph
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle
 - Proxies `/api` requests to `http://localhost:3000` via `proxy.conf.json`
 - Currently uses Zone.js for change detection (zoneless migration available - see issues)
+- Unit tests run with Vitest via the `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom, `isolate: true`); there is no `jest.config.ts` or `test-setup.ts`, the builder initializes TestBed and Zone.js itself. Use `vi.*` APIs and Vitest fake timers (`fakeAsync` is not supported with Vitest). Spec files are type-checked during the test build.
 
 ### Shared Package
 
@@ -210,6 +213,7 @@ nx graph
 1. **Node Version**: This project uses Node.js v24.22.3 (specified in `.nvmrc`)
 2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d postgres`)
 3. **Environment Variables**: Copy `.env.example` (project root) to `.env` in the root or `apps/api/.env`
+4. **Claude Code cloud sessions**: The SessionStart hook `.claude/hooks/session-start.sh` (registered in `.claude/settings.json`, runs only when `CLAUDE_CODE_REMOTE=true`) installs the Node.js version from `.nvmrc` via nvm, puts it on the `PATH`, runs `npm install --legacy-peer-deps` and `npm run db:generate`. Installs are skipped when the relevant files are unchanged (hashes in `node_modules/` and `apps/api/generated/prisma/`).
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

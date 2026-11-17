@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, UrlTree, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
+import {
+  Router,
+  UrlTree,
+  ActivatedRouteSnapshot,
+  RouterStateSnapshot,
+} from '@angular/router';
 import { signal } from '@angular/core';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
@@ -10,11 +15,11 @@ describe('authGuard', () => {
 
   const mockAuthService = {
     isAuthenticated: signal(false),
-    isTokenValid: jest.fn(),
+    isTokenValid: vi.fn(),
   };
 
   const mockRouter = {
-    createUrlTree: jest.fn(),
+    createUrlTree: vi.fn(),
   };
 
   beforeEach(() => {
@@ -31,7 +36,7 @@ describe('authGuard', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should allow access when user is authenticated and token is valid', () => {

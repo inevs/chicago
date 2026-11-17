@@ -329,7 +329,8 @@ code: string;
 - `api-e2e` project with an end-to-end test for the securities endpoints (`securities.e2e.spec.ts`): runs the full `AppModule` in-process against a dedicated PostgreSQL database (`<db>_e2e`, created and migrated in `support/global-setup.ts`), logs in via `POST /api/auth/login` and stubs the external price sync. Run with `nx e2e api-e2e`.
 
 **Frontend**:
-- Jest configured
+- Vitest via the Angular `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom environment, `isolate: true`); the builder initializes the Angular TestBed and Zone.js, so there is no separate test setup file
+- `fakeAsync`/`tick` are not used; timer-based tests use Vitest fake timers (`vi.useFakeTimers()`, `vi.advanceTimersByTime()`)
 - Unit tests for state services, the facade, interceptors and selected components
 
 **Limitations**:

@@ -15,15 +15,15 @@ describe('UiStateService', () => {
     // Mock matchMedia
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: jest.fn().mockImplementation((query) => ({
+      value: vi.fn().mockImplementation((query) => ({
         matches: false,
         media: query,
         onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
       })),
     });
 
@@ -56,15 +56,15 @@ describe('UiStateService', () => {
       // Mock matchMedia to return dark mode preference
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: jest.fn().mockImplementation((query) => ({
+        value: vi.fn().mockImplementation((query) => ({
           matches: true,
           media: query,
           onchange: null,
-          addListener: jest.fn(),
-          removeListener: jest.fn(),
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn(),
-          dispatchEvent: jest.fn(),
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
         })),
       });
 
@@ -89,21 +89,25 @@ describe('UiStateService', () => {
       expect(service.isDarkMode()).toBe(false);
     });
 
-    it('should persist theme to localStorage', (done) => {
-      service.setDarkMode(true);
-      setTimeout(() => {
-        expect(localStorage.getItem('theme')).toBe('dark');
-        done();
-      }, 100);
-    });
+    it('should persist theme to localStorage', () =>
+      new Promise<void>((done) => {
+        service.setDarkMode(true);
+        setTimeout(() => {
+          expect(localStorage.getItem('theme')).toBe('dark');
+          done();
+        }, 100);
+      }));
 
-    it('should add dark class to document when dark mode is enabled', (done) => {
-      service.setDarkMode(true);
-      setTimeout(() => {
-        expect(document.documentElement.classList.contains('dark')).toBe(true);
-        done();
-      }, 100);
-    });
+    it('should add dark class to document when dark mode is enabled', () =>
+      new Promise<void>((done) => {
+        service.setDarkMode(true);
+        setTimeout(() => {
+          expect(document.documentElement.classList.contains('dark')).toBe(
+            true
+          );
+          done();
+        }, 100);
+      }));
   });
 
   describe('Sidebar Management', () => {
@@ -119,13 +123,14 @@ describe('UiStateService', () => {
       expect(service.sidebarCollapsed()).toBe(false);
     });
 
-    it('should persist sidebar state to localStorage', (done) => {
-      service.toggleSidebar();
-      setTimeout(() => {
-        expect(localStorage.getItem('sidebarCollapsed')).toBe('true');
-        done();
-      }, 100);
-    });
+    it('should persist sidebar state to localStorage', () =>
+      new Promise<void>((done) => {
+        service.toggleSidebar();
+        setTimeout(() => {
+          expect(localStorage.getItem('sidebarCollapsed')).toBe('true');
+          done();
+        }, 100);
+      }));
 
     it('should restore sidebar state from localStorage', () => {
       localStorage.setItem('sidebarCollapsed', 'true');
@@ -244,14 +249,18 @@ describe('UiStateService', () => {
     });
 
     it('should set pending import file and open modal', () => {
-      const mockFile = new File(['test'], 'test.json', { type: 'application/json' });
+      const mockFile = new File(['test'], 'test.json', {
+        type: 'application/json',
+      });
       service.setPendingImportFile(mockFile);
       expect(service.pendingImportFile()).toBe(mockFile);
       expect(service.showImportConfirmModal()).toBe(true);
     });
 
     it('should close import confirm modal and clear pending file', () => {
-      const mockFile = new File(['test'], 'test.json', { type: 'application/json' });
+      const mockFile = new File(['test'], 'test.json', {
+        type: 'application/json',
+      });
       service.setPendingImportFile(mockFile);
       service.closeImportConfirmModal();
       expect(service.showImportConfirmModal()).toBe(false);

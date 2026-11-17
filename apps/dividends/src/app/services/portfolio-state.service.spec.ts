@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
@@ -10,61 +11,77 @@ import { SecurityService } from './security.service';
 import { UiStateService } from './ui-state.service';
 import { ExchangeRateService } from './exchange-rate.service';
 import { AuthService } from './auth.service';
-import { SecurityPrice, SecurityTransactionWithSecurity, Currency } from '@dividends/shared';
+import {
+  SecurityPrice,
+  SecurityTransactionWithSecurity,
+  Currency,
+  SecurityType,
+  TransactionType,
+} from '@dividends/shared';
+
+const timestamps = {
+  createdAt: new Date('2024-01-01T00:00:00Z'),
+  updatedAt: new Date('2024-01-01T00:00:00Z'),
+};
 
 describe('PortfolioStateService', () => {
   let service: PortfolioStateService;
-  let mockDividendDataService: jest.Mocked<Partial<DividendDataService>>;
-  let mockSecurityTransactionService: jest.Mocked<Partial<SecurityTransactionService>>;
-  let mockSecurityPriceService: jest.Mocked<Partial<SecurityPriceService>>;
-  let mockCurrencyService: jest.Mocked<Partial<CurrencyService>>;
-  let mockSecurityService: jest.Mocked<Partial<SecurityService>>;
-  let mockExchangeRateService: jest.Mocked<Partial<ExchangeRateService>>;
-  let mockUiStateService: jest.Mocked<Partial<UiStateService>>;
-  let mockAuthService: jest.Mocked<Partial<AuthService>>;
+  let mockDividendDataService: Mocked<Partial<DividendDataService>>;
+  let mockSecurityTransactionService: Mocked<
+    Partial<SecurityTransactionService>
+  >;
+  let mockSecurityPriceService: Mocked<Partial<SecurityPriceService>>;
+  let mockCurrencyService: Mocked<Partial<CurrencyService>>;
+  let mockSecurityService: Mocked<Partial<SecurityService>>;
+  let mockExchangeRateService: Mocked<Partial<ExchangeRateService>>;
+  let mockUiStateService: Mocked<Partial<UiStateService>>;
+  let mockAuthService: Mocked<Partial<AuthService>>;
 
   beforeEach(() => {
     mockDividendDataService = {
-      loadTransactionsFromBackend: jest.fn(),
-      getFilteredTransactions: jest.fn().mockReturnValue([]),
-      calculateKPIs: jest.fn().mockReturnValue({}),
+      loadTransactionsFromBackend: vi.fn(),
+      getFilteredTransactions: vi.fn().mockReturnValue([]),
+      calculateKPIs: vi.fn().mockReturnValue({}),
     };
 
     mockSecurityTransactionService = {
-      getSecurityTransactions: jest.fn().mockReturnValue(of([])),
+      getSecurityTransactions: vi.fn().mockReturnValue(of([])),
     };
 
     mockSecurityPriceService = {
-      getLatestSecurityPrices: jest.fn().mockReturnValue(of([])),
+      getLatestSecurityPrices: vi.fn().mockReturnValue(of([])),
     };
 
     mockCurrencyService = {
-      getCurrencies: jest.fn().mockReturnValue(of([])),
-      getDefaultCurrency: jest.fn().mockReturnValue(of(null)),
+      getCurrencies: vi.fn().mockReturnValue(of([])),
+      getDefaultCurrency: vi.fn().mockReturnValue(of(null)),
     };
 
     mockSecurityService = {
-      getSecurities: jest.fn().mockReturnValue(of([])),
+      getSecurities: vi.fn().mockReturnValue(of([])),
     };
 
     mockExchangeRateService = {
-      getLatestRates: jest.fn().mockReturnValue(of([])),
+      getLatestRates: vi.fn().mockReturnValue(of([])),
     };
 
     mockUiStateService = {
       selectedTimeRange: signal('ALL' as const),
-      setTimeRange: jest.fn(),
+      setTimeRange: vi.fn(),
     };
 
     mockAuthService = {
-      isTokenValid: jest.fn().mockReturnValue(true), // Default to valid token
+      isTokenValid: vi.fn().mockReturnValue(true), // Default to valid token
     };
 
     TestBed.configureTestingModule({
       providers: [
         PortfolioStateService,
         { provide: DividendDataService, useValue: mockDividendDataService },
-        { provide: SecurityTransactionService, useValue: mockSecurityTransactionService },
+        {
+          provide: SecurityTransactionService,
+          useValue: mockSecurityTransactionService,
+        },
         { provide: SecurityPriceService, useValue: mockSecurityPriceService },
         { provide: CurrencyService, useValue: mockCurrencyService },
         { provide: SecurityService, useValue: mockSecurityService },
@@ -97,9 +114,15 @@ describe('PortfolioStateService', () => {
       service.loadAllData();
 
       expect(mockSecurityService.getSecurities).toHaveBeenCalled();
-      expect(mockDividendDataService.loadTransactionsFromBackend).toHaveBeenCalled();
-      expect(mockSecurityTransactionService.getSecurityTransactions).toHaveBeenCalled();
-      expect(mockSecurityPriceService.getLatestSecurityPrices).toHaveBeenCalled();
+      expect(
+        mockDividendDataService.loadTransactionsFromBackend
+      ).toHaveBeenCalled();
+      expect(
+        mockSecurityTransactionService.getSecurityTransactions
+      ).toHaveBeenCalled();
+      expect(
+        mockSecurityPriceService.getLatestSecurityPrices
+      ).toHaveBeenCalled();
       expect(mockCurrencyService.getCurrencies).toHaveBeenCalled();
       expect(mockCurrencyService.getDefaultCurrency).toHaveBeenCalled();
       expect(mockExchangeRateService.getLatestRates).toHaveBeenCalled();
@@ -109,8 +132,8 @@ describe('PortfolioStateService', () => {
       const mockTransactions: SecurityTransactionWithSecurity[] = [
         {
           id: '1',
-          date: '2024-01-01',
-          type: 'BUY',
+          date: new Date('2024-01-01'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 10,
           pricePerShare: 100,
@@ -119,20 +142,22 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1.1,
           totalValue: 1005,
           note: 'Test',
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
       ];
 
-      mockSecurityTransactionService.getSecurityTransactions = jest
+      mockSecurityTransactionService.getSecurityTransactions = vi
         .fn()
         .mockReturnValue(of(mockTransactions));
 
@@ -142,14 +167,19 @@ describe('PortfolioStateService', () => {
     });
 
     it('should handle error when loading security transactions', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      mockSecurityTransactionService.getSecurityTransactions = jest
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      mockSecurityTransactionService.getSecurityTransactions = vi
         .fn()
         .mockReturnValue(throwError(() => new Error('Load failed')));
 
       service.loadSecurityTransactions();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error loading security transactions:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error loading security transactions:',
+        expect.any(Error)
+      );
       consoleSpy.mockRestore();
     });
 
@@ -158,13 +188,21 @@ describe('PortfolioStateService', () => {
         {
           id: '1',
           securityId: 'sec1',
-          date: '2024-01-01',
-          price: 150.5,
+          date: new Date('2024-01-01'),
+          open: 150,
+          high: 151,
+          low: 149,
+          close: 150.5,
+          volume: null,
           currency: 'USD',
+          provider: 'test',
+          ...timestamps,
         },
       ];
 
-      mockSecurityPriceService.getLatestSecurityPrices = jest.fn().mockReturnValue(of(mockPrices));
+      mockSecurityPriceService.getLatestSecurityPrices = vi
+        .fn()
+        .mockReturnValue(of(mockPrices));
 
       service.loadSecurityPrices();
 
@@ -172,38 +210,41 @@ describe('PortfolioStateService', () => {
     });
 
     it('should handle error when loading security prices', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      mockSecurityPriceService.getLatestSecurityPrices = jest
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      mockSecurityPriceService.getLatestSecurityPrices = vi
         .fn()
         .mockReturnValue(throwError(() => new Error('Load failed')));
 
       service.loadSecurityPrices();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error loading security prices:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error loading security prices:',
+        expect.any(Error)
+      );
       consoleSpy.mockRestore();
     });
 
     it('should load currencies successfully', () => {
       const mockCurrencies: Currency[] = [
         {
-          id: '1',
           code: 'USD',
           name: 'US Dollar',
-          symbol: '$',
-          isDefault: false,
         },
       ];
 
       const mockDefaultCurrency: Currency = {
-        id: '2',
         code: 'EUR',
         name: 'Euro',
-        symbol: '€',
-        isDefault: true,
       };
 
-      mockCurrencyService.getCurrencies = jest.fn().mockReturnValue(of(mockCurrencies));
-      mockCurrencyService.getDefaultCurrency = jest.fn().mockReturnValue(of(mockDefaultCurrency));
+      mockCurrencyService.getCurrencies = vi
+        .fn()
+        .mockReturnValue(of(mockCurrencies));
+      mockCurrencyService.getDefaultCurrency = vi
+        .fn()
+        .mockReturnValue(of(mockDefaultCurrency));
 
       service.loadCurrencies();
 
@@ -212,26 +253,36 @@ describe('PortfolioStateService', () => {
     });
 
     it('should handle error when loading currencies', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      mockCurrencyService.getCurrencies = jest
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      mockCurrencyService.getCurrencies = vi
         .fn()
         .mockReturnValue(throwError(() => new Error('Load failed')));
 
       service.loadCurrencies();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error loading currencies:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error loading currencies:',
+        expect.any(Error)
+      );
       consoleSpy.mockRestore();
     });
 
     it('should handle error when loading default currency', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      mockCurrencyService.getDefaultCurrency = jest
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      mockCurrencyService.getDefaultCurrency = vi
         .fn()
         .mockReturnValue(throwError(() => new Error('Load failed')));
 
       service.loadCurrencies();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Error loading default currency:', expect.any(Error));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Error loading default currency:',
+        expect.any(Error)
+      );
       consoleSpy.mockRestore();
     });
   });
@@ -239,12 +290,16 @@ describe('PortfolioStateService', () => {
   describe('Computed Values', () => {
     it('should compute filtered dividends', () => {
       const mockFiltered = [{ id: '1' }];
-      mockDividendDataService.getFilteredTransactions = jest.fn().mockReturnValue(mockFiltered);
+      mockDividendDataService.getFilteredTransactions = vi
+        .fn()
+        .mockReturnValue(mockFiltered);
 
-      mockUiStateService.selectedTimeRange?.set('1M');
+      mockUiStateService.selectedTimeRange?.set('M');
 
       expect(service.filteredDividends()).toEqual(mockFiltered);
-      expect(mockDividendDataService.getFilteredTransactions).toHaveBeenCalledWith('1M', '');
+      expect(
+        mockDividendDataService.getFilteredTransactions
+      ).toHaveBeenCalledWith('M', '');
     });
 
     it('should compute KPIs', () => {
@@ -252,13 +307,18 @@ describe('PortfolioStateService', () => {
       const mockFiltered = [{ id: '1' }];
       const mockTransactions: SecurityTransactionWithSecurity[] = [];
 
-      mockDividendDataService.getFilteredTransactions = jest.fn().mockReturnValue(mockFiltered);
-      mockDividendDataService.calculateKPIs = jest.fn().mockReturnValue(mockKPIs);
+      mockDividendDataService.getFilteredTransactions = vi
+        .fn()
+        .mockReturnValue(mockFiltered);
+      mockDividendDataService.calculateKPIs = vi.fn().mockReturnValue(mockKPIs);
 
       service.securityTransactions.set(mockTransactions);
 
       expect(service.kpis()).toEqual(mockKPIs);
-      expect(mockDividendDataService.calculateKPIs).toHaveBeenCalledWith(mockFiltered, mockTransactions);
+      expect(mockDividendDataService.calculateKPIs).toHaveBeenCalledWith(
+        mockFiltered,
+        mockTransactions
+      );
     });
   });
 
@@ -275,8 +335,8 @@ describe('PortfolioStateService', () => {
       const mockTransactions: SecurityTransactionWithSecurity[] = [
         {
           id: '1',
-          date: '2024-01-10',
-          type: 'BUY',
+          date: new Date('2024-01-10'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 100,
           pricePerShare: 50,
@@ -285,15 +345,17 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 5005,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
       ];
@@ -309,8 +371,8 @@ describe('PortfolioStateService', () => {
       const mockTransactions: SecurityTransactionWithSecurity[] = [
         {
           id: '1',
-          date: '2024-01-10',
-          type: 'BUY',
+          date: new Date('2024-01-10'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 100,
           pricePerShare: 50,
@@ -319,21 +381,23 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 5005,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
         {
           id: '2',
-          date: '2024-01-15',
-          type: 'BUY',
+          date: new Date('2024-01-15'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 50,
           pricePerShare: 50,
@@ -342,15 +406,17 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 2505,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
       ];
@@ -366,8 +432,8 @@ describe('PortfolioStateService', () => {
       const mockTransactions: SecurityTransactionWithSecurity[] = [
         {
           id: '1',
-          date: '2024-01-10',
-          type: 'BUY',
+          date: new Date('2024-01-10'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 100,
           pricePerShare: 50,
@@ -376,21 +442,23 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 5005,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
         {
           id: '2',
-          date: '2024-01-20',
-          type: 'BUY',
+          date: new Date('2024-01-20'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 50,
           pricePerShare: 50,
@@ -399,15 +467,17 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 2505,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
       ];
@@ -423,8 +493,8 @@ describe('PortfolioStateService', () => {
       const mockTransactions: SecurityTransactionWithSecurity[] = [
         {
           id: '1',
-          date: '2024-01-05',
-          type: 'BUY',
+          date: new Date('2024-01-05'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 100,
           pricePerShare: 50,
@@ -433,21 +503,23 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 5005,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
         {
           id: '2',
-          date: '2024-01-10',
-          type: 'SELL',
+          date: new Date('2024-01-10'),
+          type: TransactionType.SELL,
           securityId: 'sec1',
           quantity: 30,
           pricePerShare: 55,
@@ -456,15 +528,17 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 1645,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
       ];
@@ -480,8 +554,8 @@ describe('PortfolioStateService', () => {
       const mockTransactions: SecurityTransactionWithSecurity[] = [
         {
           id: '1',
-          date: '2024-01-10',
-          type: 'BUY',
+          date: new Date('2024-01-10'),
+          type: TransactionType.BUY,
           securityId: 'sec1',
           quantity: 100,
           pricePerShare: 50,
@@ -490,21 +564,23 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 5005,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec1',
             name: 'Test Security',
             symbol: 'TEST',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
         {
           id: '2',
-          date: '2024-01-10',
-          type: 'BUY',
+          date: new Date('2024-01-10'),
+          type: TransactionType.BUY,
           securityId: 'sec2',
           quantity: 50,
           pricePerShare: 50,
@@ -513,15 +589,17 @@ describe('PortfolioStateService', () => {
           exchangeRate: 1,
           totalValue: 2505,
           note: null,
+          ...timestamps,
           security: {
             id: 'sec2',
             name: 'Other Security',
             symbol: 'OTHER',
-            type: 'STOCK',
+            type: SecurityType.STOCK,
             exchange: 'NYSE',
             currency: 'USD',
             isin: null,
             wkn: null,
+            ...timestamps,
           },
         },
       ];

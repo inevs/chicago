@@ -10,7 +10,7 @@ describe('SidebarNavComponent', () => {
 
   const mockUiStateService = {
     sidebarCollapsed: signal(false),
-    toggleSidebar: jest.fn(() =>
+    toggleSidebar: vi.fn(() =>
       mockUiStateService.sidebarCollapsed.update((collapsed) => !collapsed)
     ),
   };
