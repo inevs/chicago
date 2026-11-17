@@ -213,6 +213,7 @@ nx graph
 1. **Node Version**: This project uses Node.js v24.22.3 (specified in `.nvmrc`)
 2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d postgres`)
 3. **Environment Variables**: Copy `.env.example` (project root) to `.env` in the root or `apps/api/.env`
+4. **Claude Code cloud sessions**: The SessionStart hook `.claude/hooks/session-start.sh` (registered in `.claude/settings.json`, runs only when `CLAUDE_CODE_REMOTE=true`) installs the Node.js version from `.nvmrc` via nvm, puts it on the `PATH`, runs `npm install --legacy-peer-deps` and `npm run db:generate`. Installs are skipped when the relevant files are unchanged (hashes in `node_modules/` and `apps/api/generated/prisma/`).
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
