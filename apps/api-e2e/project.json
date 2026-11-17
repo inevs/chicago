@@ -6,9 +6,7 @@
   "targets": {
     "e2e": {
       "outputs": ["{workspaceRoot}/coverage/api-e2e"],
-      "dependsOn": ["api:build", "api:serve"],
       "options": {
-        "passWithNoTests": true,
         "env": {
           "NODE_OPTIONS": "--experimental-vm-modules --disable-warning=ExperimentalWarning"
         }

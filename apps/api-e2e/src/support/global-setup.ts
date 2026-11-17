@@ -1,16 +1,51 @@
-import { waitForPortOpen } from '@nx/node/utils';
+import { execSync } from 'child_process';
+import { Client } from 'pg';
+import { getDatabaseName, getE2eDatabaseUrl, workspaceRoot } from './e2e-database';
 
-/* eslint-disable */
-var __TEARDOWN_MESSAGE__: string;
-
+/**
+ * Prepares the dedicated e2e database:
+ * 1. creates it if it does not exist yet,
+ * 2. applies all Prisma migrations.
+ *
+ * Requires a running PostgreSQL server (e.g. `docker compose up -d postgres`).
+ */
 module.exports = async function () {
-  // Start services that that the app needs to run (e.g. database, docker-compose, etc.).
-  console.log('\nSetting up...\n');
+  const e2eUrl = getE2eDatabaseUrl();
+  const databaseName = getDatabaseName(e2eUrl);
 
-  const host = process.env.HOST ?? 'localhost';
-  const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await waitForPortOpen(port, { host });
+  // Connect to the server's maintenance database to create the e2e database
+  const adminUrl = new URL(e2eUrl);
+  adminUrl.pathname = '/postgres';
+  adminUrl.search = '';
 
-  // Hint: Use `globalThis` to pass variables to global teardown.
-  globalThis.__TEARDOWN_MESSAGE__ = '\nTearing down...\n';
+  const client = new Client({ connectionString: adminUrl.toString() });
+  try {
+    await client.connect();
+  } catch (error) {
+    throw new Error(
+      `Cannot connect to PostgreSQL for e2e tests (${adminUrl.host}). ` +
+        `Start it with "docker compose up -d postgres".`,
+      { cause: error }
+    );
+  }
+
+  try {
+    const { rowCount } = await client.query(
+      'SELECT 1 FROM pg_database WHERE datname = $1',
+      [databaseName]
+    );
+    if (rowCount === 0) {
+      // Identifiers cannot be parameterized; the name is validated in getE2eDatabaseUrl()
+      await client.query(`CREATE DATABASE "${databaseName.replace(/"/g, '""')}"`);
+      console.log(`\nCreated e2e database "${databaseName}"`);
+    }
+  } finally {
+    await client.end();
+  }
+
+  execSync('npx prisma migrate deploy --config=apps/api/prisma.config.ts', {
+    cwd: workspaceRoot,
+    env: { ...process.env, DATABASE_URL: e2eUrl },
+    stdio: 'inherit',
+  });
 };

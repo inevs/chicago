@@ -1,9 +1,10 @@
- 
-import axios from 'axios';
+import { getE2eDatabaseUrl } from './e2e-database';
 
-module.exports = async function () {
-  // Configure axios for tests to use.
-  const host = process.env.HOST ?? 'localhost';
-  const port = process.env.PORT ?? '3000';
-  axios.defaults.baseURL = `http://${host}:${port}`;
-};
+// Point the API (PrismaService reads DATABASE_URL) at the dedicated e2e database
+process.env.DATABASE_URL = getE2eDatabaseUrl();
+
+// The auth module requires a JWT secret at startup
+process.env.JWT_SECRET ??= 'e2e-test-secret';
+
+// Single-user mode as in production: self-registration stays disabled
+process.env.ALLOW_REGISTRATION = 'false';

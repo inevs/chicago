@@ -55,7 +55,7 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 ### Maintainability Concerns
 
 1. ⚠️ **Large TransactionFacade** (~585 lines): The former `AppStateService` was split into `UiStateService`, `PortfolioStateService`, `TransactionFacade` and `PaginationStateService`, but the facade is still large
-2. ⚠️ **Test Coverage Not Measured**: 44 `*.spec.ts` files (unit, integration and `api-e2e` tests), but no coverage figures are collected
+2. ⚠️ **Test Coverage Not Measured**: 43 `*.spec.ts` files (unit, integration and `api-e2e` tests), but no coverage figures are collected
 3. ⚠️ **No Repository Pattern**: Services tightly coupled to Prisma ORM
 4. ⚠️ **Hardcoded Providers**: Exchange rate and price providers not extensible
 

@@ -326,7 +326,7 @@ code: string;
 - Unit tests for services, controllers, validators, auth strategies, the exception filter and health checks
 - Integration tests (`*.integration.spec.ts`) for auth, securities and dividend payments, using `apps/api/src/testing/integration-test.helper.ts`
 - Test data factories in `apps/api/src/testing/factories` (`@faker-js/faker`)
-- `api-e2e` project with an end-to-end test for the securities endpoints (`securities.e2e.spec.ts`)
+- `api-e2e` project with an end-to-end test for the securities endpoints (`securities.e2e.spec.ts`): runs the full `AppModule` in-process against a dedicated PostgreSQL database (`<db>_e2e`, created and migrated in `support/global-setup.ts`), logs in via `POST /api/auth/login` and stubs the external price sync. Run with `nx e2e api-e2e`.
 
 **Frontend**:
 - Jest configured

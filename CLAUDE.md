@@ -122,6 +122,11 @@ nx run-many -t test
 
 # Run tests for affected projects only
 nx affected -t test
+
+# Run API e2e tests (requires running PostgreSQL, e.g. `docker compose up -d postgres`)
+# Uses a separate database `<db>_e2e` derived from DATABASE_URL (or E2E_DATABASE_URL);
+# it is created and migrated automatically and all its data is deleted by the tests.
+nx e2e api-e2e
 ```
 
 ### Linting
