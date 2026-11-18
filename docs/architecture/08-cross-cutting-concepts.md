@@ -11,7 +11,8 @@ The application implements defense-in-depth validation across three layers:
 **Purpose**: Immediate user feedback, better UX
 
 **Implementation**:
-- Template-driven validation in forms
+- Template-driven validation in the modal forms
+- Signal Forms schema validation on the login page (`required`, `email`, `minLength` from `@angular/forms/signals`)
 - Real-time feedback on input
 - Pattern matching, length validation
 - Custom validators where needed

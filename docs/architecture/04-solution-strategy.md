@@ -105,7 +105,7 @@
 **Decision**: Multi-layer validation (client + server)
 
 **Implementation**:
-- Client: Template-driven validation (`ngModel`) in the modal forms, reactive forms on the login page
+- Client: Template-driven validation (`ngModel`) in the modal forms, Signal Forms (`@angular/forms/signals`) with a validation schema on the login page
 - Server: class-validator decorators on DTOs
 - Database: Constraints and unique indexes
 

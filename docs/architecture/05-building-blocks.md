@@ -239,7 +239,7 @@ dividends/
 
 | Component | Responsibility |
 |-----------|---------------|
-| **LoginComponent** | Login form (reactive forms) |
+| **LoginComponent** | Login form (Signal Forms) |
 | **OverviewComponent** | Dashboard with KPIs, charts, recent activity |
 | **PortfolioComponent** | Securities summary with latest prices |
 | **AllSecuritiesComponent** | List of all securities with search and sorting |

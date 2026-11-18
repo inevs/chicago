@@ -12,7 +12,7 @@
       <p class="subtitle">Willkommen zurück</p>
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+    <form [formRoot]="loginForm" class="login-form">
       @if (error()) {
         <div class="error-banner">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -27,18 +27,15 @@
         <input
           type="email"
           id="email"
-          formControlName="email"
+          [formField]="loginForm.email"
           class="form-input"
           placeholder="admin@example.com"
-          [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          [class.error]="loginForm.email().invalid() && loginForm.email().touched()"
         />
-        @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+        @if (loginForm.email().invalid() && loginForm.email().touched()) {
           <p class="error-message">
-            @if (loginForm.get('email')?.hasError('required')) {
-              E-Mail ist erforderlich
-            }
-            @if (loginForm.get('email')?.hasError('email')) {
-              Bitte gültige E-Mail eingeben
+            @for (fieldError of loginForm.email().errors(); track fieldError.kind) {
+              <span class="block">{{ fieldError.message }}</span>
             }
           </p>
         }
@@ -49,18 +46,15 @@
         <input
           type="password"
           id="password"
-          formControlName="password"
+          [formField]="loginForm.password"
           class="form-input"
           placeholder="••••••••"
-          [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+          [class.error]="loginForm.password().invalid() && loginForm.password().touched()"
         />
-        @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+        @if (loginForm.password().invalid() && loginForm.password().touched()) {
           <p class="error-message">
-            @if (loginForm.get('password')?.hasError('required')) {
-              Passwort ist erforderlich
-            }
-            @if (loginForm.get('password')?.hasError('minlength')) {
-              Passwort muss mindestens 6 Zeichen lang sein
+            @for (fieldError of loginForm.password().errors(); track fieldError.kind) {
+              <span class="block">{{ fieldError.message }}</span>
             }
           </p>
         }
@@ -69,7 +63,7 @@
       <button
         type="submit"
         class="btn-primary"
-        [disabled]="loginForm.invalid || isLoading()"
+        [disabled]="loginForm().invalid() || isLoading()"
       >
         @if (isLoading()) {
           <svg class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -82,11 +76,5 @@
         }
       </button>
     </form>
-
-    <div class="login-footer">
-      <p class="footer-text">
-        Standard-Zugangsdaten: admin@example.com / admin123
-      </p>
-    </div>
   </div>
 </div>
