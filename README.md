@@ -38,6 +38,8 @@ This monorepo contains:
 npm install
 ```
 
+npm may print `npm warn install-scripts` for some dependencies. This is expected: their install scripts are not needed because prebuilt binaries are installed as optional dependencies (see `allowScripts` in `package.json`).
+
 ### 2. Set up environment variables
 
 Copy the example environment file:

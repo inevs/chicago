@@ -214,6 +214,7 @@ nx graph
 2. **Database**: PostgreSQL 16 (use Docker Compose: `docker compose up -d postgres`)
 3. **Environment Variables**: Copy `.env.example` (project root) to `.env` in the root or `apps/api/.env`
 4. **Claude Code cloud sessions**: The SessionStart hook `.claude/hooks/session-start.sh` (registered in `.claude/settings.json`, runs only when `CLAUDE_CODE_REMOTE=true`) installs the Node.js version from `.nvmrc` via nvm, puts it on the `PATH`, runs `npm install --legacy-peer-deps` and `npm run db:generate`. Installs are skipped when the relevant files are unchanged (hashes in `node_modules/` and `apps/api/generated/prisma/`).
+5. **Dependency install scripts**: npm (11.19 and later) skips install scripts of dependencies that are not approved in the `allowScripts` field of `package.json` and lists them as `npm warn install-scripts`. `@scarf/scarf` (install telemetry, pulled in via `swagger-ui-dist`) is explicitly denied. The remaining listed scripts are not approved because the prebuilt platform binaries ship as optional dependencies; the resulting warnings are expected.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
