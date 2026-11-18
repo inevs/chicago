@@ -38,17 +38,7 @@ This monorepo contains:
 npm install
 ```
 
-### 2. Start the database
-
-Use Docker Compose to start a local PostgreSQL instance:
-
-```bash
-docker compose up -d
-```
-
-This starts PostgreSQL 16 on `localhost:5432` with default credentials configured for local development.
-
-### 3. Set up environment variables
+### 2. Set up environment variables
 
 Copy the example environment file:
 
@@ -56,13 +46,37 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-The default configuration works with the Docker Compose database:
+`DATABASE_URL` already matches the Docker Compose database:
 
 ```env
 DATABASE_URL="postgresql://dividends:dividends@localhost:5432/dividends?schema=public"
 ```
 
+Review the remaining variables and replace the placeholders:
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | yes | Connection string to PostgreSQL |
+| `JWT_SECRET` | yes | Secret for signing access tokens; the API does not start without it |
+| `ADMIN_PASSWORD` | yes | Password of the login user created by the seed |
+| `ADMIN_EMAIL`, `ADMIN_NAME` | no | Login user created by the seed (defaults: `admin@example.com`, `Admin User`) |
+| `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`) |
+| `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (default `false`) |
+| `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (default `2017-01-01`) |
+
 The application runs in single-user mode. The login user is created by the database seed from `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME`. Self-registration (`POST /api/auth/register`) is disabled by default and returns `403 Forbidden`; set `ALLOW_REGISTRATION=true` only if you need it, because data is not separated per user and every account can access all data.
+
+### 3. Start the database
+
+Use Docker Compose to start only the PostgreSQL service:
+
+```bash
+docker compose up -d postgres
+```
+
+This starts PostgreSQL 16 on `localhost:5432` with default credentials configured for local development.
+
+Note: `docker compose up -d` without a service name builds and starts the complete stack (database, API and frontend). The API container then occupies port 3000 and conflicts with `nx serve`. See [Running with Docker](#running-with-docker).
 
 ### 4. Set up the database schema
 
@@ -73,9 +87,11 @@ npm run db:generate
 # Run migrations to set up the database schema
 npm run db:migrate
 
-# (Optional) Seed the database with sample data
+# Seed the database (creates the login user and the default currency)
 npm run db:seed
 ```
+
+The seed is required for logging in, because it creates the only user account. It aborts if `ADMIN_PASSWORD`, `DEFAULT_CURRENCY` or `DEFAULT_CURRENCY_NAME` is missing. It does not create sample data.
 
 ### 5. Start the application
 
@@ -87,7 +103,7 @@ nx serve dividends
 nx serve api
 ```
 
-The API will be available at `http://localhost:3000/api` and the frontend at `http://localhost:4200`.
+The API will be available at `http://localhost:3000/api` and the frontend at `http://localhost:4200`. The interactive API documentation (Swagger UI) is served at `http://localhost:3000/api/docs`.
 
 Note: Running `nx serve dividends` automatically starts the backend API first before starting the frontend dev server.
 
@@ -132,7 +148,12 @@ nx run-many -t test
 
 # Run tests for affected projects only
 nx affected -t test
+
+# Run API end-to-end tests (requires a running PostgreSQL)
+nx e2e api-e2e
 ```
+
+The e2e tests use a separate database `<db>_e2e` derived from `DATABASE_URL` (or `E2E_DATABASE_URL`). It is created and migrated automatically, and the tests delete all its data.
 
 ### Linting
 
@@ -156,16 +177,16 @@ All database commands use Prisma with a custom configuration file (`apps/api/pri
 
 ```bash
 # Start PostgreSQL database
-docker compose up -d
+docker compose up -d postgres
 
 # Stop database
-docker compose down
+docker compose stop postgres
 
-# Stop and remove volumes (WARNING: deletes all data)
+# Stop all services and remove volumes (WARNING: deletes all data)
 docker compose down -v
 
 # View database logs
-docker compose logs db
+docker compose logs postgres
 ```
 
 ### Prisma Core Operations
@@ -209,12 +230,44 @@ npm run db:migrate:reset
 ### Data Management
 
 ```bash
-# Seed the database with sample data
+# Seed the database (login user and default currency)
 npm run db:seed
 
 # Reset database without running seeds
 npm run db:reset
 ```
+
+## Running with Docker
+
+`docker-compose.yml` defines three services that together run the complete application:
+
+| Service | Description | Port |
+|---|---|---|
+| `postgres` | PostgreSQL 16 database | `127.0.0.1:5432` |
+| `api` | NestJS API (`apps/api/Dockerfile`) | `127.0.0.1:3000` |
+| `frontend` | Angular app served by nginx, proxies `/api` to the API (`apps/dividends/Dockerfile`) | `80` (all interfaces) |
+
+Docker Compose reads the variables from the `.env` file in the project root. Set at least `JWT_SECRET`, `ADMIN_PASSWORD`, `DEFAULT_CURRENCY` and `DEFAULT_CURRENCY_NAME` before the first start (see [Set up environment variables](#2-set-up-environment-variables)).
+
+```bash
+# Build and start all services
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop all services
+docker compose down
+
+# Stop all services and remove volumes (WARNING: deletes all data)
+docker compose down -v
+```
+
+On every start, the API container applies pending migrations (`prisma migrate deploy`), runs the seed and then starts the server. The seed only creates the login user and the default currency if they do not exist yet; changing `ADMIN_PASSWORD` later does not update an existing password.
+
+The application is then available at `http://localhost`. Stop any running `nx serve` processes first, because the API container uses port 3000.
+
+Details on configuration, access from other machines and Podman are described in [docs/DOCKER.md](docs/DOCKER.md).
 
 ## Deployment
 
@@ -241,20 +294,34 @@ chicago/
 │   │   │   ├── migrations/     # Database migration files
 │   │   │   └── seed.ts         # Database seeding script
 │   │   ├── generated/          # Generated Prisma client
+│   │   ├── prisma.config.ts    # Prisma configuration used by the npm db:* scripts
+│   │   ├── Dockerfile          # API container image
 │   │   └── webpack.config.js   # Custom Webpack configuration
 │   ├── api-e2e/                # API end-to-end tests
 │   └── dividends/              # Angular frontend
 │       ├── src/
 │       │   ├── app/            # Application components
 │       │   └── main.ts         # Application entry point
+│       ├── Dockerfile          # Frontend container image (nginx)
+│       ├── nginx.conf          # nginx configuration incl. /api proxy
 │       └── proxy.conf.json     # Dev server proxy configuration
 ├── packages/
 │   └── shared/                 # Shared library (@dividends/shared)
 │       └── src/                # Shared types and utilities
-├── docker-compose.yml          # PostgreSQL database setup
+├── docs/                       # Project documentation (Docker, features, architecture)
+├── docker-compose.yml          # Full stack: PostgreSQL, API and frontend
+├── .env.example                # Template for environment variables
 ├── .nvmrc                      # Node version specification
 └── package.json                # Root package configuration
 ```
+
+## Further Documentation
+
+- [docs/DOCKER.md](docs/DOCKER.md) - Docker and Podman deployment
+- [docs/architecture/](docs/architecture/README.md) - Architecture documentation (arc42)
+- [docs/CURRENCY_FEATURE.md](docs/CURRENCY_FEATURE.md) - Currencies and exchange rates
+- [docs/SECURITY_PRICES.md](docs/SECURITY_PRICES.md) - End-of-day security prices
+- [docs/TOAST_NOTIFICATION_SYSTEM.md](docs/TOAST_NOTIFICATION_SYSTEM.md) - Toast notifications in the frontend
 
 ## Nx Workspace Tools
 
