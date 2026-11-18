@@ -13,7 +13,7 @@ import { TransactionTableComponent } from '../../shared/tables/transaction-table
     TransactionTableComponent,
   ],
   templateUrl: './dividends.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./dividends.component.scss'],
 })
 export class DividendsComponent {

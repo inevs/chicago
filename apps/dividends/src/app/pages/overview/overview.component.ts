@@ -9,7 +9,7 @@ import { AllocationChartComponent } from './allocation-chart/allocation-chart.co
   selector: 'app-overview',
   imports: [CommonModule, KpiCardsComponent, AllocationChartComponent],
   templateUrl: './overview.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./overview.component.scss'],
 })
 export class OverviewComponent {

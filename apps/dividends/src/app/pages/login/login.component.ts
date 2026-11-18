@@ -13,7 +13,7 @@ export const PASSWORD_MIN_LENGTH = 8;
   standalone: true,
   imports: [CommonModule, FormField, FormRoot],
   templateUrl: './login.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./login.component.scss'],
 })
 export class LoginComponent {

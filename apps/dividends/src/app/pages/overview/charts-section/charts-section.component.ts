@@ -10,7 +10,7 @@ setupChartDefaults();
   selector: 'app-charts-section',
   imports: [CommonModule],
   templateUrl: './charts-section.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./charts-section.component.scss'],
 })
 export class ChartsSectionComponent implements OnDestroy {

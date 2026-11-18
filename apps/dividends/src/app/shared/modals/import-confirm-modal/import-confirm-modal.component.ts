@@ -7,7 +7,7 @@ export type ImportMode = 'replace' | 'merge' | 'cancel';
   selector: 'app-import-confirm-modal',
   imports: [CommonModule],
   templateUrl: './import-confirm-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./import-confirm-modal.component.scss'],
 })
 export class ImportConfirmModalComponent {

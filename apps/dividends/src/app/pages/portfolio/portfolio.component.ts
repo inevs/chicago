@@ -8,7 +8,7 @@ import { SecuritiesSummaryComponent } from './securities-summary/securities-summ
   selector: 'app-portfolio',
   imports: [CommonModule, SecuritiesSummaryComponent],
   templateUrl: './portfolio.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./portfolio.component.scss'],
 })
 export class PortfolioComponent {

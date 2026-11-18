@@ -12,7 +12,7 @@ type SortDirection = 'asc' | 'desc';
   selector: 'app-all-securities',
   imports: [CommonModule],
   templateUrl: './all-securities.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./all-securities.component.scss'],
 })
 export class AllSecuritiesComponent {

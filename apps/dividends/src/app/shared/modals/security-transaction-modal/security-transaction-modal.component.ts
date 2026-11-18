@@ -27,7 +27,7 @@ export interface SecurityTransactionForm {
   selector: 'app-security-transaction-modal',
   imports: [CommonModule, FormField, FormRoot, FieldErrorsComponent, DecimalInputComponent, SecurityAutocompleteComponent],
   templateUrl: './security-transaction-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./security-transaction-modal.component.scss'],
 })
 export class SecurityTransactionModalComponent implements OnChanges {

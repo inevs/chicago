@@ -11,7 +11,7 @@ setupChartDefaults();
   selector: 'app-allocation-chart',
   imports: [CommonModule],
   templateUrl: './allocation-chart.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./allocation-chart.component.scss'],
 })
 export class AllocationChartComponent implements OnDestroy {

@@ -10,7 +10,7 @@ setupChartDefaults();
   selector: 'app-monthly-dividends-chart',
   imports: [CommonModule],
   templateUrl: './monthly-dividends-chart.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./monthly-dividends-chart.component.scss'],
 })
 export class MonthlyDividendsChartComponent implements OnDestroy {

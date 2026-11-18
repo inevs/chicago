@@ -9,7 +9,7 @@ import { YearlyDividendsChartComponent } from './yearly-dividends-chart/yearly-d
   selector: 'app-analyses',
   imports: [CommonModule, MonthlyDividendsChartComponent, YearlyDividendsChartComponent],
   templateUrl: './analyses.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./analyses.component.scss'],
 })
 export class AnalysesComponent {

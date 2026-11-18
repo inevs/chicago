@@ -9,7 +9,7 @@
 | **Angular 22 (Standalone)** | Modern reactive patterns (Signals), no NgModules, excellent TypeScript support | Breaking changes from older Angular, ecosystem maturity |
 | **Prisma ORM** | Type-safe database access, excellent migrations, schema-first approach | Limited to specific databases, generated code bulk |
 | **PostgreSQL** | ACID compliance, robust indexing, JSONB support for flexibility | Requires PostgreSQL knowledge, more complex than SQLite |
-| **Signals (Angular)** | Fine-grained reactivity, better performance than Zones, simpler than RxJS for state | Relatively new API, less ecosystem maturity; the app still uses Zone.js (`provideZoneChangeDetection`), zoneless change detection is not yet enabled |
+| **Signals (Angular)** | Fine-grained reactivity, better performance than Zones, enables zoneless change detection (used by the app), simpler than RxJS for state | Relatively new API, less ecosystem maturity |
 
 ## 4.2 Architectural Patterns
 

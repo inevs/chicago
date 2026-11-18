@@ -29,7 +29,7 @@ import { ToastContainerComponent } from '../../shared/toast-container/toast-cont
     ToastContainerComponent,
   ],
   templateUrl: './main-layout.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./main-layout.component.scss'],
 })
 export class MainLayoutComponent {

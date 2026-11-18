@@ -163,7 +163,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
       }
     }
   `],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger('slideIn', [
       transition(':enter', [

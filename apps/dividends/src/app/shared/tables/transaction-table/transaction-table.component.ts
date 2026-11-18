@@ -6,7 +6,7 @@ import { DividendTransaction } from '../../../models/dividend.model';
   selector: 'app-transaction-table',
   imports: [CommonModule],
   templateUrl: './transaction-table.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./transaction-table.component.scss'],
 })
 export class TransactionTableComponent {

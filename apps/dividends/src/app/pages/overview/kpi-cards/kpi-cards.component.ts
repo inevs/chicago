@@ -14,7 +14,7 @@ export interface KPIData {
   selector: 'app-kpi-cards',
   imports: [CommonModule],
   templateUrl: './kpi-cards.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./kpi-cards.component.scss'],
 })
 export class KpiCardsComponent {

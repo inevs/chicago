@@ -14,7 +14,7 @@ const EMPTY_CURRENCY: CurrencyForm = { code: '', name: '' };
   selector: 'app-currency-modal',
   imports: [CommonModule, FormField, FormRoot, FieldErrorsComponent],
   templateUrl: './currency-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./currency-modal.component.scss'],
 })
 export class CurrencyModalComponent {

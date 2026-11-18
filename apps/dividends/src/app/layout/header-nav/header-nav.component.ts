@@ -19,7 +19,7 @@ interface MenuOption {
   selector: 'app-header-nav',
   imports: [CommonModule],
   templateUrl: './header-nav.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./header-nav.component.scss'],
 })
 export class HeaderNavComponent {

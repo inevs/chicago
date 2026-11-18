@@ -11,7 +11,7 @@ type SortDirection = 'asc' | 'desc';
   selector: 'app-securities-summary',
   imports: [CommonModule],
   templateUrl: './securities-summary.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./securities-summary.component.scss'],
 })
 export class SecuritiesSummaryComponent {

@@ -21,7 +21,7 @@ export interface SecurityForm {
   selector: 'app-security-modal',
   imports: [CommonModule, FormField, FormRoot, FieldErrorsComponent],
   templateUrl: './security-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./security-modal.component.scss'],
 })
 export class SecurityModalComponent {

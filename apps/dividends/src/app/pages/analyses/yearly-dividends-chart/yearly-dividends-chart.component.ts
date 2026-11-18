@@ -10,7 +10,7 @@ setupChartDefaults();
   selector: 'app-yearly-dividends-chart',
   imports: [CommonModule],
   templateUrl: './yearly-dividends-chart.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./yearly-dividends-chart.component.scss'],
 })
 export class YearlyDividendsChartComponent implements OnDestroy {

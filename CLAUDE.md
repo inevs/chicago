@@ -199,8 +199,8 @@ nx graph
 - Build output: `dist/apps/dividends`
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle
 - Proxies `/api` requests to `http://localhost:3000` via `proxy.conf.json`
-- Currently uses Zone.js for change detection (zoneless migration available - see issues)
-- Unit tests run with Vitest via the `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom, `isolate: true`); there is no `jest.config.ts` or `test-setup.ts`, the builder initializes TestBed and Zone.js itself. Use `vi.*` APIs and Vitest fake timers (`fakeAsync` is not supported with Vitest). Spec files are type-checked during the test build.
+- Zoneless change detection (Angular default, no `provideZoneChangeDetection`, no `zone.js` dependency or polyfill); all components use `ChangeDetectionStrategy.OnPush`, enforced by the lint rule `@angular-eslint/prefer-on-push-component-change-detection` (`error`). Template state must be signals (or trigger change detection explicitly)
+- Unit tests run with Vitest via the `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom, `isolate: true`); there is no `jest.config.ts` or `test-setup.ts`, the builder initializes TestBed itself (zoneless). Use `vi.*` APIs and Vitest fake timers (`fakeAsync` is not supported with Vitest); with fake timers, advance the timers (e.g. `vi.advanceTimersByTimeAsync`) before `fixture.whenStable()`, because the zoneless scheduler runs change detection from a timer. Spec files are type-checked during the test build.
 
 ### Shared Package
 

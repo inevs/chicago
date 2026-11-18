@@ -38,7 +38,7 @@
 
 ### Technology Stack
 - **Backend**: NestJS 12, Prisma 7, class-validator, axios, @nestjs/passport with passport-jwt/passport-local, @nestjs/jwt, bcryptjs, @nestjs/schedule, @nestjs/terminus
-- **Frontend**: Angular 22 (standalone components), RxJS, Signals, Zone.js, chart.js, @lucide/angular, Tailwind CSS v4
+- **Frontend**: Angular 22 (standalone components), RxJS, Signals (zoneless change detection), chart.js, @lucide/angular, Tailwind CSS v4
 - **Build Tools**: Nx 24, Webpack 5, esbuild
 - **Database**: PostgreSQL 16
 - **Containerization**: Dockerfiles for API (`apps/api/Dockerfile`) and frontend (`apps/dividends/Dockerfile`, served by nginx); `docker-compose.yml` defines the services `postgres`, `api` and `frontend`

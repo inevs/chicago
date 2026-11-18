@@ -25,7 +25,7 @@ interface NavItem {
   selector: 'app-sidebar-nav',
   imports: [CommonModule, RouterLink, RouterLinkActive, LucideDynamicIcon],
   templateUrl: './sidebar-nav.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./sidebar-nav.component.scss'],
 })
 export class SidebarNavComponent {

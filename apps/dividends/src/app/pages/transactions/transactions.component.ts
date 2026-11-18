@@ -15,7 +15,7 @@ import { SecurityTransactionTableComponent } from '../../shared/tables/security-
     SecurityTransactionTableComponent,
   ],
   templateUrl: './transactions.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./transactions.component.scss'],
 })
 export class TransactionsComponent {

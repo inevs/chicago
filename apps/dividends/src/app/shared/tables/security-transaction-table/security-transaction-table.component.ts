@@ -6,7 +6,7 @@ import { SecurityTransactionWithSecurity, TransactionType } from '@dividends/sha
   selector: 'app-security-transaction-table',
   imports: [CommonModule],
   templateUrl: './security-transaction-table.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./security-transaction-table.component.scss'],
 })
 export class SecurityTransactionTableComponent {

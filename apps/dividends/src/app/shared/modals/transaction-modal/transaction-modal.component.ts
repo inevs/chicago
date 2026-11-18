@@ -29,7 +29,7 @@ export interface TransactionForm {
   selector: 'app-transaction-modal',
   imports: [CommonModule, FormField, FormRoot, FieldErrorsComponent, SecurityAutocompleteComponent],
   templateUrl: './transaction-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./transaction-modal.component.scss'],
 })
 export class TransactionModalComponent implements OnChanges {

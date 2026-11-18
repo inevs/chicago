@@ -8,7 +8,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
   selector: 'app-security-autocomplete',
   imports: [CommonModule],
   templateUrl: './security-autocomplete.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./security-autocomplete.component.scss'],
 })
 export class SecurityAutocompleteComponent {
