@@ -95,11 +95,12 @@ podman-compose down -v
   | `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`) |
   | `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (default `false`, single-user mode) |
   | `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (default `2017-01-01`) |
+  | `SEED_SAMPLE_DATA` | no | `true` makes the seed create sample securities, transactions and dividends on an empty database (default `false`; requires `DEFAULT_CURRENCY=EUR`) |
 
 - **Dependencies**: Waits for PostgreSQL to be healthy
 - **Startup Process** (`CMD` in `apps/api/Dockerfile`):
   1. Runs Prisma migrations (`prisma migrate deploy`)
-  2. Seeds the database (`prisma db seed`): creates the admin user and the default currency if they do not exist yet. Existing records are not changed, so changing `ADMIN_PASSWORD` later does not update the password.
+  2. Seeds the database (`prisma db seed`): creates the admin user and the default currency if they do not exist yet and marks `DEFAULT_CURRENCY` as the only default currency. An existing user is not changed, so changing `ADMIN_PASSWORD` later does not update the password. With `SEED_SAMPLE_DATA=true`, it also creates sample securities, transactions and dividends, but only while the database contains no securities and `DEFAULT_CURRENCY` is `EUR`.
   3. Starts the NestJS server
 - **Health Check**: HTTP GET to `/api/health` every 30 seconds
 

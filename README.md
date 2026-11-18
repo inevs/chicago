@@ -63,6 +63,7 @@ Review the remaining variables and replace the placeholders:
 | `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`) |
 | `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (default `false`) |
 | `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (default `2017-01-01`) |
+| `SEED_SAMPLE_DATA` | no | `true` makes the seed create sample securities, transactions and dividends (default `false`, see [Set up the database schema](#4-set-up-the-database-schema)) |
 
 The application runs in single-user mode. The login user is created by the database seed from `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME`. Self-registration (`POST /api/auth/register`) is disabled by default and returns `403 Forbidden`; set `ALLOW_REGISTRATION=true` only if you need it, because data is not separated per user and every account can access all data.
 
@@ -91,7 +92,9 @@ npm run db:migrate
 npm run db:seed
 ```
 
-The seed is required for logging in, because it creates the only user account. It aborts if `ADMIN_PASSWORD`, `DEFAULT_CURRENCY` or `DEFAULT_CURRENCY_NAME` is missing. It does not create sample data.
+The seed is required for logging in, because it creates the only user account. It aborts if `ADMIN_PASSWORD`, `DEFAULT_CURRENCY` or `DEFAULT_CURRENCY_NAME` is missing.
+
+To try the application with data, set `SEED_SAMPLE_DATA=true` before seeding. The seed then also creates 12 securities, transactions and dividend payments derived from the import samples in `docs/samples` (defined in `apps/api/prisma/sample-data.ts`). Sample data is only created if the database contains no securities yet and `DEFAULT_CURRENCY` is `EUR`; otherwise the seed skips it and logs the reason.
 
 ### 5. Start the application
 
@@ -233,6 +236,9 @@ npm run db:migrate:reset
 # Seed the database (login user and default currency)
 npm run db:seed
 
+# Seed including sample securities, transactions and dividends (empty database, EUR only)
+SEED_SAMPLE_DATA=true npm run db:seed
+
 # Reset database without running seeds
 npm run db:reset
 ```
@@ -263,7 +269,7 @@ docker compose down
 docker compose down -v
 ```
 
-On every start, the API container applies pending migrations (`prisma migrate deploy`), runs the seed and then starts the server. The seed only creates the login user and the default currency if they do not exist yet; changing `ADMIN_PASSWORD` later does not update an existing password.
+On every start, the API container applies pending migrations (`prisma migrate deploy`), runs the seed and then starts the server. The seed only creates the login user and the default currency if they do not exist yet and marks `DEFAULT_CURRENCY` as the default currency; changing `ADMIN_PASSWORD` later does not update an existing password. With `SEED_SAMPLE_DATA=true`, the first start on an empty database also creates the sample data.
 
 The application is then available at `http://localhost`. Stop any running `nx serve` processes first, because the API container uses port 3000.
 
@@ -292,7 +298,8 @@ chicago/
 │   │   ├── prisma/             # Database schema and migrations
 │   │   │   ├── schema.prisma   # Prisma schema definition
 │   │   │   ├── migrations/     # Database migration files
-│   │   │   └── seed.ts         # Database seeding script
+│   │   │   ├── seed.ts         # Database seeding script
+│   │   │   └── sample-data.ts  # Sample data for SEED_SAMPLE_DATA=true
 │   │   ├── generated/          # Generated Prisma client
 │   │   ├── prisma.config.ts    # Prisma configuration used by the npm db:* scripts
 │   │   ├── Dockerfile          # API container image

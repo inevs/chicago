@@ -204,6 +204,7 @@ this.logger.log({
 - `JWT_SECRET`: Secret for signing JWTs
 - `ALLOW_REGISTRATION`: Enables self-registration via `POST /api/auth/register` (default: disabled)
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`: Initial user created by the database seed
+- `SEED_SAMPLE_DATA`: Lets the database seed create sample securities, transactions and dividends (default: disabled)
 
 See `.env.example` in the project root. Variables are read directly via `process.env`.
 
