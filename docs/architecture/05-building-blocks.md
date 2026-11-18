@@ -272,7 +272,7 @@ dividends/
 | **ExchangeRateService** | HTTP calls for exchange rates |
 | **SecurityService** | HTTP calls for securities |
 | **DividendPaymentService** | HTTP calls for dividends |
-| **SecurityTransactionService** | HTTP calls for transactions |
+| **SecurityTransactionService** | HTTP calls for transactions; converts the decimal fields the API sends as strings (quantity, price, fees, exchange rate, total value) to numbers |
 | **CurrencyService** | HTTP calls for currencies |
 | **SecurityPriceService** | HTTP calls for prices |
 | **DataService** | Import/export operations |

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import {
   SecurityTransactionWithSecurity,
   CreateSecurityTransactionDto,
@@ -9,6 +9,24 @@ import {
   TransactionType,
   ImportTransactionsCsvResponse,
 } from '@dividends/shared';
+
+/**
+ * The API serializes Prisma `Decimal` columns as strings (e.g. "155.0000").
+ * Convert them to numbers so that calculations in the frontend do not
+ * concatenate strings.
+ */
+export function normalizeSecurityTransaction(
+  transaction: SecurityTransactionWithSecurity
+): SecurityTransactionWithSecurity {
+  return {
+    ...transaction,
+    quantity: Number(transaction.quantity),
+    pricePerShare: Number(transaction.pricePerShare),
+    fees: Number(transaction.fees),
+    exchangeRate: Number(transaction.exchangeRate),
+    totalValue: Number(transaction.totalValue),
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -21,6 +39,7 @@ export class SecurityTransactionService {
     transaction: CreateSecurityTransactionDto
   ): Observable<SecurityTransactionWithSecurity> {
     return this.http.post<SecurityTransactionWithSecurity>(this.apiUrl, transaction).pipe(
+      map(normalizeSecurityTransaction),
       catchError(this.handleError)
     );
   }
@@ -54,12 +73,14 @@ export class SecurityTransactionService {
     }
 
     return this.http.get<SecurityTransactionWithSecurity[]>(url).pipe(
+      map((transactions) => transactions.map(normalizeSecurityTransaction)),
       catchError(this.handleError)
     );
   }
 
   getSecurityTransactionById(id: string): Observable<SecurityTransactionWithSecurity> {
     return this.http.get<SecurityTransactionWithSecurity>(`${this.apiUrl}/${id}`).pipe(
+      map(normalizeSecurityTransaction),
       catchError(this.handleError)
     );
   }
@@ -69,6 +90,7 @@ export class SecurityTransactionService {
     transaction: UpdateSecurityTransactionDto
   ): Observable<SecurityTransactionWithSecurity> {
     return this.http.patch<SecurityTransactionWithSecurity>(`${this.apiUrl}/${id}`, transaction).pipe(
+      map(normalizeSecurityTransaction),
       catchError(this.handleError)
     );
   }
