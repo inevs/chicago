@@ -265,7 +265,7 @@ dividends/
 | Service | Responsibility |
 |---------|---------------|
 | **UiStateService** | UI state (modals, theme, sidebar, time range, editing selections) |
-| **PortfolioStateService** | Portfolio data state as signals |
+| **PortfolioStateService** | Portfolio data state as signals; `MainLayoutComponent` (root layout) loads all data whenever `AuthService.isAuthenticated` becomes true (startup with token, login) and clears it on logout |
 | **TransactionFacade** | Orchestrates create/update/delete, JSON import/export and CSV import workflows (~585 lines) |
 | **PaginationStateService** | Client-side pagination state |
 | **AuthService** | Login/logout, token storage in localStorage |

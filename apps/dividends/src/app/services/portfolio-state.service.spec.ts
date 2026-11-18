@@ -40,6 +40,7 @@ describe('PortfolioStateService', () => {
   beforeEach(() => {
     mockDividendDataService = {
       loadTransactionsFromBackend: vi.fn(),
+      clearTransactions: vi.fn(),
       getFilteredTransactions: vi.fn().mockReturnValue([]),
       calculateKPIs: vi.fn().mockReturnValue({}),
     };
@@ -284,6 +285,27 @@ describe('PortfolioStateService', () => {
         expect.any(Error)
       );
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('clearAllData', () => {
+    it('should reset all loaded data and the dividend transactions', () => {
+      service.securities.set([{ id: 'sec-1' } as never]);
+      service.securityTransactions.set([{ id: 'tx-1' } as never]);
+      service.securityPrices.set([{ id: 'price-1' } as never]);
+      service.currencies.set([{ code: 'EUR' } as never]);
+      service.defaultCurrency.set({ code: 'EUR' } as never);
+      service.exchangeRates.set([{ currency: 'USD' } as never]);
+
+      service.clearAllData();
+
+      expect(service.securities()).toEqual([]);
+      expect(service.securityTransactions()).toEqual([]);
+      expect(service.securityPrices()).toEqual([]);
+      expect(service.currencies()).toEqual([]);
+      expect(service.defaultCurrency()).toBeNull();
+      expect(service.exchangeRates()).toEqual([]);
+      expect(mockDividendDataService.clearTransactions).toHaveBeenCalled();
     });
   });
 

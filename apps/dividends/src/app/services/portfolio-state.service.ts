@@ -73,6 +73,20 @@ export class PortfolioStateService {
     this.loadExchangeRates();
   }
 
+  /**
+   * Resets all loaded data, e.g. after logout, so no data of a previous
+   * session stays visible.
+   */
+  clearAllData() {
+    this.securities.set([]);
+    this.dividendDataService.clearTransactions();
+    this.securityTransactions.set([]);
+    this.securityPrices.set([]);
+    this.currencies.set([]);
+    this.defaultCurrency.set(null);
+    this.exchangeRates.set([]);
+  }
+
   loadSecurities() {
     this.securityService.getSecurities().subscribe({
       next: (securities) => {
