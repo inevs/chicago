@@ -259,6 +259,8 @@ dividends/
 | **TransactionTable** | Display dividend payments |
 | **SecurityTransactionTable** | Display buy/sell transactions |
 | **SecurityAutocomplete** | Searchable security selector |
+| **FieldErrors** | Shows the validation messages of a Signal Forms field below the input |
+| **DecimalInput** | Signal Forms control for decimal numbers with comma as decimal separator |
 
 #### Services
 

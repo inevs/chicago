@@ -36,7 +36,7 @@
       </button>
     </div>
 
-    <form (submit)="onSubmit(); $event.preventDefault()">
+    <form [formRoot]="securityForm">
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label for="securityName" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
@@ -45,19 +45,18 @@
           <input
             id="securityName"
             type="text"
-            [(ngModel)]="formData().name"
-            name="securityName"
-            required
+            [formField]="securityForm.name"
             class="modal-input"
             placeholder="z.B. Apple Inc."
           />
+          <app-field-errors [state]="securityForm.name()" />
         </div>
 
         <div>
           <label for="securityType" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Typ</label
           >
-          <select id="securityType" [(ngModel)]="formData().type" name="securityType" required class="modal-input">
+          <select id="securityType" [formField]="securityForm.type" class="modal-input">
             <option value="STOCK">Aktie</option>
             <option value="ETF">ETF</option>
             <option value="BOND">Anleihe</option>
@@ -71,12 +70,11 @@
           <input
             id="symbol"
             type="text"
-            [(ngModel)]="formData().symbol"
-            name="symbol"
-            required
+            [formField]="securityForm.symbol"
             class="modal-input"
             placeholder="z.B. AAPL"
           />
+          <app-field-errors [state]="securityForm.symbol()" />
         </div>
 
         <div>
@@ -86,8 +84,7 @@
           <input
             id="isin"
             type="text"
-            [(ngModel)]="formData().isin"
-            name="isin"
+            [formField]="securityForm.isin"
             class="modal-input"
             placeholder="z.B. US0378331005"
           />
@@ -100,8 +97,7 @@
           <input
             id="wkn"
             type="text"
-            [(ngModel)]="formData().wkn"
-            name="wkn"
+            [formField]="securityForm.wkn"
             class="modal-input"
             placeholder="z.B. 865985"
           />
@@ -114,23 +110,23 @@
           <input
             id="exchange"
             type="text"
-            [(ngModel)]="formData().exchange"
-            name="exchange"
-            required
+            [formField]="securityForm.exchange"
             class="modal-input"
             placeholder="z.B. NASDAQ, XETRA"
           />
+          <app-field-errors [state]="securityForm.exchange()" />
         </div>
 
         <div>
           <label for="securityCurrency" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Handelswährung</label
           >
-          <select id="securityCurrency" [(ngModel)]="formData().currency" name="securityCurrency" required class="modal-input">
+          <select id="securityCurrency" [formField]="securityForm.currency" class="modal-input">
             @for (currency of currencies(); track currency.code) {
               <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
             }
           </select>
+          <app-field-errors [state]="securityForm.currency()" />
         </div>
       </div>
 

@@ -30,7 +30,7 @@
       </button>
     </div>
 
-    <form (submit)="onSubmit(); $event.preventDefault()">
+    <form [formRoot]="transactionForm">
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label for="securityAutocomplete" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
@@ -42,6 +42,7 @@
             placeholder="z.B. Apple Inc. oder AAPL"
             (securitySelected)="onSecuritySelected($event)"
           />
+          <app-field-errors [state]="transactionForm.securityId()" />
         </div>
 
         <div>
@@ -51,12 +52,11 @@
           <input
             id="exDate"
             type="date"
-            [ngModel]="formData().exDate"
-            (ngModelChange)="onExDateChange($event)"
-            name="exDate"
-            required
+            [formField]="transactionForm.exDate"
+            (change)="onExDateChange(transactionForm.exDate().value())"
             class="modal-input"
           />
+          <app-field-errors [state]="transactionForm.exDate()" />
         </div>
 
         <div>
@@ -66,19 +66,23 @@
           <input
             id="payoutDate"
             type="date"
-            [ngModel]="formData().payoutDate"
-            (ngModelChange)="onPayoutDateChange($event)"
-            name="payoutDate"
-            required
+            [formField]="transactionForm.payoutDate"
+            (change)="onPayoutDateChange(transactionForm.payoutDate().value())"
             class="modal-input"
           />
+          <app-field-errors [state]="transactionForm.payoutDate()" />
         </div>
 
         <div>
           <label for="currency" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
             >Währung</label
           >
-          <select id="currency" [ngModel]="formData().currency" (ngModelChange)="onCurrencyChange($event)" name="currency" class="modal-input">
+          <select
+            id="currency"
+            [formField]="transactionForm.currency"
+            (change)="onCurrencyChange(transactionForm.currency().value())"
+            class="modal-input"
+          >
             @for (currency of currencies(); track currency.code) {
               <option [value]="currency.code">{{ currency.code }} - {{ currency.name }}</option>
             }
@@ -93,12 +97,11 @@
             id="amount"
             type="number"
             step="0.0001"
-            [ngModel]="formData().amount"
-            (ngModelChange)="updateFormDataWithCalculation('amount', $event)"
-            name="amount"
-            required
+            [formField]="transactionForm.amount"
+            (input)="recalculateFinalPayment()"
             class="modal-input"
           />
+          <app-field-errors [state]="transactionForm.amount()" />
         </div>
 
         <div>
@@ -109,12 +112,11 @@
             id="dividend"
             type="number"
             step="0.0001"
-            [ngModel]="formData().dividend"
-            (ngModelChange)="updateFormDataWithCalculation('dividend', $event)"
-            name="dividend"
-            required
+            [formField]="transactionForm.dividend"
+            (input)="recalculateFinalPayment()"
             class="modal-input"
           />
+          <app-field-errors [state]="transactionForm.dividend()" />
         </div>
 
         @if (formData().currency !== defaultCurrencyCode()) {
@@ -126,9 +128,8 @@
               id="rate"
               type="number"
               step="0.0001"
-              [ngModel]="formData().rate"
-              (ngModelChange)="updateFormDataWithCalculation('rate', $event)"
-              name="rate"
+              [formField]="transactionForm.rate"
+              (input)="recalculateFinalPayment()"
               class="modal-input"
               placeholder="1.0 bei {{ defaultCurrencyCode() }}"
             />
@@ -143,9 +144,8 @@
             id="taxes"
             type="number"
             step="0.01"
-            [ngModel]="formData().taxes"
-            (ngModelChange)="updateFormDataWithCalculation('taxes', $event)"
-            name="taxes"
+            [formField]="transactionForm.taxes"
+            (input)="recalculateFinalPayment()"
             class="modal-input"
           />
         </div>
@@ -158,12 +158,10 @@
             id="finalPayment"
             type="number"
             step="0.01"
-            [ngModel]="formData().finalPayment"
-            (ngModelChange)="updateFormData('finalPayment', $event)"
-            name="finalPayment"
-            required
+            [formField]="transactionForm.finalPayment"
             class="modal-input"
           />
+          <app-field-errors [state]="transactionForm.finalPayment()" />
         </div>
 
         <div class="col-span-2">
@@ -172,9 +170,7 @@
           >
           <textarea
             id="note"
-            [ngModel]="formData().note"
-            (ngModelChange)="updateFormData('note', $event)"
-            name="note"
+            [formField]="transactionForm.note"
             rows="2"
             placeholder="z.B. Q1 2024 Dividende"
             class="modal-input resize-none"

@@ -1,12 +1,12 @@
 import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, required, submit, validate } from '@angular/forms/signals';
+import { FieldErrorsComponent } from '../../inputs/field-errors/field-errors.component';
 import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
 import { Security, Currency } from '@dividends/shared';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { PortfolioStateService } from '../../../services/portfolio-state.service';
 import { ExchangeRateService } from '../../../services/exchange-rate.service';
-import { ToastService } from '../../../services/toast.service';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
@@ -22,12 +22,12 @@ export interface TransactionForm {
   rate: number;
   taxes: number;
   finalPayment: number;
-  note?: string;
+  note: string;
 }
 
 @Component({
   selector: 'app-transaction-modal',
-  imports: [CommonModule, FormsModule, SecurityAutocompleteComponent],
+  imports: [CommonModule, FormField, FormRoot, FieldErrorsComponent, SecurityAutocompleteComponent],
   templateUrl: './transaction-modal.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./transaction-modal.component.scss'],
@@ -40,7 +40,6 @@ export class TransactionModalComponent implements OnChanges {
   closeModal = output<void>();
   transactionSubmit = output<TransactionForm>();
 
-  private readonly toastService = inject(ToastService);
   private readonly portfolioState = inject(PortfolioStateService);
   private readonly exchangeRateService = inject(ExchangeRateService);
 
@@ -61,6 +60,31 @@ export class TransactionModalComponent implements OnChanges {
     finalPayment: 0,
     note: '',
   });
+
+  readonly transactionForm = form(
+    this.formData,
+    (path) => {
+      required(path.securityId, { message: 'Bitte wählen Sie ein Wertpapier aus der Liste aus' });
+      required(path.exDate, { message: 'Bitte geben Sie ein Ex-Datum ein' });
+      required(path.payoutDate, { message: 'Bitte geben Sie ein Auszahlungsdatum ein' });
+      validate(path.amount, ({ value }) =>
+        value() > 0
+          ? undefined
+          : { kind: 'min', message: 'Anzahl der Aktien muss größer als 0 sein' }
+      );
+      required(path.dividend, { message: 'Bitte geben Sie die Dividende pro Aktie ein' });
+      required(path.finalPayment, { message: 'Bitte geben Sie die Netto-Auszahlung ein' });
+    },
+    {
+      submission: {
+        action: async () => {
+          this.transactionSubmit.emit(this.formData());
+          this.resetForm();
+          return undefined;
+        },
+      },
+    }
+  );
 
   constructor() {
     // Update currency in formData when defaultCurrency changes
@@ -101,34 +125,16 @@ export class TransactionModalComponent implements OnChanges {
 
   onClose() {
     this.closeModal.emit();
+    // Keep the entered values, but hide validation messages until the next interaction
+    this.transactionForm().reset();
   }
 
-  onSubmit() {
-    // Validation
-    const data = this.formData();
-    if (!data.securityId) {
-      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
-      return;
-    }
-    if (!data.exDate) {
-      this.toastService.warning('Bitte geben Sie ein Ex-Datum ein');
-      return;
-    }
-    if (!data.payoutDate) {
-      this.toastService.warning('Bitte geben Sie ein Auszahlungsdatum ein');
-      return;
-    }
-    if (data.amount <= 0) {
-      this.toastService.warning('Anzahl der Aktien muss größer als 0 sein');
-      return;
-    }
-
-    this.transactionSubmit.emit(data);
-    this.resetForm();
+  onSubmit(): Promise<boolean> {
+    return submit(this.transactionForm);
   }
 
   resetForm() {
-    this.formData.set({
+    this.transactionForm().reset({
       name: '',
       securityId: '',
       exDate: '',
@@ -157,19 +163,17 @@ export class TransactionModalComponent implements OnChanges {
     });
   }
 
+  /** Recalculates the net payment after amount, dividend, taxes or rate were edited in the form. */
+  recalculateFinalPayment() {
+    this.formData.update(data => ({ ...data, finalPayment: this.calculateFinalPayment(data) }));
+  }
+
   private calculateFinalPayment(data: TransactionForm): number {
     const gross = data.amount * data.dividend;
     const netOrig = gross - data.taxes;
     const rate = data.rate && data.rate !== 0 ? data.rate : 1;
     // Round to 2 decimal places to avoid floating point issues
     return Math.round((netOrig / rate) * 100) / 100;
-  }
-
-  parseNumberInput(value: string): number {
-    if (!value) return 0;
-    const normalized = value.toString().replace(',', '.');
-    const parsed = parseFloat(normalized);
-    return isNaN(parsed) ? 0 : parsed;
   }
 
   onCurrencyChange(currency: string) {

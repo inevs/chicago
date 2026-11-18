@@ -1,13 +1,12 @@
 import { Component, input, output, signal, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { SecurityService } from '../../../services/security.service';
 import { Security } from '@dividends/shared';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
 @Component({
   selector: 'app-security-autocomplete',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './security-autocomplete.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./security-autocomplete.component.scss'],

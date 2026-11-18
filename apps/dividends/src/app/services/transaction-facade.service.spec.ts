@@ -163,7 +163,7 @@ describe('TransactionFacadeService', () => {
       currency: 'USD',
       rate: 1.1,
       finalPayment: 15.0,
-      note: undefined,
+      note: '',
     };
 
     it('should show warning if security is not selected', () => {

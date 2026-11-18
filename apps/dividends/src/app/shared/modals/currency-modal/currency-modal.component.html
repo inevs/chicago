@@ -30,13 +30,7 @@
       </button>
     </div>
 
-    <form (submit)="onSubmit(); $event.preventDefault()">
-      @if (validationError()) {
-      <div class="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-        <p class="text-sm text-red-600 dark:text-red-400">{{ validationError() }}</p>
-      </div>
-      }
-
+    <form [formRoot]="currencyForm">
       <div class="space-y-4">
         <div>
           <label for="currencyCode" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1"
@@ -45,14 +39,11 @@
           <input
             type="text"
             id="currencyCode"
-            [value]="formData().code"
-            (input)="onCodeInput($event)"
-            name="currencyCode"
+            [formField]="currencyForm.code"
             placeholder="z.B. CHF, SEK, JPY"
-            maxlength="3"
-            required
             class="modal-input uppercase"
           />
+          <app-field-errors [state]="currencyForm.code()" />
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
             3-stelliger ISO 4217 Code (wird automatisch in Großbuchstaben konvertiert)
           </p>
@@ -65,13 +56,11 @@
           <input
             type="text"
             id="currencyName"
-            [(ngModel)]="formData().name"
-            (ngModelChange)="updateFormData('name', $event)"
-            name="currencyName"
+            [formField]="currencyForm.name"
             placeholder="z.B. Schweizer Franken"
-            required
             class="modal-input"
           />
+          <app-field-errors [state]="currencyForm.name()" />
         </div>
       </div>
 

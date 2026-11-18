@@ -29,7 +29,7 @@ Source: `menuOptions` in `apps/dividends/src/app/layout/header-nav/header-nav.co
 
 **ISO-Code (3 Buchstaben)**
 - 3-letter ISO 4217 code, e.g. `CHF`, `SEK`, `NOK`, `DKK`, `JPY`
-- Converted to uppercase while typing
+- Displayed in uppercase while typing and saved in uppercase
 
 **Name**
 - Full currency name, e.g. `Schweizer Franken`, `Schwedische Krone`
@@ -49,13 +49,13 @@ On a server error the dialog stays open and the error message is shown as an err
 
 | Message | Origin | Cause |
 |---|---|---|
-| "ISO-Code muss genau 3 Buchstaben lang sein (z.B. CHF, SEK, JPY)" | Client | Code is not exactly 3 characters long |
-| "ISO-Code darf nur Buchstaben enthalten" | Client | Code contains digits or special characters |
-| "Bitte geben Sie einen Namen ein (z.B. Schweizer Franken, Schwedische Krone)" | Client | Name is empty |
+| "Bitte geben Sie einen ISO-Code ein (z.B. CHF, SEK, JPY)" | Client | Code is empty |
+| "ISO-Code muss aus genau 3 Buchstaben bestehen (z.B. CHF, SEK, JPY)" | Client | Code is not exactly 3 letters (too short, or contains digits or special characters) |
+| "Bitte geben Sie einen Namen ein (z.B. Schweizer Franken, Schwedische Krone)" | Client | Name is empty or only whitespace |
 | "Currency code must be a valid ISO 4217 code (e.g., USD, EUR, CHF)" | Server | Code is not in the ISO 4217 whitelist (e.g. `ABC`) |
 | "Currency with code XXX already exists" | Server | Currency already exists |
 
-Client validation: `apps/dividends/src/app/shared/modals/currency-modal/currency-modal.component.ts`.
+Client validation: Signal Forms schema in `apps/dividends/src/app/shared/modals/currency-modal/currency-modal.component.ts`. Client messages are shown below the affected field once it was left or the form was submitted; the input field limits the code to 3 characters.
 
 ## Architecture
 

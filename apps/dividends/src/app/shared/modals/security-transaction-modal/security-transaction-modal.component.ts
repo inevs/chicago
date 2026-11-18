@@ -1,9 +1,10 @@
-import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, signal, OnChanges, SimpleChanges, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { form, FormField, FormRoot, required, submit, validate } from '@angular/forms/signals';
+import { FieldErrorsComponent } from '../../inputs/field-errors/field-errors.component';
+import { DecimalInputComponent } from '../../inputs/decimal-input/decimal-input.component';
 import { SecurityAutocompleteComponent } from '../../inputs/security-autocomplete/security-autocomplete.component';
 import { Security, SecurityTransactionWithSecurity, TransactionType, Currency } from '@dividends/shared';
-import { ToastService } from '../../../services/toast.service';
 
 const DEFAULT_FALLBACK_CURRENCY = 'EUR';
 
@@ -24,7 +25,7 @@ export interface SecurityTransactionForm {
 
 @Component({
   selector: 'app-security-transaction-modal',
-  imports: [CommonModule, FormsModule, SecurityAutocompleteComponent],
+  imports: [CommonModule, FormField, FormRoot, FieldErrorsComponent, DecimalInputComponent, SecurityAutocompleteComponent],
   templateUrl: './security-transaction-modal.component.html',
   changeDetection: ChangeDetectionStrategy.Eager,
   styleUrls: ['./security-transaction-modal.component.scss'],
@@ -40,8 +41,12 @@ export class SecurityTransactionModalComponent implements OnChanges {
   // Make TransactionType accessible in template
   readonly TransactionType = TransactionType;
 
-  private readonly toastService = inject(ToastService);
-  private readonly defaultCurrencyCode = computed(() =>
+  readonly inputClass =
+    'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md ' +
+    'bg-white dark:bg-gray-700 text-gray-900 dark:text-white ' +
+    'focus:ring-2 focus:ring-brand-500 focus:border-transparent';
+
+  readonly defaultCurrencyCode = computed(() =>
     this.defaultCurrency()?.code ?? DEFAULT_FALLBACK_CURRENCY
   );
 
@@ -59,6 +64,38 @@ export class SecurityTransactionModalComponent implements OnChanges {
     note: '',
   });
 
+  readonly transactionForm = form(
+    this.formData,
+    (path) => {
+      required(path.securityId, { message: 'Bitte wählen Sie ein Wertpapier aus der Liste aus' });
+      required(path.date, { message: 'Bitte geben Sie ein Datum ein' });
+      validate(path.quantity, ({ value }) =>
+        value() > 0 ? undefined : { kind: 'min', message: 'Anzahl muss größer als 0 sein' }
+      );
+      validate(path.pricePerShare, ({ value }) =>
+        value() > 0 ? undefined : { kind: 'min', message: 'Preis pro Anteil muss größer als 0 sein' }
+      );
+      validate(path.fees, ({ value }) =>
+        value() >= 0 ? undefined : { kind: 'min', message: 'Gebühren dürfen nicht negativ sein' }
+      );
+      validate(path.exchangeRate, ({ value }) =>
+        value() > 0 ? undefined : { kind: 'min', message: 'Kurs muss größer als 0 sein' }
+      );
+    },
+    {
+      submission: {
+        action: async () => {
+          this.transactionSubmit.emit({
+            ...this.formData(),
+            totalValue: this.calculatedTotal(),
+          });
+          this.resetForm();
+          return undefined;
+        },
+      },
+    }
+  );
+
   constructor() {
     // Update currency in formData when defaultCurrency changes
     effect(() => {
@@ -75,7 +112,8 @@ export class SecurityTransactionModalComponent implements OnChanges {
     const data = this.formData();
     const subtotal = data.quantity * data.pricePerShare;
     const totalInCurrency = subtotal + data.fees;
-    return totalInCurrency / data.exchangeRate;
+    const rate = data.exchangeRate > 0 ? data.exchangeRate : 1;
+    return totalInCurrency / rate;
   });
 
   ngOnChanges(changes: SimpleChanges) {
@@ -106,40 +144,16 @@ export class SecurityTransactionModalComponent implements OnChanges {
 
   onClose() {
     this.closeModal.emit();
+    // Keep the entered values, but hide validation messages until the next interaction
+    this.transactionForm().reset();
   }
 
-  onSubmit() {
-    // Validation
-    const data = this.formData();
-    if (!data.securityId) {
-      this.toastService.warning('Bitte wählen Sie ein Wertpapier aus der Liste aus');
-      return;
-    }
-    if (!data.date) {
-      this.toastService.warning('Bitte geben Sie ein Datum ein');
-      return;
-    }
-    if (data.quantity <= 0) {
-      this.toastService.warning('Anzahl muss größer als 0 sein');
-      return;
-    }
-    if (data.pricePerShare <= 0) {
-      this.toastService.warning('Preis pro Anteil muss größer als 0 sein');
-      return;
-    }
-
-    // Update totalValue with calculated value
-    const formDataWithTotal = {
-      ...data,
-      totalValue: this.calculatedTotal(),
-    };
-
-    this.transactionSubmit.emit(formDataWithTotal);
-    this.resetForm();
+  onSubmit(): Promise<boolean> {
+    return submit(this.transactionForm);
   }
 
   resetForm() {
-    this.formData.set({
+    this.transactionForm().reset({
       date: new Date().toISOString().split('T')[0],
       type: TransactionType.BUY,
       securityId: '',
@@ -152,19 +166,6 @@ export class SecurityTransactionModalComponent implements OnChanges {
       totalValue: 0,
       note: '',
     });
-  }
-
-  updateFormData(field: keyof SecurityTransactionForm, value: unknown) {
-    this.formData.update(data => ({ ...data, [field]: value }));
-  }
-
-  // Helper to parse number input - accepts both comma and period as decimal separator
-  parseNumberInput(value: string): number {
-    if (!value) return 0;
-    // Replace comma with period for German number format
-    const normalized = value.toString().replace(',', '.');
-    const parsed = parseFloat(normalized);
-    return isNaN(parsed) ? 0 : parsed;
   }
 
   onSecuritySelected(security: Security) {

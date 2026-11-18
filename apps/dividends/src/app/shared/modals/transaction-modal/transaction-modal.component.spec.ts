@@ -346,15 +346,139 @@ describe('TransactionModalComponent', () => {
     });
   });
 
-  describe('Input Parsing', () => {
-    it('should handle comma as decimal separator', () => {
-      expect(component.parseNumberInput('1,5')).toBe(1.5);
-      expect(component.parseNumberInput('1.5')).toBe(1.5);
+  describe('Form binding', () => {
+    const query = <T extends HTMLElement>(selector: string): T =>
+      fixture.nativeElement.querySelector(selector) as T;
+
+    const typeNumber = (selector: string, value: string) => {
+      const input = query<HTMLInputElement>(selector);
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    };
+
+    it('should write number inputs into the model', () => {
+      typeNumber('#amount', '12');
+
+      expect(component.formData().amount).toBe(12);
     });
 
-    it('should return 0 for invalid inputs', () => {
-      expect(component.parseNumberInput('')).toBe(0);
-      expect(component.parseNumberInput('abc')).toBe(0);
+    it('should recalculate finalPayment when a number input is edited', () => {
+      typeNumber('#amount', '10');
+      typeNumber('#dividend', '2.5');
+      typeNumber('#taxes', '5');
+
+      // 10 * 2.5 - 5 = 20
+      expect(component.formData().finalPayment).toBe(20);
+    });
+
+    it('should keep a manually edited finalPayment', () => {
+      typeNumber('#amount', '10');
+      typeNumber('#dividend', '2');
+      typeNumber('#finalPayment', '19.5');
+
+      expect(component.formData().finalPayment).toBe(19.5);
+    });
+
+    it('should fetch the exchange rate when the currency select changes', () => {
+      component.updateFormData('payoutDate', '2023-01-01');
+      mockExchangeRateService.getExchangeRate.mockReturnValue(of({ rate: 1.2 }));
+      fixture.detectChanges();
+
+      const select = query<HTMLSelectElement>('#currency');
+      select.value = 'USD';
+      select.dispatchEvent(new Event('input'));
+      select.dispatchEvent(new Event('change'));
+
+      expect(component.formData().currency).toBe('USD');
+      expect(exchangeRateService.getExchangeRate).toHaveBeenCalledWith('EUR', 'USD', '2023-01-01');
+      expect(component.formData().rate).toBe(1.2);
+    });
+
+    it('should update shares from holdings when the ex-date input changes', () => {
+      mockPortfolioStateService.getSharesAtDate.mockReturnValue(7);
+      component.updateFormData('securityId', 'sec-1');
+
+      const input = query<HTMLInputElement>('#exDate');
+      input.value = '2023-03-01';
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('change'));
+
+      expect(portfolioStateService.getSharesAtDate).toHaveBeenCalledWith('sec-1', '2023-03-01');
+      expect(component.formData().amount).toBe(7);
+    });
+  });
+
+  describe('Validation & Submit', () => {
+    const fillValidForm = () => {
+      component.formData.update((data) => ({
+        ...data,
+        name: 'My Stock',
+        securityId: 'sec-1',
+        exDate: '2023-01-01',
+        payoutDate: '2023-01-15',
+        amount: 10,
+        dividend: 1,
+        finalPayment: 10,
+      }));
+    };
+
+    const errorKinds = (field: { (): { errors(): { kind: string }[] } }) =>
+      field().errors().map((e) => e.kind);
+
+    it('should be invalid initially', () => {
+      expect(component.transactionForm().valid()).toBe(false);
+      expect(errorKinds(component.transactionForm.securityId)).toContain('required');
+      expect(errorKinds(component.transactionForm.exDate)).toContain('required');
+      expect(errorKinds(component.transactionForm.payoutDate)).toContain('required');
+      expect(errorKinds(component.transactionForm.amount)).toContain('min');
+    });
+
+    it('should be valid with all required values', () => {
+      fillValidForm();
+
+      expect(component.transactionForm().valid()).toBe(true);
+    });
+
+    it('should not emit and show field errors when submitting an invalid form', async () => {
+      const emitSpy = vi.spyOn(component.transactionSubmit, 'emit');
+
+      const result = await component.onSubmit();
+      fixture.detectChanges();
+
+      expect(result).toBe(false);
+      expect(emitSpy).not.toHaveBeenCalled();
+      const messages = Array.from(
+        fixture.nativeElement.querySelectorAll('.field-error') as NodeListOf<HTMLElement>
+      ).map((el) => el.textContent?.trim());
+      expect(messages).toContain('Bitte wählen Sie ein Wertpapier aus der Liste aus');
+      expect(messages).toContain('Anzahl der Aktien muss größer als 0 sein');
+    });
+
+    it('should not show field errors before interaction', () => {
+      expect(fixture.nativeElement.querySelectorAll('.field-error').length).toBe(0);
+    });
+
+    it('should emit the form data and reset the form on valid submit', async () => {
+      const emitSpy = vi.spyOn(component.transactionSubmit, 'emit');
+      fillValidForm();
+
+      const result = await component.onSubmit();
+
+      expect(result).toBe(true);
+      expect(emitSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ securityId: 'sec-1', amount: 10, finalPayment: 10 })
+      );
+      expect(component.formData().securityId).toBe('');
+      expect(component.transactionForm().touched()).toBe(false);
+    });
+
+    it('should hide validation messages when the modal is closed', async () => {
+      await component.onSubmit();
+      expect(component.transactionForm.securityId().touched()).toBe(true);
+
+      component.onClose();
+
+      expect(component.transactionForm.securityId().touched()).toBe(false);
     });
   });
 });

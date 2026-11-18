@@ -11,17 +11,20 @@ The application implements defense-in-depth validation across three layers:
 **Purpose**: Immediate user feedback, better UX
 
 **Implementation**:
-- Template-driven validation in the modal forms
-- Signal Forms schema validation on the login page (`required`, `email`, `minLength` from `@angular/forms/signals`)
-- Real-time feedback on input
-- Pattern matching, length validation
-- Custom validators where needed
+- Signal Forms (`@angular/forms/signals`) in all forms: the form model is a `signal`, `form()` adds a validation schema, inputs are bound with `[formField]`, submission runs through `[formRoot]` / `submit()`
+- Built-in validators (`required`, `email`, `minLength`, `maxLength`, `pattern`) and custom rules via `validate()`
+- Messages are shown below the field by `FieldErrorsComponent` (`shared/inputs/field-errors/`) once the field was left or the form was submitted; an invalid form is not submitted
+- `DecimalInputComponent` (`shared/inputs/decimal-input/`) is a custom form control that accepts a comma as decimal separator and reports invalid numbers as a parse error
 
 **Example** (Currency Modal):
 ```typescript
-// Code must be exactly 3 letters (currency-modal.component.ts)
-if (!data.code || data.code.length !== 3) { /* show error */ }
-if (!/^[A-Za-z]{3}$/.test(data.code)) { /* show error */ }
+// currency-modal.component.ts
+readonly currencyForm = form(this.formData, (path) => {
+  required(path.code, { message: 'Bitte geben Sie einen ISO-Code ein (z.B. CHF, SEK, JPY)' });
+  maxLength(path.code, 3);
+  pattern(path.code, /^[A-Za-z]{3}$/, { message: 'ISO-Code muss aus genau 3 Buchstaben bestehen (z.B. CHF, SEK, JPY)' });
+  validate(path.name, ({ value }) => value().trim() ? undefined : { kind: 'required', message: '...' });
+}, { submission: { action: async () => { /* emit and reset */ } } });
 ```
 
 **Limitation**: Can be bypassed by users (not security-critical)

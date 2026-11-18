@@ -38,7 +38,7 @@
         </div>
 
         <!-- Form -->
-        <form (ngSubmit)="onSubmit()" class="space-y-5">
+        <form [formRoot]="transactionForm" class="space-y-5">
           <!-- Transaction Details Section -->
           <div class="space-y-4">
             <h4 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -55,13 +55,12 @@
                 <input
                   id="transactionDate"
                   type="date"
-                  [value]="formData().date"
-                  (input)="updateFormData('date', $any($event.target).value)"
-                  required
+                  [formField]="transactionForm.date"
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 />
+                <app-field-errors [state]="transactionForm.date()" />
               </div>
 
               <!-- Transaction Type -->
@@ -71,16 +70,13 @@
                 </label>
                 <select
                   id="transactionType"
-                  [ngModel]="formData().type"
-                  (ngModelChange)="updateFormData('type', $event)"
-                  name="transactionType"
-                  required
+                  [formField]="transactionForm.type"
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 >
-                  <option [ngValue]="TransactionType.BUY">Kauf</option>
-                  <option [ngValue]="TransactionType.SELL">Verkauf</option>
+                  <option [value]="TransactionType.BUY">Kauf</option>
+                  <option [value]="TransactionType.SELL">Verkauf</option>
                 </select>
               </div>
             </div>
@@ -95,6 +91,7 @@
                 [value]="formData().securityName"
                 (securitySelected)="onSecuritySelected($event)"
               />
+              <app-field-errors [state]="transactionForm.securityId()" />
             </div>
           </div>
 
@@ -111,18 +108,13 @@
               <label for="quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Anzahl * <span class="text-xs text-gray-500">(Bruchstücke möglich)</span>
               </label>
-              <input
-                id="quantity"
-                type="text"
-                inputmode="decimal"
-                [value]="formData().quantity"
-                (input)="updateFormData('quantity', parseNumberInput($any($event.target).value))"
-                required
+              <app-decimal-input
+                [formField]="transactionForm.quantity"
+                inputId="quantity"
                 placeholder="0.00000001"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                [inputClass]="inputClass"
               />
+              <app-field-errors [state]="transactionForm.quantity()" />
             </div>
 
             <!-- Price Per Share -->
@@ -130,18 +122,13 @@
               <label for="pricePerShare" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Preis pro Anteil *
               </label>
-              <input
-                id="pricePerShare"
-                type="text"
-                inputmode="decimal"
-                [value]="formData().pricePerShare"
-                (input)="updateFormData('pricePerShare', parseNumberInput($any($event.target).value))"
-                required
+              <app-decimal-input
+                [formField]="transactionForm.pricePerShare"
+                inputId="pricePerShare"
                 placeholder="0.0001"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                       bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                       focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                [inputClass]="inputClass"
               />
+              <app-field-errors [state]="transactionForm.pricePerShare()" />
             </div>
           </div>
 
@@ -152,17 +139,13 @@
                 <label for="fees" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Gebühren
                 </label>
-                <input
-                  id="fees"
-                  type="text"
-                  inputmode="decimal"
-                  [value]="formData().fees"
-                  (input)="updateFormData('fees', parseNumberInput($any($event.target).value))"
+                <app-decimal-input
+                  [formField]="transactionForm.fees"
+                  inputId="fees"
                   placeholder="0.00"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                         focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  [inputClass]="inputClass"
                 />
+                <app-field-errors [state]="transactionForm.fees()" />
               </div>
 
               <!-- Currency -->
@@ -172,9 +155,8 @@
                 </label>
                 <select
                   id="currency"
-                  [value]="formData().currency"
-                  (change)="onCurrencyChange($any($event.target).value)"
-                  required
+                  [formField]="transactionForm.currency"
+                  (change)="onCurrencyChange(transactionForm.currency().value())"
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
                          bg-white dark:bg-gray-700 text-gray-900 dark:text-white
                          focus:ring-2 focus:ring-brand-500 focus:border-transparent"
@@ -186,23 +168,18 @@
               </div>
 
               <!-- Exchange Rate (only visible for non-default currencies) -->
-              @if (formData().currency !== (defaultCurrency()?.code || 'EUR')) {
+              @if (formData().currency !== defaultCurrencyCode()) {
                 <div>
                   <label for="exchangeRate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Kurs zu EUR *
                   </label>
-                  <input
-                    id="exchangeRate"
-                    type="text"
-                    inputmode="decimal"
-                    [value]="formData().exchangeRate"
-                    (input)="updateFormData('exchangeRate', parseNumberInput($any($event.target).value) || 1)"
-                    required
+                  <app-decimal-input
+                    [formField]="transactionForm.exchangeRate"
+                    inputId="exchangeRate"
                     placeholder="1.0"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md
-                           bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                           focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    [inputClass]="inputClass"
                   />
+                  <app-field-errors [state]="transactionForm.exchangeRate()" />
                 </div>
               }
             </div>
@@ -242,8 +219,7 @@
               </label>
               <textarea
                 id="notes"
-                [value]="formData().note"
-                (input)="updateFormData('note', $any($event.target).value)"
+                [formField]="transactionForm.note"
                 rows="3"
                 placeholder="Optional: Notizen zu dieser Transaktion"
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md

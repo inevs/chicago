@@ -63,8 +63,6 @@ export class ToastService {
 | `services/transaction-facade.service.ts` | Success and error messages for CRUD operations, currency creation, import and export |
 | `interceptors/error.interceptor.ts` | Central display of HTTP errors (with deduplication) |
 | `pages/login/login.component.ts` | Login feedback |
-| `shared/modals/transaction-modal/` | Validation warnings |
-| `shared/modals/security-transaction-modal/` | Validation warnings |
 
 ## Usage
 
