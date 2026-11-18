@@ -4,7 +4,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { SecuritiesRepository } from './securities.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 import { CreateSecurityDto } from './dto/create-security.dto';
 import { UpdateSecurityDto } from './dto/update-security.dto';
 import { CsvSecurityRow, UploadedFile } from './dto/import-securities-csv.dto';
@@ -12,18 +13,19 @@ import { Security, ImportCsvResponse, ImportSecurityResult, SecurityType } from 
 import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { parse } from 'csv-parse/sync';
 
+const SEARCH_RESULT_LIMIT = 10;
+
 @Injectable()
 export class SecuritiesService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly securitiesRepository: SecuritiesRepository,
+    private readonly currenciesRepository: CurrenciesRepository,
     private readonly securityPricesService: SecurityPricesService
   ) {}
 
   async createSecurity(dto: CreateSecurityDto): Promise<Security> {
     // Check for duplicate symbol
-    const existing = await this.prisma.security.findUnique({
-      where: { symbol: dto.symbol },
-    });
+    const existing = await this.securitiesRepository.findBySymbol(dto.symbol);
 
     if (existing) {
       throw new ConflictException(
@@ -31,20 +33,14 @@ export class SecuritiesService {
       );
     }
 
-    const currency = await this.prisma.currency.findUnique({
-      where: { code: dto.currency },
-    });
-
-    if (!currency) {
+    if (!(await this.currenciesRepository.existsByCode(dto.currency))) {
       throw new NotFoundException(
         `Currency with code ${dto.currency} not found`
       );
     }
 
     // Create security
-    const security = await this.prisma.security.create({
-      data: dto,
-    });
+    const security = await this.securitiesRepository.create(dto);
 
     // Trigger price update for the new security
     // We don't await this so the API response isn't delayed
@@ -73,17 +69,13 @@ export class SecuritiesService {
   }
 
   async getAllSecurities(): Promise<Security[]> {
-    const securities = await this.prisma.security.findMany({
-      orderBy: { symbol: 'asc' },
-    });
+    const securities = await this.securitiesRepository.findAll();
 
     return securities as Security[];
   }
 
   async getSecurityById(id: string): Promise<Security> {
-    const security = await this.prisma.security.findUnique({
-      where: { id },
-    });
+    const security = await this.securitiesRepository.findById(id);
 
     if (!security) {
       throw new NotFoundException('Security not found');
@@ -93,9 +85,7 @@ export class SecuritiesService {
   }
 
   async updateSecurity(id: string, dto: UpdateSecurityDto): Promise<Security> {
-    const security = await this.prisma.security.findUnique({
-      where: { id },
-    });
+    const security = await this.securitiesRepository.findById(id);
 
     if (!security) {
       throw new NotFoundException('Security not found');
@@ -104,9 +94,7 @@ export class SecuritiesService {
     // Check for duplicate symbol if symbol is being changed
     const newSymbol = dto.symbol;
     if (newSymbol && newSymbol !== security.symbol) {
-      const existing = await this.prisma.security.findUnique({
-        where: { symbol: newSymbol },
-      });
+      const existing = await this.securitiesRepository.findBySymbol(newSymbol);
 
       if (existing) {
         throw new ConflictException(
@@ -118,21 +106,14 @@ export class SecuritiesService {
     // Validate currency if provided
     const newCurrency = dto.currency;
     if (newCurrency) {
-      const currency = await this.prisma.currency.findUnique({
-        where: { code: newCurrency },
-      });
-
-      if (!currency) {
+      if (!(await this.currenciesRepository.existsByCode(newCurrency))) {
         throw new NotFoundException(
           `Currency with code ${newCurrency} not found`
         );
       }
     }
 
-    const updated = await this.prisma.security.update({
-      where: { id },
-      data: dto,
-    });
+    const updated = await this.securitiesRepository.update(id, dto);
 
     return updated as Security;
   }
@@ -144,18 +125,10 @@ export class SecuritiesService {
 
     const searchTerm = query.trim().toLowerCase();
 
-    const securities = await this.prisma.security.findMany({
-      where: {
-        OR: [
-          { name: { contains: searchTerm, mode: 'insensitive' } },
-          { symbol: { contains: searchTerm, mode: 'insensitive' } },
-          { isin: { contains: searchTerm, mode: 'insensitive' } },
-          { wkn: { contains: searchTerm, mode: 'insensitive' } },
-        ],
-      },
-      orderBy: { symbol: 'asc' },
-      take: 10,
-    });
+    const securities = await this.securitiesRepository.search(
+      searchTerm,
+      SEARCH_RESULT_LIMIT
+    );
 
     return securities as Security[];
   }
@@ -220,19 +193,13 @@ export class SecuritiesService {
         .filter(c => c && c.length > 0)
     )];
 
-    const [existingSecurities, existingCurrencies] = await Promise.all([
-      this.prisma.security.findMany({
-        where: { symbol: { in: symbolsToCheck } },
-        select: { symbol: true },
-      }),
-      this.prisma.currency.findMany({
-        where: { code: { in: currenciesToCheck } },
-        select: { code: true },
-      }),
+    const [existingSymbols, existingCurrencies] = await Promise.all([
+      this.securitiesRepository.findExistingSymbols(symbolsToCheck),
+      this.currenciesRepository.findExistingCodes(currenciesToCheck),
     ]);
 
-    const existingSymbolsSet = new Set(existingSecurities.map(s => s.symbol));
-    const existingCurrenciesSet = new Set(existingCurrencies.map(c => c.code));
+    const existingSymbolsSet = new Set(existingSymbols);
+    const existingCurrenciesSet = new Set(existingCurrencies);
 
     // Process and validate each row
     const results: ImportSecurityResult[] = [];
@@ -333,10 +300,8 @@ export class SecuritiesService {
     if (securitiesToCreate.length > 0) {
       try {
         // Use createMany for batch insert (more efficient than individual creates)
-        const createResult = await this.prisma.security.createManyAndReturn({
-          data: securitiesToCreate,
-          skipDuplicates: true,
-        });
+        const createResult =
+          await this.securitiesRepository.createMany(securitiesToCreate);
 
         // Update results with actual security IDs
         let createdIndex = 0;

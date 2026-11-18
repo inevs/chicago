@@ -3,7 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { SecurityTransactionsRepository } from './security-transactions.repository';
+import { SecuritiesRepository } from '../securities/securities.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 import { CreateSecurityTransactionDto } from './dto/create-security-transaction.dto';
 import { UpdateSecurityTransactionDto } from './dto/update-security-transaction.dto';
 import { SecurityTransaction, ImportTransactionsCsvResponse, ImportTransactionResult, TransactionType } from '@dividends/shared';
@@ -12,64 +14,45 @@ import { CsvSecurityTransactionRow, UploadedFile } from './dto/import-security-t
 
 @Injectable()
 export class SecurityTransactionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly securityTransactionsRepository: SecurityTransactionsRepository,
+    private readonly securitiesRepository: SecuritiesRepository,
+    private readonly currenciesRepository: CurrenciesRepository
+  ) {}
 
   async createSecurityTransaction(
     dto: CreateSecurityTransactionDto
   ): Promise<SecurityTransaction> {
     // Validate that security exists
-    const security = await this.prisma.security.findUnique({
-      where: { id: dto.securityId },
-    });
-
-    if (!security) {
-      throw new NotFoundException(
-        `Security with ID ${dto.securityId} not found`
-      );
-    }
-
+    await this.ensureSecurityExists(dto.securityId);
     await this.ensureCurrencyExists(dto.currency);
 
     // Create security transaction
-    const transaction = await this.prisma.securityTransaction.create({
-      data: {
-        date: new Date(dto.date),
-        type: dto.type,
-        securityId: dto.securityId,
-        quantity: dto.quantity,
-        pricePerShare: dto.pricePerShare,
-        fees: dto.fees,
-        currency: dto.currency,
-        exchangeRate: dto.exchangeRate,
-        totalValue: dto.totalValue,
-        note: dto.note,
-      },
-      include: {
-        security: true,
-      },
+    const transaction = await this.securityTransactionsRepository.create({
+      date: new Date(dto.date),
+      type: dto.type,
+      securityId: dto.securityId,
+      quantity: dto.quantity,
+      pricePerShare: dto.pricePerShare,
+      fees: dto.fees,
+      currency: dto.currency,
+      exchangeRate: dto.exchangeRate,
+      totalValue: dto.totalValue,
+      note: dto.note,
     });
 
     return transaction as unknown as SecurityTransaction;
   }
 
   async getAllSecurityTransactions(): Promise<SecurityTransaction[]> {
-    const transactions = await this.prisma.securityTransaction.findMany({
-      include: {
-        security: true,
-      },
-      orderBy: { date: 'desc' },
-    });
+    const transactions = await this.securityTransactionsRepository.findAll();
 
     return transactions as unknown as SecurityTransaction[];
   }
 
   async getSecurityTransactionById(id: string): Promise<SecurityTransaction> {
-    const transaction = await this.prisma.securityTransaction.findUnique({
-      where: { id },
-      include: {
-        security: true,
-      },
-    });
+    const transaction =
+      await this.securityTransactionsRepository.findByIdWithSecurity(id);
 
     if (!transaction) {
       throw new NotFoundException('Security transaction not found');
@@ -81,13 +64,8 @@ export class SecurityTransactionsService {
   async getSecurityTransactionsBySecurityId(
     securityId: string
   ): Promise<SecurityTransaction[]> {
-    const transactions = await this.prisma.securityTransaction.findMany({
-      where: { securityId },
-      include: {
-        security: true,
-      },
-      orderBy: { date: 'desc' },
-    });
+    const transactions =
+      await this.securityTransactionsRepository.findBySecurityId(securityId);
 
     return transactions as unknown as SecurityTransaction[];
   }
@@ -95,13 +73,7 @@ export class SecurityTransactionsService {
   async getSecurityTransactionsByType(
     type: 'BUY' | 'SELL'
   ): Promise<SecurityTransaction[]> {
-    const transactions = await this.prisma.securityTransaction.findMany({
-      where: { type },
-      include: {
-        security: true,
-      },
-      orderBy: { date: 'desc' },
-    });
+    const transactions = await this.securityTransactionsRepository.findByType(type);
 
     return transactions as unknown as SecurityTransaction[];
   }
@@ -110,18 +82,10 @@ export class SecurityTransactionsService {
     startDate: Date,
     endDate: Date
   ): Promise<SecurityTransaction[]> {
-    const transactions = await this.prisma.securityTransaction.findMany({
-      where: {
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: {
-        security: true,
-      },
-      orderBy: { date: 'desc' },
-    });
+    const transactions = await this.securityTransactionsRepository.findByDateRange(
+      startDate,
+      endDate
+    );
 
     return transactions as unknown as SecurityTransaction[];
   }
@@ -131,9 +95,7 @@ export class SecurityTransactionsService {
     dto: UpdateSecurityTransactionDto
   ): Promise<SecurityTransaction> {
     // Check if security transaction exists
-    const existing = await this.prisma.securityTransaction.findUnique({
-      where: { id },
-    });
+    const existing = await this.securityTransactionsRepository.findById(id);
 
     if (!existing) {
       throw new NotFoundException('Security transaction not found');
@@ -141,15 +103,7 @@ export class SecurityTransactionsService {
 
     // If securityId is being updated, validate that the new security exists
     if (dto.securityId && dto.securityId !== existing.securityId) {
-      const security = await this.prisma.security.findUnique({
-        where: { id: dto.securityId },
-      });
-
-      if (!security) {
-        throw new NotFoundException(
-          `Security with ID ${dto.securityId} not found`
-        );
-      }
+      await this.ensureSecurityExists(dto.securityId);
     }
 
     if (dto.currency && dto.currency !== existing.currency) {
@@ -157,29 +111,23 @@ export class SecurityTransactionsService {
     }
 
     // Update security transaction
-    const transaction = await this.prisma.securityTransaction.update({
-      where: { id },
-      data: {
-        ...(dto.date && { date: new Date(dto.date) }),
-        ...(dto.type && { type: dto.type }),
-        ...(dto.securityId &&
-          dto.securityId !== existing.securityId && {
-            security: { connect: { id: dto.securityId } },
-          }),
-        ...(dto.quantity !== undefined && { quantity: dto.quantity }),
-        ...(dto.pricePerShare !== undefined && { pricePerShare: dto.pricePerShare }),
-        ...(dto.fees !== undefined && { fees: dto.fees }),
-        ...(dto.currency &&
-          dto.currency !== existing.currency && {
-            currencyRef: { connect: { code: dto.currency } },
-          }),
-        ...(dto.exchangeRate !== undefined && { exchangeRate: dto.exchangeRate }),
-        ...(dto.totalValue !== undefined && { totalValue: dto.totalValue }),
-        ...(dto.note !== undefined && { note: dto.note }),
-      },
-      include: {
-        security: true,
-      },
+    const transaction = await this.securityTransactionsRepository.update(id, {
+      ...(dto.date && { date: new Date(dto.date) }),
+      ...(dto.type && { type: dto.type }),
+      ...(dto.securityId &&
+        dto.securityId !== existing.securityId && {
+          securityId: dto.securityId,
+        }),
+      ...(dto.quantity !== undefined && { quantity: dto.quantity }),
+      ...(dto.pricePerShare !== undefined && { pricePerShare: dto.pricePerShare }),
+      ...(dto.fees !== undefined && { fees: dto.fees }),
+      ...(dto.currency &&
+        dto.currency !== existing.currency && {
+          currency: dto.currency,
+        }),
+      ...(dto.exchangeRate !== undefined && { exchangeRate: dto.exchangeRate }),
+      ...(dto.totalValue !== undefined && { totalValue: dto.totalValue }),
+      ...(dto.note !== undefined && { note: dto.note }),
     });
 
     return transaction as unknown as SecurityTransaction;
@@ -187,26 +135,26 @@ export class SecurityTransactionsService {
 
   async deleteSecurityTransaction(id: string): Promise<void> {
     // Check if security transaction exists
-    const existing = await this.prisma.securityTransaction.findUnique({
-      where: { id },
-    });
+    const existing = await this.securityTransactionsRepository.findById(id);
 
     if (!existing) {
       throw new NotFoundException('Security transaction not found');
     }
 
     // Delete the transaction
-    await this.prisma.securityTransaction.delete({
-      where: { id },
-    });
+    await this.securityTransactionsRepository.delete(id);
+  }
+
+  private async ensureSecurityExists(securityId: string): Promise<void> {
+    if (!(await this.securitiesRepository.existsById(securityId))) {
+      throw new NotFoundException(
+        `Security with ID ${securityId} not found`
+      );
+    }
   }
 
   private async ensureCurrencyExists(code: string): Promise<void> {
-    const currency = await this.prisma.currency.findUnique({
-      where: { code },
-    });
-
-    if (!currency) {
+    if (!(await this.currenciesRepository.existsByCode(code))) {
       throw new NotFoundException(`Currency with code ${code} not found`);
     }
   }
@@ -274,14 +222,8 @@ export class SecurityTransactionsService {
     )];
 
     const [existingSecurities, existingCurrencies] = await Promise.all([
-      this.prisma.security.findMany({
-        where: { isin: { in: isinsToCheck } },
-        select: { id: true, isin: true },
-      }),
-      this.prisma.currency.findMany({
-        where: { code: { in: currenciesToCheck } },
-        select: { code: true },
-      }),
+      this.securitiesRepository.findIdsByIsins(isinsToCheck),
+      this.currenciesRepository.findExistingCodes(currenciesToCheck),
     ]);
 
     // Create lookup maps for O(1) access
@@ -290,7 +232,7 @@ export class SecurityTransactionsService {
         .filter(s => s.isin)
         .map(s => [s.isin!.toUpperCase(), s.id])
     );
-    const existingCurrenciesSet = new Set(existingCurrencies.map(c => c.code));
+    const existingCurrenciesSet = new Set(existingCurrencies);
 
     // Process and validate each row
     const results: ImportTransactionResult[] = [];
@@ -435,9 +377,8 @@ export class SecurityTransactionsService {
     // Batch create all valid transactions
     if (transactionsToCreate.length > 0) {
       try {
-        const createResult = await this.prisma.securityTransaction.createManyAndReturn({
-          data: transactionsToCreate,
-        });
+        const createResult =
+          await this.securityTransactionsRepository.createMany(transactionsToCreate);
 
         // Update results with actual transaction IDs
         let createdIndex = 0;

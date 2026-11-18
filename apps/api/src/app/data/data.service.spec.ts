@@ -1,53 +1,72 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataService } from './data.service';
-import { PrismaService } from '../../prisma.service';
+import { DataImportRepository } from './data-import.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
+import { SecuritiesRepository } from '../securities/securities.repository';
+import { DividendPaymentsRepository } from '../dividend-payments/dividend-payments.repository';
+import { SecurityTransactionsRepository } from '../security-transactions/security-transactions.repository';
+import { SecurityPricesRepository } from '../security-prices/security-prices.repository';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 describe('DataService', () => {
   let service: DataService;
-  let prisma: PrismaService;
 
-  const mockPrismaService = {
-    currency: {
-      findMany: jest.fn(),
-    },
-    security: {
-      findMany: jest.fn(),
-    },
-    dividendPayment: {
-      findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      upsert: jest.fn(),
-    },
-    securityTransaction: {
-      findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      upsert: jest.fn(),
-    },
-    securityPrice: {
-      findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      upsert: jest.fn(),
-    },
-    exchangeRate: {
-      deleteMany: jest.fn(),
-      upsert: jest.fn(),
-    },
-    $transaction: jest.fn(),
+  const mockCurrenciesRepository = {
+    findAll: jest.fn(),
+  };
+
+  const mockSecuritiesRepository = {
+    findAll: jest.fn(),
+  };
+
+  const mockDividendPaymentsRepository = {
+    findAllForExport: jest.fn(),
+  };
+
+  const mockSecurityTransactionsRepository = {
+    findAllForExport: jest.fn(),
+  };
+
+  const mockSecurityPricesRepository = {
+    findAllForExport: jest.fn(),
+  };
+
+  const mockDataImportRepository = {
+    importAll: jest.fn(),
   };
 
   const mockExchangeRatesService = {
     getAllExchangeRates: jest.fn().mockResolvedValue([]),
   };
 
+  const emptyCounts = {
+    currenciesImported: 0,
+    securitiesImported: 0,
+    dividendPaymentsImported: 0,
+    securityTransactionsImported: 0,
+    securityPricesImported: 0,
+    exchangeRatesImported: 0,
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DataService,
+        { provide: CurrenciesRepository, useValue: mockCurrenciesRepository },
+        { provide: SecuritiesRepository, useValue: mockSecuritiesRepository },
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: DividendPaymentsRepository,
+          useValue: mockDividendPaymentsRepository,
         },
+        {
+          provide: SecurityTransactionsRepository,
+          useValue: mockSecurityTransactionsRepository,
+        },
+        {
+          provide: SecurityPricesRepository,
+          useValue: mockSecurityPricesRepository,
+        },
+        { provide: DataImportRepository, useValue: mockDataImportRepository },
         {
           provide: ExchangeRatesService,
           useValue: mockExchangeRatesService,
@@ -56,7 +75,6 @@ describe('DataService', () => {
     }).compile();
 
     service = module.get<DataService>(DataService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -72,15 +90,15 @@ describe('DataService', () => {
       const mockSecurityPrices = [{ id: 'price-1', close: 100 }];
       const mockExchangeRates = [{ id: 'rate-1', baseCurrency: 'EUR', targetCurrency: 'USD', rate: 1.1 }];
 
-      mockPrismaService.currency.findMany.mockResolvedValue(mockCurrencies);
-      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
-      mockPrismaService.dividendPayment.findMany.mockResolvedValue(
+      mockCurrenciesRepository.findAll.mockResolvedValue(mockCurrencies);
+      mockSecuritiesRepository.findAll.mockResolvedValue(mockSecurities);
+      mockDividendPaymentsRepository.findAllForExport.mockResolvedValue(
         mockDividendPayments
       );
-      mockPrismaService.securityTransaction.findMany.mockResolvedValue(
+      mockSecurityTransactionsRepository.findAllForExport.mockResolvedValue(
         mockSecurityTransactions
       );
-      mockPrismaService.securityPrice.findMany.mockResolvedValue(
+      mockSecurityPricesRepository.findAllForExport.mockResolvedValue(
         mockSecurityPrices
       );
       mockExchangeRatesService.getAllExchangeRates.mockResolvedValue(
@@ -99,21 +117,18 @@ describe('DataService', () => {
       expect(result.exportedAt).toBeDefined();
       expect(typeof result.exportedAt).toBe('string');
 
-      expect(prisma.currency.findMany).toHaveBeenCalledWith({
-        orderBy: { code: 'asc' },
-      });
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        orderBy: { symbol: 'asc' },
-      });
-      expect(prisma.dividendPayment.findMany).toHaveBeenCalledWith({
-        orderBy: { exDate: 'asc' },
-      });
-      expect(prisma.securityTransaction.findMany).toHaveBeenCalledWith({
-        orderBy: { date: 'asc' },
-      });
-      expect(prisma.securityPrice.findMany).toHaveBeenCalledWith({
-        orderBy: { date: 'asc' },
-      });
+      expect(mockCurrenciesRepository.findAll).toHaveBeenCalledTimes(1);
+      expect(mockSecuritiesRepository.findAll).toHaveBeenCalledTimes(1);
+      expect(
+        mockDividendPaymentsRepository.findAllForExport
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        mockSecurityTransactionsRepository.findAllForExport
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        mockSecurityPricesRepository.findAllForExport
+      ).toHaveBeenCalledTimes(1);
+      expect(mockExchangeRatesService.getAllExchangeRates).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -127,102 +142,59 @@ describe('DataService', () => {
         securityPrices: [{ id: 'price-1', close: 100 }],
         exchangeRates: [{ id: 'rate-1', baseCurrency: 'EUR', targetCurrency: 'USD', rate: 1.1 }],
       };
-
-      const mockTx = {
-        currency: { upsert: jest.fn(), deleteMany: jest.fn() },
-        security: { upsert: jest.fn() },
-        dividendPayment: { upsert: jest.fn(), deleteMany: jest.fn() },
-        securityTransaction: { upsert: jest.fn(), deleteMany: jest.fn() },
-        securityPrice: { upsert: jest.fn(), deleteMany: jest.fn() },
-        exchangeRate: { upsert: jest.fn(), deleteMany: jest.fn() },
+      const counts = {
+        currenciesImported: 1,
+        securitiesImported: 1,
+        dividendPaymentsImported: 1,
+        securityTransactionsImported: 1,
+        securityPricesImported: 1,
+        exchangeRatesImported: 1,
       };
-
-      mockPrismaService.$transaction.mockImplementation((callback) =>
-        callback(mockTx)
-      );
+      mockDataImportRepository.importAll.mockResolvedValueOnce(counts);
 
       const result = await service.importAllData(importData);
 
-      expect(result.currenciesImported).toBe(1);
-      expect(result.securitiesImported).toBe(1);
-      expect(result.dividendPaymentsImported).toBe(1);
-      expect(result.securityTransactionsImported).toBe(1);
-      expect(result.securityPricesImported).toBe(1);
-      expect(result.exchangeRatesImported).toBe(1);
-
-      expect(mockTx.currency.upsert).toHaveBeenCalled();
-      expect(mockTx.security.upsert).toHaveBeenCalled();
-      expect(mockTx.dividendPayment.upsert).toHaveBeenCalled();
-      expect(mockTx.securityTransaction.upsert).toHaveBeenCalled();
-      expect(mockTx.securityPrice.upsert).toHaveBeenCalled();
-      expect(mockTx.exchangeRate.upsert).toHaveBeenCalled();
-
-      expect(mockTx.currency.deleteMany).not.toHaveBeenCalled();
-      expect(mockTx.dividendPayment.deleteMany).not.toHaveBeenCalled();
-      expect(mockTx.securityTransaction.deleteMany).not.toHaveBeenCalled();
-      expect(mockTx.securityPrice.deleteMany).not.toHaveBeenCalled();
-      expect(mockTx.exchangeRate.deleteMany).not.toHaveBeenCalled();
+      expect(result).toEqual(counts);
+      expect(mockDataImportRepository.importAll).toHaveBeenCalledWith(
+        importData,
+        {}
+      );
     });
 
     it('should clear existing data when requested', async () => {
       const importData = {
         securities: [{ id: 'security-1', symbol: 'AAPL' }],
       };
-
-      const mockTx = {
-        security: { upsert: jest.fn(), deleteMany: jest.fn() },
-        dividendPayment: { upsert: jest.fn(), deleteMany: jest.fn() },
-        securityTransaction: { upsert: jest.fn(), deleteMany: jest.fn() },
-        securityPrice: { upsert: jest.fn(), deleteMany: jest.fn() },
-        exchangeRate: { upsert: jest.fn(), deleteMany: jest.fn() },
-        currency: { upsert: jest.fn(), deleteMany: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation((callback) =>
-        callback(mockTx)
-      );
+      mockDataImportRepository.importAll.mockResolvedValueOnce({
+        ...emptyCounts,
+        securitiesImported: 1,
+      });
 
       await service.importAllData(importData, { clearExisting: true });
 
-      expect(mockTx.currency.deleteMany).toHaveBeenCalled();
-      expect(mockTx.dividendPayment.deleteMany).toHaveBeenCalled();
-      expect(mockTx.securityTransaction.deleteMany).toHaveBeenCalled();
-      expect(mockTx.securityPrice.deleteMany).toHaveBeenCalled();
-      expect(mockTx.exchangeRate.deleteMany).toHaveBeenCalled();
-      expect(mockTx.security.deleteMany).toHaveBeenCalled();
+      expect(mockDataImportRepository.importAll).toHaveBeenCalledWith(
+        importData,
+        { clearExisting: true }
+      );
     });
 
     it('should handle empty import data', async () => {
-      const importData = {};
+      mockDataImportRepository.importAll.mockResolvedValueOnce(emptyCounts);
 
-      const mockTx = {
-        security: { upsert: jest.fn() },
-        dividendPayment: { upsert: jest.fn(), deleteMany: jest.fn() },
-        securityTransaction: { upsert: jest.fn(), deleteMany: jest.fn() },
-        securityPrice: { upsert: jest.fn(), deleteMany: jest.fn() },
-        exchangeRate: { upsert: jest.fn(), deleteMany: jest.fn() },
-        currency: { upsert: jest.fn(), deleteMany: jest.fn() },
-      };
+      const result = await service.importAllData({});
 
-      mockPrismaService.$transaction.mockImplementation((callback) =>
-        callback(mockTx)
+      expect(result).toEqual(emptyCounts);
+      expect(mockDataImportRepository.importAll).toHaveBeenCalledWith({}, {});
+    });
+
+    it('should propagate errors from the import (transaction rolled back)', async () => {
+      mockDataImportRepository.importAll.mockRejectedValueOnce(
+        new Error('Foreign key constraint failed')
       );
 
-      const result = await service.importAllData(importData);
-
-      expect(result.currenciesImported).toBe(0);
-      expect(result.securitiesImported).toBe(0);
-      expect(result.dividendPaymentsImported).toBe(0);
-      expect(result.securityTransactionsImported).toBe(0);
-      expect(result.securityPricesImported).toBe(0);
-      expect(result.exchangeRatesImported).toBe(0);
-
-      expect(mockTx.currency.upsert).not.toHaveBeenCalled();
-      expect(mockTx.security.upsert).not.toHaveBeenCalled();
-      expect(mockTx.dividendPayment.upsert).not.toHaveBeenCalled();
-      expect(mockTx.securityTransaction.upsert).not.toHaveBeenCalled();
-      expect(mockTx.securityPrice.upsert).not.toHaveBeenCalled();
-      expect(mockTx.exchangeRate.upsert).not.toHaveBeenCalled();
+      await expect(
+        service.importAllData({ securities: [{ id: 'security-1' }] })
+      ).rejects.toThrow('Foreign key constraint failed');
     });
   });
 });

@@ -1,24 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { SecurityPricesService } from './security-prices.service';
-import { PrismaService } from '../../prisma.service';
+import { SecurityPricesRepository } from './security-prices.repository';
+import { SecuritiesRepository } from '../securities/securities.repository';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
-
-
 
 describe('SecurityPricesService', () => {
   let service: SecurityPricesService;
-  let prisma: PrismaService;
 
-  const mockPrismaService = {
-    $queryRaw: jest.fn(),
-    security: {
-      findMany: jest.fn(),
-    },
-    securityPrice: {
-      createMany: jest.fn(),
-      findFirst: jest.fn(),
-    },
+  const mockSecurityPricesRepository = {
+    findLatestPerSecurity: jest.fn(),
+    findLatestDateBySecurityId: jest.fn(),
+    findEarliestLatestDate: jest.fn(),
+    createMany: jest.fn(),
+  };
+
+  const mockSecuritiesRepository = {
+    findAllOrById: jest.fn(),
   };
 
   const mockExchangeRatesService = {
@@ -32,8 +30,12 @@ describe('SecurityPricesService', () => {
       providers: [
         SecurityPricesService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: SecurityPricesRepository,
+          useValue: mockSecurityPricesRepository,
+        },
+        {
+          provide: SecuritiesRepository,
+          useValue: mockSecuritiesRepository,
         },
         {
           provide: ExchangeRatesService,
@@ -43,7 +45,6 @@ describe('SecurityPricesService', () => {
     }).compile();
 
     service = module.get<SecurityPricesService>(SecurityPricesService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
@@ -53,6 +54,15 @@ describe('SecurityPricesService', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
+
+  /** Spies on the private provider fetch so that no HTTP requests are made. */
+  const spyOnFetch = () =>
+    jest.spyOn(
+      service as unknown as {
+        fetchHistoricalPricesWithRetry: () => Promise<unknown[]>;
+      },
+      'fetchHistoricalPricesWithRetry'
+    );
 
   describe('getLatestPrices', () => {
     it('should return latest prices for all securities', async () => {
@@ -73,12 +83,12 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValue(mockRawPrices);
+      mockSecurityPricesRepository.findLatestPerSecurity.mockResolvedValue(mockRawPrices);
 
       const result = await service.getLatestPrices();
 
       expect(result).toEqual(mockRawPrices);
-      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(mockSecurityPricesRepository.findLatestPerSecurity).toHaveBeenCalled();
     });
 
     it('should handle Decimal types from database', async () => {
@@ -99,7 +109,7 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValue(mockRawPrices);
+      mockSecurityPricesRepository.findLatestPerSecurity.mockResolvedValue(mockRawPrices);
 
       const result = await service.getLatestPrices();
 
@@ -128,7 +138,7 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValue(mockRawPrices);
+      mockSecurityPricesRepository.findLatestPerSecurity.mockResolvedValue(mockRawPrices);
 
       const result = await service.getLatestPrices();
 
@@ -146,15 +156,11 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
-      mockPrismaService.securityPrice.createMany.mockResolvedValue({
-        count: 0,
-      });
+      mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
+      mockSecurityPricesRepository.createMany.mockResolvedValue(0);
 
       // Mock the private fetchHistoricalPricesWithRetry to return empty
-      jest
-        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockResolvedValue([] as any);
+      spyOnFetch().mockResolvedValue([]);
 
       const result = await service.syncHistoricalPrices();
 
@@ -166,7 +172,7 @@ describe('SecurityPricesService', () => {
       expect(result.exchangeRates.currencies).toEqual({
         USD: { synced: 10, skipped: 0 },
       });
-      expect(prisma.security.findMany).toHaveBeenCalled();
+      expect(mockSecuritiesRepository.findAllOrById).toHaveBeenCalledWith(undefined);
     });
 
     it('should filter by security ID when provided', async () => {
@@ -178,21 +184,16 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
-      mockPrismaService.securityPrice.createMany.mockResolvedValue({
-        count: 0,
-      });
+      mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
+      mockSecurityPricesRepository.createMany.mockResolvedValue(0);
 
-      jest
-        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockResolvedValue([] as any);
+      spyOnFetch().mockResolvedValue([]);
 
       await service.syncHistoricalPrices({ securityId: 'security-1' });
 
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        where: { id: 'security-1' },
-        orderBy: { symbol: 'asc' },
-      });
+      expect(mockSecuritiesRepository.findAllOrById).toHaveBeenCalledWith(
+        'security-1'
+      );
     });
 
     it('should handle date range options', async () => {
@@ -206,14 +207,10 @@ describe('SecurityPricesService', () => {
       const from = new Date('2024-01-01');
       const to = new Date('2024-12-31');
 
-      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
-      mockPrismaService.securityPrice.createMany.mockResolvedValue({
-        count: 0,
-      });
+      mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
+      mockSecurityPricesRepository.createMany.mockResolvedValue(0);
 
-      jest
-        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockResolvedValue([] as any);
+      spyOnFetch().mockResolvedValue([]);
 
       const result = await service.syncHistoricalPrices({ from, to });
 
@@ -231,11 +228,9 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
+      mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
 
-      jest
-        .spyOn(service as any, 'fetchHistoricalPricesWithRetry')
-        .mockRejectedValueOnce(new Error('API error') as any);
+      spyOnFetch().mockRejectedValueOnce(new Error('API error'));
 
       const result = await service.syncHistoricalPrices();
 
@@ -254,14 +249,10 @@ describe('SecurityPricesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(mockSecurities);
-      mockPrismaService.securityPrice.createMany.mockResolvedValue({
-        count: 5,
-      });
+      mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
+      mockSecurityPricesRepository.createMany.mockResolvedValue(5);
 
-      (jest
-        .spyOn(service as any, 'fetchHistoricalPricesWithRetry') as any)
-        .mockResolvedValue([
+      spyOnFetch().mockResolvedValue([
           {
             date: new Date('2024-01-01'),
             open: 100,
@@ -283,6 +274,22 @@ describe('SecurityPricesService', () => {
       // Price sync should succeed
       expect(result.pricesInserted).toBe(5);
       expect(result.failures).toEqual([]);
+      expect(mockSecurityPricesRepository.createMany).toHaveBeenCalledWith([
+        {
+          id: expect.any(String),
+          securityId: 'security-1',
+          date: new Date('2024-01-01'),
+          open: 100,
+          high: 105,
+          low: 99,
+          close: 102,
+          volume: 1000000,
+          currency: 'USD',
+          provider: 'yahoo',
+          createdAt: expect.any(Date),
+          updatedAt: expect.any(Date),
+        },
+      ]);
 
       // Exchange rate sync should be marked as failed with error message
       expect(result.exchangeRates.synced).toBe(false);
@@ -294,22 +301,25 @@ describe('SecurityPricesService', () => {
   describe('getLastPriceUpdateDate', () => {
     it('should return the latest price date for a specific security', async () => {
       const mockDate = new Date('2024-12-31');
-      mockPrismaService.securityPrice.findFirst.mockResolvedValue({
-        date: mockDate,
-      });
+      mockSecurityPricesRepository.findLatestDateBySecurityId.mockResolvedValue(
+        mockDate
+      );
 
       const result = await service.getLastPriceUpdateDate('security-1');
 
       expect(result).toEqual(mockDate);
-      expect(prisma.securityPrice.findFirst).toHaveBeenCalledWith({
-        where: { securityId: 'security-1' },
-        orderBy: { date: 'desc' },
-        select: { date: true },
-      });
+      expect(
+        mockSecurityPricesRepository.findLatestDateBySecurityId
+      ).toHaveBeenCalledWith('security-1');
+      expect(
+        mockSecurityPricesRepository.findEarliestLatestDate
+      ).not.toHaveBeenCalled();
     });
 
     it('should return null when no prices exist for a specific security', async () => {
-      mockPrismaService.securityPrice.findFirst.mockResolvedValue(null);
+      mockSecurityPricesRepository.findLatestDateBySecurityId.mockResolvedValue(
+        null
+      );
 
       const result = await service.getLastPriceUpdateDate('security-1');
 
@@ -318,20 +328,25 @@ describe('SecurityPricesService', () => {
 
     it('should return the earliest last update date across all securities', async () => {
       const mockDate = new Date('2024-11-01');
-      mockPrismaService.$queryRaw.mockResolvedValue([
-        { min_date: mockDate },
-      ]);
+      mockSecurityPricesRepository.findEarliestLatestDate.mockResolvedValue(
+        mockDate
+      );
 
       const result = await service.getLastPriceUpdateDate();
 
       expect(result).toEqual(mockDate);
-      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(
+        mockSecurityPricesRepository.findEarliestLatestDate
+      ).toHaveBeenCalled();
+      expect(
+        mockSecurityPricesRepository.findLatestDateBySecurityId
+      ).not.toHaveBeenCalled();
     });
 
     it('should return null when no prices exist for any security', async () => {
-      mockPrismaService.$queryRaw.mockResolvedValue([
-        { min_date: null },
-      ]);
+      mockSecurityPricesRepository.findEarliestLatestDate.mockResolvedValue(
+        null
+      );
 
       const result = await service.getLastPriceUpdateDate();
 

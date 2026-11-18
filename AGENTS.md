@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `apps/api`: NestJS backend with Prisma (schema in `apps/api/prisma/schema.prisma`, generated client in `apps/api/generated/prisma`).
+- `apps/api`: NestJS backend with Prisma (schema in `apps/api/prisma/schema.prisma`, generated client in `apps/api/generated/prisma`). Services access the database only through repositories (`*.repository.ts`), provided by the global `DatabaseModule` (`apps/api/src/app/database`).
 - `apps/dividends`: Angular 22 frontend (standalone components, SCSS, API proxy in `apps/dividends/proxy.conf.json`).
 - `apps/api-e2e`: API end-to-end tests (Jest).
 - `packages/shared`: Shared types/utilities, imported via `@dividends/shared`.

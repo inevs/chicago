@@ -23,7 +23,7 @@
 ├─────────────────────────────────────────┤
 │           Services Layer                │  (Business logic)
 ├─────────────────────────────────────────┤
-│         Data Access Layer               │  (Prisma ORM)
+│         Data Access Layer               │  (Repositories, Prisma ORM)
 ├─────────────────────────────────────────┤
 │            Database                     │  (PostgreSQL)
 └─────────────────────────────────────────┘
@@ -35,7 +35,7 @@
 - Easy to test individual layers
 
 **Current Implementation Gaps**:
-- ❌ No repository abstraction (services directly use Prisma)
+- ✅ Repository abstraction: services use typed repositories (`*.repository.ts`), only the repositories use Prisma
 - ✅ Centralized exception handling via `GlobalExceptionFilter` (registered in `main.ts`)
 - ❌ Limited transaction management
 - ❌ No caching layer

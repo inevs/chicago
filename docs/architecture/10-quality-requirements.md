@@ -90,10 +90,9 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 - Service specs exist for the API services, plus integration tests (`*.integration.spec.ts`) for auth, securities and dividend payments
 - Test data factories in `apps/api/src/testing/factories` (currency, security, dividend payment, user)
 - `apps/api/src/testing/integration-test.helper.ts` creates a test application for integration tests
-- Service uses Prisma directly
+- Service uses repositories (`DividendPaymentsRepository`, `SecuritiesRepository`, `CurrenciesRepository`) instead of Prisma; repositories have their own specs
 
 **Challenges**:
-- ⚠️ Mocking Prisma still requires per-test setup (no repository abstraction)
 - ⚠️ No coverage thresholds enforced
 
 **Effort**: ~1-2 hours (infrastructure already in place)
@@ -345,7 +344,7 @@ class CurrencyLayerProvider implements ExchangeRateProvider { }
 
 **Medium (Maintainability)**:
 1. ~~Refactor AppStateService~~ (done); `TransactionFacadeService` (~585 lines) is now the largest service
-2. Add repository pattern abstraction
+2. ~~Add repository pattern abstraction~~ (done)
 3. Enforce coverage thresholds (target 80%)
 
 **Low (Performance)**:

@@ -1,28 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { SecuritiesService } from './securities.service';
-import { PrismaService } from '../../prisma.service';
+import { SecuritiesRepository } from './securities.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { SecurityType } from '@dividends/shared';
 import { UploadedFile } from './dto/import-securities-csv.dto';
 
 describe('SecuritiesService', () => {
   let service: SecuritiesService;
-  let prisma: PrismaService;
+  let securitiesRepository: SecuritiesRepository;
+  let currenciesRepository: CurrenciesRepository;
   let securityPricesService: SecurityPricesService;
 
-  const mockPrismaService = {
-    security: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      createManyAndReturn: jest.fn(),
-      update: jest.fn(),
-    },
-    currency: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-    },
+  const mockSecuritiesRepository = {
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    findBySymbol: jest.fn(),
+    findExistingSymbols: jest.fn(),
+    search: jest.fn(),
+    create: jest.fn(),
+    createMany: jest.fn(),
+    update: jest.fn(),
+  };
+
+  const mockCurrenciesRepository = {
+    existsByCode: jest.fn(),
+    findExistingCodes: jest.fn(),
   };
 
   const mockSecurityPricesService = {
@@ -37,8 +41,12 @@ describe('SecuritiesService', () => {
       providers: [
         SecuritiesService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: SecuritiesRepository,
+          useValue: mockSecuritiesRepository,
+        },
+        {
+          provide: CurrenciesRepository,
+          useValue: mockCurrenciesRepository,
         },
         {
           provide: SecurityPricesService,
@@ -48,7 +56,8 @@ describe('SecuritiesService', () => {
     }).compile();
 
     service = module.get<SecuritiesService>(SecuritiesService);
-    prisma = module.get<PrismaService>(PrismaService);
+    securitiesRepository = module.get<SecuritiesRepository>(SecuritiesRepository);
+    currenciesRepository = module.get<CurrenciesRepository>(CurrenciesRepository);
     securityPricesService = module.get<SecurityPricesService>(SecurityPricesService);
   });
 
@@ -75,20 +84,16 @@ describe('SecuritiesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
-      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'USD' });
-      mockPrismaService.security.create.mockResolvedValue(createdSecurity);
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockSecuritiesRepository.create.mockResolvedValue(createdSecurity);
 
       const result = await service.createSecurity(dto);
 
       expect(result).toEqual(createdSecurity);
-      expect(prisma.security.findUnique).toHaveBeenCalledWith({
-        where: { symbol: 'AAPL' },
-      });
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: 'USD' },
-      });
-      expect(prisma.security.create).toHaveBeenCalledWith({ data: dto });
+      expect(securitiesRepository.findBySymbol).toHaveBeenCalledWith('AAPL');
+      expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('USD');
+      expect(securitiesRepository.create).toHaveBeenCalledWith(dto);
       expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledWith({
         securityId: 'uuid-123',
       });
@@ -103,15 +108,15 @@ describe('SecuritiesService', () => {
         currency: 'USD',
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue({
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue({
         id: 'existing-id',
       });
 
       await expect(service.createSecurity(dto)).rejects.toThrow(
         ConflictException
       );
-      expect(prisma.currency.findUnique).not.toHaveBeenCalled();
-      expect(prisma.security.create).not.toHaveBeenCalled();
+      expect(currenciesRepository.existsByCode).not.toHaveBeenCalled();
+      expect(securitiesRepository.create).not.toHaveBeenCalled();
       expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
     });
 
@@ -133,9 +138,9 @@ describe('SecuritiesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
-      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'USD' });
-      mockPrismaService.security.create.mockResolvedValue(createdSecurity);
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockSecuritiesRepository.create.mockResolvedValue(createdSecurity);
 
       const result = await service.createSecurity(dto);
 
@@ -151,13 +156,13 @@ describe('SecuritiesService', () => {
         currency: 'USD',
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
 
       await expect(service.createSecurity(dto)).rejects.toThrow(
         NotFoundException
       );
-      expect(prisma.security.create).not.toHaveBeenCalled();
+      expect(securitiesRepository.create).not.toHaveBeenCalled();
       expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
     });
   });
@@ -191,18 +196,16 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.findAll.mockResolvedValue(securities);
 
       const result = await service.getAllSecurities();
 
       expect(result).toEqual(securities);
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        orderBy: { symbol: 'asc' },
-      });
+      expect(securitiesRepository.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should return empty array when no securities exist', async () => {
-      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockSecuritiesRepository.findAll.mockResolvedValue([]);
 
       const result = await service.getAllSecurities();
 
@@ -225,18 +228,16 @@ describe('SecuritiesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(security);
+      mockSecuritiesRepository.findById.mockResolvedValue(security);
 
       const result = await service.getSecurityById('uuid-123');
 
       expect(result).toEqual(security);
-      expect(prisma.security.findUnique).toHaveBeenCalledWith({
-        where: { id: 'uuid-123' },
-      });
+      expect(securitiesRepository.findById).toHaveBeenCalledWith('uuid-123');
     });
 
     it('should throw NotFoundException when security not found', async () => {
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.findById.mockResolvedValue(null);
 
       await expect(service.getSecurityById('invalid-id')).rejects.toThrow(
         NotFoundException
@@ -270,19 +271,16 @@ describe('SecuritiesService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(existingSecurity);
-      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockSecuritiesRepository.update.mockResolvedValue(updatedSecurity);
 
       const result = await service.updateSecurity('uuid-123', dto);
 
       expect(result).toEqual(updatedSecurity);
-      expect(prisma.security.findUnique).toHaveBeenCalledWith({
-        where: { id: 'uuid-123' },
-      });
-      expect(prisma.security.update).toHaveBeenCalledWith({
-        where: { id: 'uuid-123' },
-        data: dto,
-      });
+      expect(securitiesRepository.findById).toHaveBeenCalledWith('uuid-123');
+      expect(securitiesRepository.findBySymbol).not.toHaveBeenCalled();
+      expect(currenciesRepository.existsByCode).not.toHaveBeenCalled();
+      expect(securitiesRepository.update).toHaveBeenCalledWith('uuid-123', dto);
     });
 
     it('should throw NotFoundException when security does not exist', async () => {
@@ -290,12 +288,12 @@ describe('SecuritiesService', () => {
         name: 'Updated',
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.findById.mockResolvedValue(null);
 
       await expect(service.updateSecurity('invalid-id', dto)).rejects.toThrow(
         NotFoundException
       );
-      expect(prisma.security.update).not.toHaveBeenCalled();
+      expect(securitiesRepository.update).not.toHaveBeenCalled();
     });
 
     it('should update symbol when provided and not duplicate', async () => {
@@ -317,18 +315,16 @@ describe('SecuritiesService', () => {
         symbol: 'AAPL2',
       };
 
-      mockPrismaService.security.findUnique
-        .mockResolvedValueOnce(existingSecurity) // First call - finding the security
-        .mockResolvedValueOnce(null); // Second call - checking for duplicate symbol
-      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity); // Finding the security
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null); // Checking for duplicate symbol
+      mockSecuritiesRepository.update.mockResolvedValue(updatedSecurity);
 
       const result = await service.updateSecurity('uuid-123', dto);
 
       expect(result.symbol).toBe('AAPL2');
-      expect(prisma.security.findUnique).toHaveBeenCalledTimes(2);
-      expect(prisma.security.findUnique).toHaveBeenNthCalledWith(2, {
-        where: { symbol: 'AAPL2' },
-      });
+      expect(securitiesRepository.findById).toHaveBeenCalledTimes(1);
+      expect(securitiesRepository.findBySymbol).toHaveBeenCalledTimes(1);
+      expect(securitiesRepository.findBySymbol).toHaveBeenCalledWith('AAPL2');
     });
 
     it('should throw ConflictException when new symbol already exists', async () => {
@@ -341,14 +337,16 @@ describe('SecuritiesService', () => {
         symbol: 'MSFT',
       };
 
-      mockPrismaService.security.findUnique
-        .mockResolvedValueOnce(existingSecurity)
-        .mockResolvedValueOnce({ id: 'uuid-456', symbol: 'MSFT' });
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue({
+        id: 'uuid-456',
+        symbol: 'MSFT',
+      });
 
       await expect(service.updateSecurity('uuid-123', dto)).rejects.toThrow(
         ConflictException
       );
-      expect(prisma.security.update).not.toHaveBeenCalled();
+      expect(securitiesRepository.update).not.toHaveBeenCalled();
     });
 
     it('should not check for duplicate when symbol is the same', async () => {
@@ -368,15 +366,14 @@ describe('SecuritiesService', () => {
         name: 'Apple Inc. Updated',
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValueOnce(
-        existingSecurity
-      );
-      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockSecuritiesRepository.update.mockResolvedValue(updatedSecurity);
 
       await service.updateSecurity('uuid-123', dto);
 
-      expect(prisma.security.findUnique).toHaveBeenCalledTimes(1);
-      expect(prisma.security.update).toHaveBeenCalled();
+      expect(securitiesRepository.findById).toHaveBeenCalledTimes(1);
+      expect(securitiesRepository.findBySymbol).not.toHaveBeenCalled();
+      expect(securitiesRepository.update).toHaveBeenCalled();
     });
 
     it('should validate currency when provided', async () => {
@@ -389,18 +386,16 @@ describe('SecuritiesService', () => {
         currency: 'EUR',
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(existingSecurity);
-      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'EUR' });
-      mockPrismaService.security.update.mockResolvedValue({
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockSecuritiesRepository.update.mockResolvedValue({
         ...existingSecurity,
         currency: 'EUR',
       });
 
       await service.updateSecurity('uuid-123', dto);
 
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: 'EUR' },
-      });
+      expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('EUR');
     });
 
     it('should throw NotFoundException when currency does not exist', async () => {
@@ -413,13 +408,13 @@ describe('SecuritiesService', () => {
         currency: 'XYZ',
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(existingSecurity);
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
 
       await expect(service.updateSecurity('uuid-123', dto)).rejects.toThrow(
         NotFoundException
       );
-      expect(prisma.security.update).not.toHaveBeenCalled();
+      expect(securitiesRepository.update).not.toHaveBeenCalled();
     });
 
     it('should update all fields when provided', async () => {
@@ -449,15 +444,15 @@ describe('SecuritiesService', () => {
         ...dto,
       };
 
-      mockPrismaService.security.findUnique
-        .mockResolvedValueOnce(existingSecurity)
-        .mockResolvedValueOnce(null);
-      mockPrismaService.currency.findUnique.mockResolvedValue({ code: 'EUR' });
-      mockPrismaService.security.update.mockResolvedValue(updatedSecurity);
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockSecuritiesRepository.update.mockResolvedValue(updatedSecurity);
 
       const result = await service.updateSecurity('uuid-123', dto);
 
       expect(result).toMatchObject(dto);
+      expect(securitiesRepository.update).toHaveBeenCalledWith('uuid-123', dto);
     });
   });
 
@@ -474,14 +469,13 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.findAll.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('');
 
       expect(result).toEqual(securities);
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        orderBy: { symbol: 'asc' },
-      });
+      expect(securitiesRepository.findAll).toHaveBeenCalledTimes(1);
+      expect(securitiesRepository.search).not.toHaveBeenCalled();
     });
 
     it('should return all securities when query is only whitespace', async () => {
@@ -496,14 +490,13 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.findAll.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('   ');
 
       expect(result).toEqual(securities);
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        orderBy: { symbol: 'asc' },
-      });
+      expect(securitiesRepository.findAll).toHaveBeenCalledTimes(1);
+      expect(securitiesRepository.search).not.toHaveBeenCalled();
     });
 
     it('should search by name case-insensitively', async () => {
@@ -518,23 +511,12 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.search.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('apple');
 
       expect(result).toEqual(securities);
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [
-            { name: { contains: 'apple', mode: 'insensitive' } },
-            { symbol: { contains: 'apple', mode: 'insensitive' } },
-            { isin: { contains: 'apple', mode: 'insensitive' } },
-            { wkn: { contains: 'apple', mode: 'insensitive' } },
-          ],
-        },
-        orderBy: { symbol: 'asc' },
-        take: 10,
-      });
+      expect(securitiesRepository.search).toHaveBeenCalledWith('apple', 10);
     });
 
     it('should search by symbol case-insensitively', async () => {
@@ -549,23 +531,12 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.search.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('aapl');
 
       expect(result).toEqual(securities);
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [
-            { name: { contains: 'aapl', mode: 'insensitive' } },
-            { symbol: { contains: 'aapl', mode: 'insensitive' } },
-            { isin: { contains: 'aapl', mode: 'insensitive' } },
-            { wkn: { contains: 'aapl', mode: 'insensitive' } },
-          ],
-        },
-        orderBy: { symbol: 'asc' },
-        take: 10,
-      });
+      expect(securitiesRepository.search).toHaveBeenCalledWith('aapl', 10);
     });
 
     it('should search by ISIN', async () => {
@@ -581,11 +552,16 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.search.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('US0378331005');
 
       expect(result).toEqual(securities);
+      // The search term is lower-cased before it is passed to the repository
+      expect(securitiesRepository.search).toHaveBeenCalledWith(
+        'us0378331005',
+        10
+      );
     });
 
     it('should search by WKN', async () => {
@@ -601,7 +577,7 @@ describe('SecuritiesService', () => {
         },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.search.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('865985');
 
@@ -618,39 +594,27 @@ describe('SecuritiesService', () => {
         currency: 'USD',
       }));
 
-      mockPrismaService.security.findMany.mockResolvedValue(securities);
+      mockSecuritiesRepository.search.mockResolvedValue(securities);
 
       const result = await service.searchSecurities('security');
 
       expect(result).toEqual(securities);
-      expect(prisma.security.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          take: 10,
-        })
+      expect(securitiesRepository.search).toHaveBeenCalledWith(
+        'security',
+        10
       );
     });
 
     it('should trim whitespace from search query', async () => {
-      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockSecuritiesRepository.search.mockResolvedValue([]);
 
       await service.searchSecurities('  apple  ');
 
-      expect(prisma.security.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [
-            { name: { contains: 'apple', mode: 'insensitive' } },
-            { symbol: { contains: 'apple', mode: 'insensitive' } },
-            { isin: { contains: 'apple', mode: 'insensitive' } },
-            { wkn: { contains: 'apple', mode: 'insensitive' } },
-          ],
-        },
-        orderBy: { symbol: 'asc' },
-        take: 10,
-      });
+      expect(securitiesRepository.search).toHaveBeenCalledWith('apple', 10);
     });
 
     it('should return empty array when no matches found', async () => {
-      mockPrismaService.security.findMany.mockResolvedValue([]);
+      mockSecuritiesRepository.search.mockResolvedValue([]);
 
       const result = await service.searchSecurities('nonexistent');
 
@@ -680,9 +644,9 @@ Microsoft Corp.,MSFT,STOCK,NASDAQ,USD,US5949181045,870747`;
         { id: 'uuid-2', name: 'Microsoft Corp.', symbol: 'MSFT', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD', isin: 'US5949181045', wkn: '870747' },
       ];
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue(createdSecurities);
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue(createdSecurities);
 
       const result = await service.importFromCsv(file);
 
@@ -700,9 +664,9 @@ Apple Inc.,AAPL,STOCK,NASDAQ,USD`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
         { id: 'uuid-1', name: 'Apple Inc.', symbol: 'AAPL', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
       ]);
 
@@ -710,11 +674,9 @@ Apple Inc.,AAPL,STOCK,NASDAQ,USD`;
 
       expect(result.created).toBe(1);
       expect(result.errors).toBe(0);
-      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: [expect.objectContaining({ name: 'Apple Inc.', symbol: 'AAPL' })],
-        })
-      );
+      expect(securitiesRepository.createMany).toHaveBeenCalledWith([
+        expect.objectContaining({ name: 'Apple Inc.', symbol: 'AAPL' }),
+      ]);
     });
 
     it('should skip duplicate symbols', async () => {
@@ -724,9 +686,9 @@ Microsoft Corp.,MSFT,STOCK,NASDAQ,USD`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([{ symbol: 'AAPL' }]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue(['AAPL']);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
         { id: 'uuid-2', symbol: 'MSFT', name: 'Microsoft Corp.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
       ]);
 
@@ -783,9 +745,9 @@ Apple Inc.,AAPL,INVALID,NASDAQ,USD`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([]);
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([]);
 
       const result = await service.importFromCsv(file);
 
@@ -801,9 +763,9 @@ Apple Inc.,AAPL,STOCK,NASDAQ,XYZ`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([]);
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue([]);
+      mockSecuritiesRepository.createMany.mockResolvedValue([]);
 
       const result = await service.importFromCsv(file);
 
@@ -819,9 +781,9 @@ Apple Inc.,AAPL,STOCK,NASDAQ,XYZ`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([]);
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([]);
 
       const result = await service.importFromCsv(file);
 
@@ -840,8 +802,8 @@ Apple Inc.,AAPL,STOCK,NASDAQ,XYZ`;
     });
 
     it('should handle no file provided', async () => {
-      await expect(service.importFromCsv(null as any)).rejects.toThrow(BadRequestException);
-      await expect(service.importFromCsv(null as any)).rejects.toThrow('No file provided');
+      await expect(service.importFromCsv(null as unknown as UploadedFile)).rejects.toThrow(BadRequestException);
+      await expect(service.importFromCsv(null as unknown as UploadedFile)).rejects.toThrow('No file provided');
     });
 
     it('should trim whitespace from fields', async () => {
@@ -850,27 +812,25 @@ Apple Inc.,AAPL,STOCK,NASDAQ,XYZ`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
         { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
       ]);
 
       const result = await service.importFromCsv(file);
 
       expect(result.created).toBe(1);
-      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({
-              name: 'Apple Inc.',
-              symbol: 'AAPL',
-              type: 'STOCK',
-              exchange: 'NASDAQ',
-              currency: 'USD',
-            }),
-          ]),
-        })
+      expect(securitiesRepository.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'Apple Inc.',
+            symbol: 'AAPL',
+            type: 'STOCK',
+            exchange: 'NASDAQ',
+            currency: 'USD',
+          }),
+        ])
       );
     });
 
@@ -880,23 +840,21 @@ Apple Inc.,aapl,STOCK,NASDAQ,USD`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
         { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
       ]);
 
       const result = await service.importFromCsv(file);
 
       expect(result.created).toBe(1);
-      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({
-              symbol: 'AAPL',
-            }),
-          ]),
-        })
+      expect(securitiesRepository.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            symbol: 'AAPL',
+          }),
+        ])
       );
     });
 
@@ -906,24 +864,22 @@ Apple Inc.,AAPL,STOCK,NASDAQ,USD,,`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
         { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD', isin: undefined, wkn: undefined },
       ]);
 
       const result = await service.importFromCsv(file);
 
       expect(result.created).toBe(1);
-      expect(mockPrismaService.security.createManyAndReturn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({
-              isin: undefined,
-              wkn: undefined,
-            }),
-          ]),
-        })
+      expect(securitiesRepository.createMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            isin: undefined,
+            wkn: undefined,
+          }),
+        ])
       );
     });
 
@@ -935,9 +891,9 @@ BMW AG,BMW.DE,STOCK,XETRA,EUR`;
 
       const file = createMockFile(csvContent);
 
-      mockPrismaService.security.findMany.mockResolvedValue([]);
-      mockPrismaService.currency.findMany.mockResolvedValue([{ code: 'USD' }, { code: 'EUR' }]);
-      mockPrismaService.security.createManyAndReturn.mockResolvedValue([
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD', 'EUR']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
         { id: 'uuid-1', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
         { id: 'uuid-2', symbol: 'MSFT', name: 'Microsoft Corp.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
         { id: 'uuid-3', symbol: 'BMW.DE', name: 'BMW AG', type: 'STOCK', exchange: 'XETRA', currency: 'EUR' },
@@ -945,21 +901,22 @@ BMW AG,BMW.DE,STOCK,XETRA,EUR`;
 
       await service.importFromCsv(file);
 
-      // Should only call findMany once for symbols and once for currencies
-      expect(mockPrismaService.security.findMany).toHaveBeenCalledTimes(1);
-      expect(mockPrismaService.currency.findMany).toHaveBeenCalledTimes(1);
+      // Should only load existing symbols once and existing currencies once
+      expect(securitiesRepository.findExistingSymbols).toHaveBeenCalledTimes(1);
+      expect(currenciesRepository.findExistingCodes).toHaveBeenCalledTimes(1);
 
       // Should call with all symbols at once
-      expect(mockPrismaService.security.findMany).toHaveBeenCalledWith({
-        where: { symbol: { in: ['AAPL', 'MSFT', 'BMW.DE'] } },
-        select: { symbol: true },
-      });
+      expect(securitiesRepository.findExistingSymbols).toHaveBeenCalledWith([
+        'AAPL',
+        'MSFT',
+        'BMW.DE',
+      ]);
 
       // Should call with unique currencies
-      expect(mockPrismaService.currency.findMany).toHaveBeenCalledWith({
-        where: { code: { in: ['USD', 'EUR'] } },
-        select: { code: true },
-      });
+      expect(currenciesRepository.findExistingCodes).toHaveBeenCalledWith([
+        'USD',
+        'EUR',
+      ]);
     });
   });
 });

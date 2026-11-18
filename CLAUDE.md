@@ -187,6 +187,7 @@ nx graph
 - Build output: `dist/apps/api`
 - Uses TypeScript compilation via Webpack with the Nx App plugin
 - **Prisma Configuration**: Schema at `apps/api/prisma/schema.prisma`, generated client at `apps/api/generated/prisma`
+- **Repository pattern**: Services never inject `PrismaService`; all database access goes through typed repositories (`<feature>/<feature>.repository.ts`, plus `auth/users.repository.ts` and `data/data-import.repository.ts`). The global `DatabaseModule` (`apps/api/src/app/database/database.module.ts`) provides the single `PrismaService` instance and all repositories, so feature modules must not register `PrismaService` themselves. Service specs mock the repositories; repository specs mock `PrismaService`
 - **Environment**: Copy `.env.example` to `.env` and configure `DATABASE_URL`
 - The API build uses a custom build command (`webpack-cli build`) instead of the standard Nx webpack executor
 

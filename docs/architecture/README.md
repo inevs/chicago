@@ -55,9 +55,8 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 ### Maintainability Concerns
 
 1. ⚠️ **Large TransactionFacade** (~585 lines): The former `AppStateService` was split into `UiStateService`, `PortfolioStateService`, `TransactionFacade` and `PaginationStateService`, but the facade is still large
-2. ⚠️ **Test Coverage Not Measured**: 43 `*.spec.ts` files (unit, integration and `api-e2e` tests), but no coverage figures are collected
-3. ⚠️ **No Repository Pattern**: Services tightly coupled to Prisma ORM
-4. ⚠️ **Hardcoded Providers**: Exchange rate and price providers not extensible
+2. ⚠️ **Test Coverage Not Measured**: 63 `*.spec.ts` files (unit, integration and `api-e2e` tests), but no coverage figures are collected
+3. ⚠️ **Hardcoded Providers**: Exchange rate and price providers not extensible
 
 ### Extensibility Gaps
 
@@ -85,7 +84,7 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 **Impact**: Easier to maintain and extend codebase
 
 ### Phase 3: Extensibility (Week 5-6)
-- Implement repository pattern
+- Implement repository pattern (done)
 - Add provider abstractions (strategy pattern)
 - Make base currency configurable (partially done: `DEFAULT_CURRENCY`; exchange-rate sync still EUR-based)
 
@@ -125,7 +124,7 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 │           NestJS Backend                │
 │    (Modular, Controller-Service)        │
 ├─────────────────────────────────────────┤
-│          Prisma ORM Layer               │
+│   Repositories → Prisma ORM Layer       │
 └────────────┬────────────────────────────┘
              │
              ▼
@@ -136,7 +135,7 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 
 ### Recommended Improvements
 
-**Backend**: Add repository pattern for better abstraction
+**Backend**: Add provider abstractions (strategy pattern) for exchange rates and prices
 **Frontend**: Further split `TransactionFacade` into smaller units
 **Security**: Add rate limiting, security headers (`helmet`) and explicit CORS configuration
 **Monitoring**: Add request logging and structured logging (health checks exist)

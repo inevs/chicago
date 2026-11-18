@@ -5,7 +5,7 @@ This document explains how to run different types of tests for the API.
 ## Test Types
 
 ### Unit Tests
-Unit tests test individual components (services, controllers) in isolation with mocked dependencies.
+Unit tests test individual components (services, repositories, controllers) in isolation with mocked dependencies. Service specs mock the repositories (`*.repository.ts`); repository specs mock `PrismaService`.
 
 **Run unit tests:**
 ```bash

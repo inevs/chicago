@@ -3,7 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { DividendPaymentsRepository, CreateDividendPaymentData } from './dividend-payments.repository';
+import { SecuritiesRepository } from '../securities/securities.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 import { CreateDividendPaymentDto } from './dto/create-dividend-payment.dto';
 import { UpdateDividendPaymentDto } from './dto/update-dividend-payment.dto';
 import { DividendPayment, ImportDividendsCsvResponse, ImportDividendResult } from '@dividends/shared';
@@ -12,66 +14,46 @@ import { CsvDividendPaymentRow, UploadedFile } from './dto/import-dividends-csv.
 
 @Injectable()
 export class DividendPaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly dividendPaymentsRepository: DividendPaymentsRepository,
+    private readonly securitiesRepository: SecuritiesRepository,
+    private readonly currenciesRepository: CurrenciesRepository
+  ) {}
 
   async createDividendPayment(
     dto: CreateDividendPaymentDto
   ): Promise<DividendPayment> {
     // Validate that security exists
-    const security = await this.prisma.security.findUnique({
-      where: { id: dto.securityId },
-    });
-
-    if (!security) {
-      throw new NotFoundException(
-        `Security with ID ${dto.securityId} not found`
-      );
-    }
-
+    await this.ensureSecurityExists(dto.securityId);
     await this.ensureCurrencyExists(dto.originCurrency);
     await this.ensureCurrencyExists(dto.destCurrency);
 
     // Create dividend payment
-    const payment = await this.prisma.dividendPayment.create({
-      data: {
-        exDate: new Date(dto.exDate),
-        payoutDate: new Date(dto.payoutDate),
-        securityId: dto.securityId,
-        shares: dto.shares,
-        dividendYield: dto.dividendYield,
-        taxAmount: dto.taxAmount,
-        originCurrency: dto.originCurrency,
-        destCurrency: dto.destCurrency,
-        conversionRate: dto.conversionRate,
-        finalPayment: dto.finalPayment,
-        note: dto.note,
-      },
-      include: {
-        security: true,
-      },
+    const payment = await this.dividendPaymentsRepository.create({
+      exDate: new Date(dto.exDate),
+      payoutDate: new Date(dto.payoutDate),
+      securityId: dto.securityId,
+      shares: dto.shares,
+      dividendYield: dto.dividendYield,
+      taxAmount: dto.taxAmount,
+      originCurrency: dto.originCurrency,
+      destCurrency: dto.destCurrency,
+      conversionRate: dto.conversionRate,
+      finalPayment: dto.finalPayment,
+      note: dto.note,
     });
 
     return payment as unknown as DividendPayment;
   }
 
   async getAllDividendPayments(): Promise<DividendPayment[]> {
-    const payments = await this.prisma.dividendPayment.findMany({
-      include: {
-        security: true,
-      },
-      orderBy: { payoutDate: 'desc' },
-    });
+    const payments = await this.dividendPaymentsRepository.findAll();
 
     return payments as unknown as DividendPayment[];
   }
 
   async getDividendPaymentById(id: string): Promise<DividendPayment> {
-    const payment = await this.prisma.dividendPayment.findUnique({
-      where: { id },
-      include: {
-        security: true,
-      },
-    });
+    const payment = await this.dividendPaymentsRepository.findByIdWithSecurity(id);
 
     if (!payment) {
       throw new NotFoundException('Dividend payment not found');
@@ -83,13 +65,8 @@ export class DividendPaymentsService {
   async getDividendPaymentsBySecurityId(
     securityId: string
   ): Promise<DividendPayment[]> {
-    const payments = await this.prisma.dividendPayment.findMany({
-      where: { securityId },
-      include: {
-        security: true,
-      },
-      orderBy: { payoutDate: 'desc' },
-    });
+    const payments =
+      await this.dividendPaymentsRepository.findBySecurityId(securityId);
 
     return payments as unknown as DividendPayment[];
   }
@@ -98,18 +75,10 @@ export class DividendPaymentsService {
     startDate: Date,
     endDate: Date
   ): Promise<DividendPayment[]> {
-    const payments = await this.prisma.dividendPayment.findMany({
-      where: {
-        payoutDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: {
-        security: true,
-      },
-      orderBy: { payoutDate: 'desc' },
-    });
+    const payments = await this.dividendPaymentsRepository.findByPayoutDateRange(
+      startDate,
+      endDate
+    );
 
     return payments as unknown as DividendPayment[];
   }
@@ -119,9 +88,7 @@ export class DividendPaymentsService {
     dto: UpdateDividendPaymentDto
   ): Promise<DividendPayment> {
     // Check if dividend payment exists
-    const existing = await this.prisma.dividendPayment.findUnique({
-      where: { id },
-    });
+    const existing = await this.dividendPaymentsRepository.findById(id);
 
     if (!existing) {
       throw new NotFoundException('Dividend payment not found');
@@ -129,15 +96,7 @@ export class DividendPaymentsService {
 
     // If securityId is being updated, validate that the new security exists
     if (dto.securityId && dto.securityId !== existing.securityId) {
-      const security = await this.prisma.security.findUnique({
-        where: { id: dto.securityId },
-      });
-
-      if (!security) {
-        throw new NotFoundException(
-          `Security with ID ${dto.securityId} not found`
-        );
-      }
+      await this.ensureSecurityExists(dto.securityId);
     }
 
     if (dto.originCurrency && dto.originCurrency !== existing.originCurrency) {
@@ -149,24 +108,18 @@ export class DividendPaymentsService {
     }
 
     // Update dividend payment
-    const payment = await this.prisma.dividendPayment.update({
-      where: { id },
-      data: {
-        ...(dto.exDate && { exDate: new Date(dto.exDate) }),
-        ...(dto.payoutDate && { payoutDate: new Date(dto.payoutDate) }),
-        ...(dto.securityId && { securityId: dto.securityId }),
-        ...(dto.shares !== undefined && { shares: dto.shares }),
-        ...(dto.dividendYield !== undefined && { dividendYield: dto.dividendYield }),
-        ...(dto.taxAmount !== undefined && { taxAmount: dto.taxAmount }),
-        ...(dto.originCurrency && { originCurrency: dto.originCurrency }),
-        ...(dto.destCurrency && { destCurrency: dto.destCurrency }),
-        ...(dto.conversionRate !== undefined && { conversionRate: dto.conversionRate }),
-        ...(dto.finalPayment !== undefined && { finalPayment: dto.finalPayment }),
-        ...(dto.note !== undefined && { note: dto.note }),
-      },
-      include: {
-        security: true,
-      },
+    const payment = await this.dividendPaymentsRepository.update(id, {
+      ...(dto.exDate && { exDate: new Date(dto.exDate) }),
+      ...(dto.payoutDate && { payoutDate: new Date(dto.payoutDate) }),
+      ...(dto.securityId && { securityId: dto.securityId }),
+      ...(dto.shares !== undefined && { shares: dto.shares }),
+      ...(dto.dividendYield !== undefined && { dividendYield: dto.dividendYield }),
+      ...(dto.taxAmount !== undefined && { taxAmount: dto.taxAmount }),
+      ...(dto.originCurrency && { originCurrency: dto.originCurrency }),
+      ...(dto.destCurrency && { destCurrency: dto.destCurrency }),
+      ...(dto.conversionRate !== undefined && { conversionRate: dto.conversionRate }),
+      ...(dto.finalPayment !== undefined && { finalPayment: dto.finalPayment }),
+      ...(dto.note !== undefined && { note: dto.note }),
     });
 
     return payment as unknown as DividendPayment;
@@ -174,26 +127,26 @@ export class DividendPaymentsService {
 
   async deleteDividendPayment(id: string): Promise<void> {
     // Check if dividend payment exists
-    const existing = await this.prisma.dividendPayment.findUnique({
-      where: { id },
-    });
+    const existing = await this.dividendPaymentsRepository.findById(id);
 
     if (!existing) {
       throw new NotFoundException('Dividend payment not found');
     }
 
     // Delete the payment
-    await this.prisma.dividendPayment.delete({
-      where: { id },
-    });
+    await this.dividendPaymentsRepository.delete(id);
+  }
+
+  private async ensureSecurityExists(securityId: string): Promise<void> {
+    if (!(await this.securitiesRepository.existsById(securityId))) {
+      throw new NotFoundException(
+        `Security with ID ${securityId} not found`
+      );
+    }
   }
 
   private async ensureCurrencyExists(code: string): Promise<void> {
-    const currency = await this.prisma.currency.findUnique({
-      where: { code },
-    });
-
-    if (!currency) {
+    if (!(await this.currenciesRepository.existsByCode(code))) {
       throw new NotFoundException(`Currency with code ${code} not found`);
     }
   }
@@ -261,14 +214,8 @@ export class DividendPaymentsService {
     ])];
 
     const [existingSecurities, existingCurrencies] = await Promise.all([
-      this.prisma.security.findMany({
-        where: { isin: { in: isinsToCheck } },
-        select: { id: true, isin: true },
-      }),
-      this.prisma.currency.findMany({
-        where: { code: { in: currenciesToCheck } },
-        select: { code: true },
-      }),
+      this.securitiesRepository.findIdsByIsins(isinsToCheck),
+      this.currenciesRepository.findExistingCodes(currenciesToCheck),
     ]);
 
     // Create lookup maps for O(1) access
@@ -277,23 +224,11 @@ export class DividendPaymentsService {
         .filter(s => s.isin)
         .map(s => [s.isin!.toUpperCase(), s.id])
     );
-    const existingCurrenciesSet = new Set(existingCurrencies.map(c => c.code));
+    const existingCurrenciesSet = new Set(existingCurrencies);
 
     // Process and validate each row
     const results: ImportDividendResult[] = [];
-    const paymentsToCreate: Array<{
-      exDate: Date;
-      payoutDate: Date;
-      securityId: string;
-      shares: number;
-      dividendYield: number;
-      taxAmount: number;
-      originCurrency: string;
-      destCurrency: string;
-      conversionRate: number;
-      finalPayment: number;
-      note: string | null;
-    }> = [];
+    const paymentsToCreate: CreateDividendPaymentData[] = [];
     const ROW_NUMBER_OFFSET = 2; // CSV header row + 0-indexed array
 
     for (let i = 0; i < records.length; i++) {
@@ -434,10 +369,8 @@ export class DividendPaymentsService {
 
     // Batch create dividend payments
     if (paymentsToCreate.length > 0) {
-      const createdPayments = await this.prisma.dividendPayment.createManyAndReturn({
-        data: paymentsToCreate,
-        select: { id: true },
-      });
+      const createdPayments =
+        await this.dividendPaymentsRepository.createMany(paymentsToCreate);
 
       // Update results with created payment IDs
       let createdIndex = 0;

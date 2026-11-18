@@ -102,7 +102,7 @@
 ### Backend ↔ Database
 
 - **Connection**: Prisma Client (connection pooling)
-- **Query Pattern**: Repository-like services using Prisma ORM
+- **Query Pattern**: Repository pattern; services access the database only through typed repositories (`*.repository.ts`) that wrap Prisma
 - **Transactions**: Limited usage (opportunity for improvement)
 - **Migration**: Prisma Migrate for schema changes
 

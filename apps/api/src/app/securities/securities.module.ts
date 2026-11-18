@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { SecuritiesController } from './securities.controller';
 import { SecuritiesService } from './securities.service';
-import { PrismaService } from '../../prisma.service';
 import { SecurityPricesModule } from '../security-prices/security-prices.module';
 
 @Module({
@@ -22,7 +21,7 @@ import { SecurityPricesModule } from '../security-prices/security-prices.module'
     }),
   ],
   controllers: [SecuritiesController],
-  providers: [SecuritiesService, PrismaService],
+  providers: [SecuritiesService],
   exports: [SecuritiesService],
 })
 export class SecuritiesModule {}

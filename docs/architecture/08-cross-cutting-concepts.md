@@ -388,7 +388,7 @@ code: string;
 // Cache frequently accessed data
 @CacheTTL(300) // 5 minutes
 async getCurrencies() {
-  return this.prisma.currency.findMany();
+  return this.currenciesRepository.findAll();
 }
 ```
 
@@ -396,11 +396,8 @@ async getCurrencies() {
 ```typescript
 // Paginate large lists
 async getDividends(page: number, limit: number) {
-  return this.prisma.dividendPayment.findMany({
-    skip: (page - 1) * limit,
-    take: limit,
-    orderBy: { payoutDate: 'desc' }
-  });
+  // e.g. a new repository method wrapping findMany({ skip, take, orderBy })
+  return this.dividendPaymentsRepository.findPage(page, limit);
 }
 ```
 

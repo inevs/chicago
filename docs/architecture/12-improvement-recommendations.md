@@ -299,7 +299,9 @@ export class TransactionFacadeService {
 
 ### Issue 5: No Repository Pattern
 
-**Status**: ❌ Open — services still use `PrismaService` directly.
+**Status**: ✅ Implemented (GitHub issue #22). Every entity has a typed repository in its feature folder (`SecuritiesRepository`, `DividendPaymentsRepository`, `SecurityTransactionsRepository`, `CurrenciesRepository`, `ExchangeRatesRepository`, `SecurityPricesRepository`, plus `UsersRepository` and `DataImportRepository` for the transactional data import). The global `DatabaseModule` (`apps/api/src/app/database/database.module.ts`) provides a single `PrismaService` instance and all repositories; services no longer inject `PrismaService` (only the database health check still uses it). Instead of the generic base class with a string model name sketched below, the repositories expose explicit, type-safe, intention-revealing methods (e.g. `findBySymbol`, `findExistingCodes`, `search`), and service specs mock the repositories instead of Prisma.
+
+The original recommendation is kept below for reference.
 
 **Problem**:
 - Services directly use Prisma
@@ -1008,7 +1010,7 @@ export class AppModule implements NestModule {
 
 **Priority**: P2 - Medium
 
-1. ❌ Add repository pattern (16h)
+1. ✅ Add repository pattern (16h) — done
 2. ❌ Add provider abstraction for exchange rates (8h)
 3. ❌ Add provider abstraction for prices (6h)
 
@@ -1052,9 +1054,9 @@ export class AppModule implements NestModule {
 ```
 Current State:
 - Frontend state split into focused services (largest: TransactionFacadeService)
-- Direct Prisma usage
+- Repository pattern (services do not use Prisma directly)
 - Hardcoded providers
-- No abstraction layers
+- No provider abstractions
 
 Recommended State:
 - Focused, single-responsibility services

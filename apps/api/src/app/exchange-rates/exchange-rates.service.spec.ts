@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger, BadRequestException } from '@nestjs/common';
 import { ExchangeRatesService } from './exchange-rates.service';
-import { PrismaService } from '../../prisma.service';
+import { ExchangeRatesRepository } from './exchange-rates.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 import axios, { InternalAxiosRequestConfig } from 'axios';
 
 jest.mock('axios');
@@ -19,17 +20,16 @@ type MockExchangeRate = {
 describe('ExchangeRatesService', () => {
   let service: ExchangeRatesService;
 
-  const mockPrismaService = {
-    exchangeRate: {
-      upsert: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-    },
-    currency: {
-      findMany: jest.fn(),
-    },
-    $queryRaw: jest.fn(),
+  const mockExchangeRatesRepository = {
+    upsert: jest.fn(),
+    findByPairAndDate: jest.fn(),
+    findLatestOnOrBefore: jest.fn(),
+    findAll: jest.fn(),
+    findLatestPerTargetCurrency: jest.fn(),
+  };
+
+  const mockCurrenciesRepository = {
+    findCodesExcept: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -37,8 +37,12 @@ describe('ExchangeRatesService', () => {
       providers: [
         ExchangeRatesService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: ExchangeRatesRepository,
+          useValue: mockExchangeRatesRepository,
+        },
+        {
+          provide: CurrenciesRepository,
+          useValue: mockCurrenciesRepository,
         },
       ],
     }).compile();
@@ -71,7 +75,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({
+      mockExchangeRatesRepository.upsert.mockResolvedValue({
         id: 'test-id',
         baseCurrency: 'EUR',
         targetCurrency: 'USD',
@@ -90,7 +94,14 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
 
       expect(result.synced).toBe(3);
       expect(result.skipped).toBe(0);
-      expect(mockPrismaService.exchangeRate.upsert).toHaveBeenCalledTimes(3);
+      expect(mockExchangeRatesRepository.upsert).toHaveBeenCalledTimes(3);
+      expect(mockExchangeRatesRepository.upsert).toHaveBeenCalledWith({
+        baseCurrency: 'EUR',
+        targetCurrency: 'USD',
+        date: new Date('2025-01-01'),
+        rate: 1.0234,
+        provider: 'ecb',
+      });
     });
 
     it('should handle CSV with extra whitespace', async () => {
@@ -106,7 +117,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345  `;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -131,7 +142,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -157,7 +168,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -203,7 +214,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-03,1.0456`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -230,7 +241,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -282,7 +293,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,1.0345,2025-01-02,EUR,SP00,A`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -291,7 +302,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,1.0345,2025-01-02,EUR,SP00,A`;
       );
 
       expect(result.synced).toBe(2);
-      expect(mockPrismaService.exchangeRate.upsert).toHaveBeenCalledTimes(2);
+      expect(mockExchangeRatesRepository.upsert).toHaveBeenCalledTimes(2);
     });
 
     it('should handle completely empty CSV response', async () => {
@@ -444,7 +455,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2020-01-01,1.0234`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       await service.syncExchangeRates('USD', undefined, new Date('2020-01-02'));
 
@@ -474,7 +485,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2017-01-01,1.0234`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       await service.syncExchangeRates('USD', undefined, new Date('2017-01-02'));
 
@@ -514,7 +525,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2020-01-01,1.0234`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates('USD', startDate, endDate);
       expect(result).toBeDefined();
@@ -533,7 +544,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       const result = await service.syncExchangeRates(
         'USD',
@@ -550,7 +561,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
       const rate = await service.getExchangeRate('EUR', 'EUR', new Date());
 
       expect(rate).toBe(1);
-      expect(mockPrismaService.exchangeRate.findUnique).not.toHaveBeenCalled();
+      expect(mockExchangeRatesRepository.findByPairAndDate).not.toHaveBeenCalled();
     });
 
     it('should return exact match when rate exists for the date', async () => {
@@ -566,29 +577,26 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
         updatedAt: new Date(),
       };
 
-      mockPrismaService.exchangeRate.findUnique.mockResolvedValueOnce(
+      mockExchangeRatesRepository.findByPairAndDate.mockResolvedValueOnce(
         mockRate
       );
 
       const result = await service.getExchangeRate('EUR', 'USD', testDate);
 
       expect(result).toBe(1.0234);
-      expect(mockPrismaService.exchangeRate.findUnique).toHaveBeenCalledWith({
-        where: {
-          baseCurrency_targetCurrency_date: {
-            baseCurrency: 'EUR',
-            targetCurrency: 'USD',
-            date: testDate,
-          },
-        },
-      });
+      expect(mockExchangeRatesRepository.findByPairAndDate).toHaveBeenCalledWith(
+        'EUR',
+        'USD',
+        testDate
+      );
+      expect(mockExchangeRatesRepository.findLatestOnOrBefore).not.toHaveBeenCalled();
     });
 
     it('should fall back to closest previous date when exact match not found', async () => {
       const requestedDate = new Date('2025-01-06'); // Weekend
       const closestDate = new Date('2025-01-03'); // Friday
 
-      mockPrismaService.exchangeRate.findUnique.mockResolvedValueOnce(null);
+      mockExchangeRatesRepository.findByPairAndDate.mockResolvedValueOnce(null);
 
       const mockRate = {
         id: 'test-id',
@@ -601,7 +609,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
         updatedAt: new Date(),
       };
 
-      mockPrismaService.exchangeRate.findFirst.mockResolvedValueOnce(mockRate);
+      mockExchangeRatesRepository.findLatestOnOrBefore.mockResolvedValueOnce(mockRate);
 
       const result = await service.getExchangeRate(
         'EUR',
@@ -610,23 +618,16 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
       );
 
       expect(result).toBe(1.0456);
-      expect(mockPrismaService.exchangeRate.findFirst).toHaveBeenCalledWith({
-        where: {
-          baseCurrency: 'EUR',
-          targetCurrency: 'USD',
-          date: {
-            lte: requestedDate,
-          },
-        },
-        orderBy: {
-          date: 'desc',
-        },
-      });
+      expect(mockExchangeRatesRepository.findLatestOnOrBefore).toHaveBeenCalledWith(
+        'EUR',
+        'USD',
+        requestedDate
+      );
     });
 
     it('should return null when no rate exists at all', async () => {
-      mockPrismaService.exchangeRate.findUnique.mockResolvedValueOnce(null);
-      mockPrismaService.exchangeRate.findFirst.mockResolvedValueOnce(null);
+      mockExchangeRatesRepository.findByPairAndDate.mockResolvedValueOnce(null);
+      mockExchangeRatesRepository.findLatestOnOrBefore.mockResolvedValueOnce(null);
 
       const result = await service.getExchangeRate(
         'EUR',
@@ -650,7 +651,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
         updatedAt: new Date(),
       };
 
-      mockPrismaService.exchangeRate.findUnique.mockResolvedValueOnce(
+      mockExchangeRatesRepository.findByPairAndDate.mockResolvedValueOnce(
         mockRate
       );
 
@@ -663,10 +664,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2024-02-29,1.0234`;
 
   describe('syncAllCurrencies', () => {
     it('should sync all non-EUR currencies', async () => {
-      mockPrismaService.currency.findMany.mockResolvedValueOnce([
-        { code: 'USD' },
-        { code: 'GBP' },
-        { code: 'JPY' },
+      mockCurrenciesRepository.findCodesExcept.mockResolvedValueOnce([
+        'USD',
+        'GBP',
+        'JPY',
       ]);
 
       const validCsv = `KEY,FREQ,CURRENCY,CURRENCY_DENOM,EXR_TYPE,EXR_SUFFIX,TIME_PERIOD,OBS_VALUE
@@ -680,7 +681,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-01,1.0234`;
         config: {} as InternalAxiosRequestConfig,
       });
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
 
       // Mock the delay
       jest.useFakeTimers();
@@ -703,12 +704,13 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-01,1.0234`;
       expect(results).toHaveProperty('GBP');
       expect(results).toHaveProperty('JPY');
       expect(results.USD.synced).toBeGreaterThan(0);
+      expect(mockCurrenciesRepository.findCodesExcept).toHaveBeenCalledWith('EUR');
     });
 
     it('should handle errors for individual currencies gracefully', async () => {
-      mockPrismaService.currency.findMany.mockResolvedValueOnce([
-        { code: 'USD' },
-        { code: 'INVALID' },
+      mockCurrenciesRepository.findCodesExcept.mockResolvedValueOnce([
+        'USD',
+        'INVALID',
       ]);
 
       const validCsv = `KEY,FREQ,CURRENCY,CURRENCY_DENOM,EXR_TYPE,EXR_SUFFIX,TIME_PERIOD,OBS_VALUE
@@ -724,7 +726,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-01,1.0234`;
         })
         .mockRejectedValueOnce(new Error('Currency not found'));
 
-      mockPrismaService.exchangeRate.upsert.mockResolvedValue({} as MockExchangeRate);
+      mockExchangeRatesRepository.upsert.mockResolvedValue({} as MockExchangeRate);
       mockedAxios.isAxiosError.mockReturnValue(false);
 
       jest.useFakeTimers();
@@ -773,18 +775,12 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-01,1.0234`;
         },
       ];
 
-      mockPrismaService.exchangeRate.findMany.mockResolvedValueOnce(mockRates);
+      mockExchangeRatesRepository.findAll.mockResolvedValueOnce(mockRates);
 
       const result = await service.getAllExchangeRates();
 
       expect(result).toEqual(mockRates);
-      expect(mockPrismaService.exchangeRate.findMany).toHaveBeenCalledWith({
-        orderBy: [
-          { baseCurrency: 'asc' },
-          { targetCurrency: 'asc' },
-          { date: 'asc' },
-        ],
-      });
+      expect(mockExchangeRatesRepository.findAll).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -803,7 +799,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
       });
 
       // First upsert succeeds, second fails
-      mockPrismaService.exchangeRate.upsert
+      mockExchangeRatesRepository.upsert
         .mockResolvedValueOnce({} as MockExchangeRate)
         .mockRejectedValueOnce(new Error('Database constraint violation'));
 
@@ -838,7 +834,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
         },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+      mockExchangeRatesRepository.findLatestPerTargetCurrency.mockResolvedValueOnce(mockQueryResult);
 
       const result = await service.getLatestRatesToEur();
 
@@ -847,16 +843,16 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
         { currency: 'GBP', rate: 0.8567, date: new Date('2025-01-03') },
         { currency: 'JPY', rate: 156.78, date: new Date('2025-01-03') },
       ]);
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(mockExchangeRatesRepository.findLatestPerTargetCurrency).toHaveBeenCalledTimes(1);
     });
 
     it('should return empty array when no rates exist', async () => {
-      mockPrismaService.$queryRaw.mockResolvedValueOnce([]);
+      mockExchangeRatesRepository.findLatestPerTargetCurrency.mockResolvedValueOnce([]);
 
       const result = await service.getLatestRatesToEur();
 
       expect(result).toEqual([]);
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(mockExchangeRatesRepository.findLatestPerTargetCurrency).toHaveBeenCalledWith('EUR');
     });
 
     it('should handle rates with different dates per currency', async () => {
@@ -873,7 +869,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
         },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+      mockExchangeRatesRepository.findLatestPerTargetCurrency.mockResolvedValueOnce(mockQueryResult);
 
       const result = await service.getLatestRatesToEur();
 
@@ -885,7 +881,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
     });
 
     it('should correctly convert rate to number', async () => {
-      // Prisma might return Decimal or string from database
+      // The repository might return Decimal or string from database
       const mockQueryResult = [
         {
           targetCurrency: 'USD',
@@ -894,7 +890,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
         },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+      mockExchangeRatesRepository.findLatestPerTargetCurrency.mockResolvedValueOnce(mockQueryResult);
 
       const result = await service.getLatestRatesToEur();
 
@@ -904,10 +900,10 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
 
     it('should handle database errors gracefully', async () => {
       const dbError = new Error('Database connection lost');
-      mockPrismaService.$queryRaw.mockRejectedValueOnce(dbError);
+      mockExchangeRatesRepository.findLatestPerTargetCurrency.mockRejectedValueOnce(dbError);
 
       await expect(service.getLatestRatesToEur()).rejects.toThrow('Database connection lost');
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(mockExchangeRatesRepository.findLatestPerTargetCurrency).toHaveBeenCalledTimes(1);
     });
 
     it('should only return one rate per currency (most recent)', async () => {
@@ -918,7 +914,7 @@ EXR.D.USD.EUR.SP00.A,D,USD,EUR,SP00,A,2025-01-02,1.0345`;
         { targetCurrency: 'JPY', rate: 156.78, date: new Date('2025-01-03') },
       ];
 
-      mockPrismaService.$queryRaw.mockResolvedValueOnce(mockQueryResult);
+      mockExchangeRatesRepository.findLatestPerTargetCurrency.mockResolvedValueOnce(mockQueryResult);
 
       const result = await service.getLatestRatesToEur();
 

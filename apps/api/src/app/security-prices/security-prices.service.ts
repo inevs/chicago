@@ -1,7 +1,8 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import axios from 'axios';
-import { PrismaService } from '../../prisma.service';
+import { SecurityPricesRepository } from './security-prices.repository';
+import { SecuritiesRepository } from '../securities/securities.repository';
 import type { SecurityPrice } from '@dividends/shared';
 import type { Security } from '../../../generated/prisma/client';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
@@ -21,53 +22,15 @@ export class SecurityPricesService {
   private readonly logger = new Logger(SecurityPricesService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly securityPricesRepository: SecurityPricesRepository,
+    private readonly securitiesRepository: SecuritiesRepository,
     @Inject(forwardRef(() => ExchangeRatesService))
     private readonly exchangeRatesService: ExchangeRatesService
   ) {}
 
   async getLatestPrices(): Promise<SecurityPrice[]> {
-    // Use a more efficient query with DISTINCT ON to avoid N+1 problem
-    // This PostgreSQL-specific query gets the latest price for each security in a single query
-    //
-    // NOTE: Using $queryRaw is safe here because:
-    // 1. The query uses a template literal (not string concatenation)
-    // 2. No user input is interpolated into the query
-    // 3. All column and table names are hardcoded
-    // If you need to add dynamic filtering in the future, use parameterized queries
-    // or Prisma's query builder to maintain type safety and prevent SQL injection
-    const latestPrices = await this.prisma.$queryRaw<
-      Array<{
-        id: string;
-        securityId: string;
-        date: Date;
-        open: { toNumber: () => number } | number;
-        high: { toNumber: () => number } | number;
-        low: { toNumber: () => number } | number;
-        close: { toNumber: () => number } | number;
-        volume: { toNumber: () => number } | number | null;
-        currency: string;
-        provider: string;
-        createdAt: Date;
-        updatedAt: Date;
-      }>
-    >`
-      SELECT DISTINCT ON ("securityId")
-        id,
-        "securityId",
-        date,
-        open,
-        high,
-        low,
-        close,
-        volume,
-        currency,
-        provider,
-        "createdAt",
-        "updatedAt"
-      FROM security_prices
-      ORDER BY "securityId", date DESC
-    `;
+    // Single query for the latest price of each security (avoids N+1 queries)
+    const latestPrices = await this.securityPricesRepository.findLatestPerSecurity();
 
     // Convert Decimal types to numbers for the interface
     return latestPrices.map((price) => ({
@@ -100,27 +63,12 @@ export class SecurityPricesService {
    */
   async getLastPriceUpdateDate(securityId?: string): Promise<Date | null> {
     if (securityId) {
-      // Get the latest price date for a specific security
-      const result = await this.prisma.securityPrice.findFirst({
-        where: { securityId },
-        orderBy: { date: 'desc' },
-        select: { date: true },
-      });
-      return result?.date || null;
+      return this.securityPricesRepository.findLatestDateBySecurityId(securityId);
     }
 
     // Get the earliest of the latest dates across all securities
     // This ensures we update all securities from their respective last update dates
-    const result = await this.prisma.$queryRaw<Array<{ min_date: Date | null }>>`
-      SELECT MIN(max_date) as min_date
-      FROM (
-        SELECT MAX(date) as max_date
-        FROM security_prices
-        GROUP BY "securityId"
-      ) latest_dates
-    `;
-
-    return result[0]?.min_date || null;
+    return this.securityPricesRepository.findEarliestLatestDate();
   }
 
   async syncHistoricalPrices(options: {
@@ -145,10 +93,9 @@ export class SecurityPricesService {
     const toDate = options.to || new Date();
     this.ensureProviderConfigured(provider);
 
-    const securities = await this.prisma.security.findMany({
-      where: options.securityId ? { id: options.securityId } : undefined,
-      orderBy: { symbol: 'asc' },
-    });
+    const securities = await this.securitiesRepository.findAllOrById(
+      options.securityId
+    );
 
     let totalInserted = 0;
     const failures: Array<{ symbol: string; error: string }> = [];
@@ -256,11 +203,7 @@ export class SecurityPricesService {
         createdAt: now,
         updatedAt: now,
       }));
-      const result = await this.prisma.securityPrice.createMany({
-        data: payload,
-        skipDuplicates: true,
-      });
-      inserted += result.count;
+      inserted += await this.securityPricesRepository.createMany(payload);
     }
 
     return inserted;

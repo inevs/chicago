@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
-import { PrismaService } from '../../prisma.service';
+import { ExchangeRatesRepository } from './exchange-rates.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 
 interface EcbRate {
   date: Date;
@@ -12,7 +13,10 @@ export class ExchangeRatesService {
   private readonly logger = new Logger(ExchangeRatesService.name);
   private readonly ECB_API_BASE = 'https://data-api.ecb.europa.eu/service/data';
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly exchangeRatesRepository: ExchangeRatesRepository,
+    private readonly currenciesRepository: CurrenciesRepository
+  ) {}
 
   /**
    * Get the default start date for fetching exchange rates from environment variable
@@ -97,25 +101,12 @@ export class ExchangeRatesService {
         const results = await Promise.allSettled(
           chunk.map(async (rate) => {
             try {
-              await this.prisma.exchangeRate.upsert({
-                where: {
-                  baseCurrency_targetCurrency_date: {
-                    baseCurrency,
-                    targetCurrency,
-                    date: rate.date,
-                  },
-                },
-                update: {
-                  rate: rate.rate,
-                  provider: 'ecb',
-                },
-                create: {
-                  baseCurrency,
-                  targetCurrency,
-                  date: rate.date,
-                  rate: rate.rate,
-                  provider: 'ecb',
-                },
+              await this.exchangeRatesRepository.upsert({
+                baseCurrency,
+                targetCurrency,
+                date: rate.date,
+                rate: rate.rate,
+                provider: 'ecb',
               });
               return { success: true };
             } catch (error) {
@@ -293,16 +284,8 @@ export class ExchangeRatesService {
     const baseCurrency = 'EUR';
 
     // Get all unique currencies from securities, excluding EUR
-    const currencies = await this.prisma.currency.findMany({
-      where: {
-        code: {
-          not: baseCurrency,
-        },
-      },
-      select: {
-        code: true,
-      },
-    });
+    const currencies =
+      await this.currenciesRepository.findCodesExcept(baseCurrency);
 
     this.logger.log(
       `Syncing exchange rates for ${currencies.length} currencies`
@@ -311,23 +294,23 @@ export class ExchangeRatesService {
     const results: Record<string, { synced: number; skipped: number }> = {};
 
     // Process each currency sequentially to avoid rate limiting
-    for (const currency of currencies) {
+    for (const currencyCode of currencies) {
       try {
         const result = await this.syncExchangeRates(
-          currency.code,
+          currencyCode,
           from,
           to,
           baseCurrency
         );
-        results[currency.code] = result;
+        results[currencyCode] = result;
 
         // Add delay between requests to be respectful to the API
         await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (error) {
         this.logger.error(
-          `Failed to sync ${currency.code}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          `Failed to sync ${currencyCode}: ${error instanceof Error ? error.message : 'Unknown error'}`
         );
-        results[currency.code] = { synced: 0, skipped: 0 };
+        results[currencyCode] = { synced: 0, skipped: 0 };
       }
     }
 
@@ -348,30 +331,19 @@ export class ExchangeRatesService {
     }
 
     // Try to find exact match for the date
-    let rate = await this.prisma.exchangeRate.findUnique({
-      where: {
-        baseCurrency_targetCurrency_date: {
-          baseCurrency,
-          targetCurrency,
-          date,
-        },
-      },
-    });
+    let rate = await this.exchangeRatesRepository.findByPairAndDate(
+      baseCurrency,
+      targetCurrency,
+      date
+    );
 
     // If not found, try to find the closest previous date (for weekends/holidays)
     if (!rate) {
-      rate = await this.prisma.exchangeRate.findFirst({
-        where: {
-          baseCurrency,
-          targetCurrency,
-          date: {
-            lte: date,
-          },
-        },
-        orderBy: {
-          date: 'desc',
-        },
-      });
+      rate = await this.exchangeRatesRepository.findLatestOnOrBefore(
+        baseCurrency,
+        targetCurrency,
+        date
+      );
     }
 
     return rate ? Number(rate.rate) : null;
@@ -381,9 +353,7 @@ export class ExchangeRatesService {
    * Get all exchange rates (for export)
    */
   async getAllExchangeRates() {
-    return this.prisma.exchangeRate.findMany({
-      orderBy: [{ baseCurrency: 'asc' }, { targetCurrency: 'asc' }, { date: 'asc' }],
-    });
+    return this.exchangeRatesRepository.findAll();
   }
 
   /**
@@ -394,18 +364,9 @@ export class ExchangeRatesService {
   async getLatestRatesToEur(): Promise<Array<{ currency: string; rate: number; date: Date }>> {
     const baseCurrency = 'EUR';
 
-    // Use raw SQL with DISTINCT ON to get the latest rate for each currency in a single query
-    // Using raw SQL with DISTINCT ON for PostgreSQL optimization
-    // This is more efficient than N+1 queries (one per currency)
-    const rates = await this.prisma.$queryRaw<Array<{ targetCurrency: string; rate: any; date: Date }>>`
-      SELECT DISTINCT ON ("targetCurrency")
-        "targetCurrency",
-        rate,
-        date
-      FROM "exchange_rates"
-      WHERE "baseCurrency" = ${baseCurrency}
-      ORDER BY "targetCurrency", date DESC
-    `;
+    // Single query for the latest rate of each currency (avoids N+1 queries)
+    const rates =
+      await this.exchangeRatesRepository.findLatestPerTargetCurrency(baseCurrency);
 
     // Transform the results to match the expected format
     return rates.map((rate) => ({

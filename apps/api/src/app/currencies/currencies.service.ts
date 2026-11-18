@@ -1,5 +1,5 @@
 import { Injectable, ConflictException, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { CurrenciesRepository } from './currencies.repository';
 import { CURRENCY_ERRORS } from '@dividends/shared';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
 import type { Currency } from '../../../generated/prisma/client';
@@ -10,16 +10,12 @@ export class CurrenciesService {
   private readonly logger = new Logger(CurrenciesService.name);
 
   constructor(
-    private prisma: PrismaService,
+    private readonly currenciesRepository: CurrenciesRepository,
     private exchangeRatesService: ExchangeRatesService
   ) {}
 
   async findAll(): Promise<Currency[]> {
-    return this.prisma.currency.findMany({
-      orderBy: {
-        code: 'asc',
-      },
-    });
+    return this.currenciesRepository.findAll();
   }
 
   async create(createCurrencyDto: CreateCurrencyDto): Promise<Currency> {
@@ -29,21 +25,15 @@ export class CurrenciesService {
     const normalizedCode = createCurrencyDto.code.toUpperCase().trim();
 
     // Check if currency with this code already exists
-    const existing = await this.prisma.currency.findUnique({
-      where: { code: normalizedCode },
-    });
-
-    if (existing) {
+    if (await this.currenciesRepository.existsByCode(normalizedCode)) {
       throw new ConflictException(
         CURRENCY_ERRORS.ALREADY_EXISTS(normalizedCode)
       );
     }
 
-    const currency = await this.prisma.currency.create({
-      data: {
-        code: normalizedCode,
-        name: createCurrencyDto.name.trim(),
-      },
+    const currency = await this.currenciesRepository.create({
+      code: normalizedCode,
+      name: createCurrencyDto.name.trim(),
     });
 
     // Trigger background job to fetch exchange rates
@@ -68,8 +58,6 @@ export class CurrenciesService {
   async getDefaultCurrency(): Promise<Currency | null> {
     const defaultCode = process.env.DEFAULT_CURRENCY || 'EUR';
 
-    return this.prisma.currency.findUnique({
-      where: { code: defaultCode },
-    });
+    return this.currenciesRepository.findByCode(defaultCode);
   }
 }

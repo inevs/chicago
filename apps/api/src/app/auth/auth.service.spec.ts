@@ -3,18 +3,17 @@ import { JwtService } from '@nestjs/jwt';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
-import { PrismaService } from '../../prisma.service';
+import { UsersRepository } from './users.repository';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prismaService: PrismaService;
+  let usersRepository: UsersRepository;
   let jwtService: JwtService;
 
-  const mockPrismaService = {
-    user: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-    },
+  const mockUsersRepository = {
+    findByEmail: jest.fn(),
+    findProfileById: jest.fn(),
+    create: jest.fn(),
   };
 
   const mockJwtService = {
@@ -26,8 +25,8 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: UsersRepository,
+          useValue: mockUsersRepository,
         },
         {
           provide: JwtService,
@@ -37,7 +36,7 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prismaService = module.get<PrismaService>(PrismaService);
+    usersRepository = module.get<UsersRepository>(UsersRepository);
     jwtService = module.get<JwtService>(JwtService);
   });
 
@@ -57,10 +56,11 @@ describe('AuthService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockUsersRepository.findByEmail.mockResolvedValue(mockUser);
 
       const result = await service.validateUser('test@example.com', 'password123');
 
+      expect(usersRepository.findByEmail).toHaveBeenCalledWith('test@example.com');
       expect(result).toEqual({
         id: '1',
         email: 'test@example.com',
@@ -68,11 +68,11 @@ describe('AuthService', () => {
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       });
-      expect((result as any).password).toBeUndefined();
+      expect(result).not.toHaveProperty('password');
     });
 
     it('should return null when user is not found', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockUsersRepository.findByEmail.mockResolvedValue(null);
 
       const result = await service.validateUser('nonexistent@example.com', 'password123');
 
@@ -90,7 +90,7 @@ describe('AuthService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockUsersRepository.findByEmail.mockResolvedValue(mockUser);
 
       const result = await service.validateUser('test@example.com', 'wrongpassword');
 
@@ -164,8 +164,8 @@ describe('AuthService', () => {
         await expect(service.register(registerDto)).rejects.toThrow(
           'Registration is disabled'
         );
-        expect(prismaService.user.findUnique).not.toHaveBeenCalled();
-        expect(prismaService.user.create).not.toHaveBeenCalled();
+        expect(usersRepository.findByEmail).not.toHaveBeenCalled();
+        expect(usersRepository.create).not.toHaveBeenCalled();
       }
     );
 
@@ -184,8 +184,8 @@ describe('AuthService', () => {
         name: 'New User',
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
-      mockPrismaService.user.create.mockResolvedValue({
+      mockUsersRepository.findByEmail.mockResolvedValue(null);
+      mockUsersRepository.create.mockResolvedValue({
         id: '2',
         email: registerDto.email,
         password: 'hashed-password',
@@ -205,7 +205,15 @@ describe('AuthService', () => {
           name: registerDto.name,
         },
       });
-      expect(prismaService.user.create).toHaveBeenCalled();
+      expect(usersRepository.findByEmail).toHaveBeenCalledWith(registerDto.email);
+      expect(usersRepository.create).toHaveBeenCalledWith({
+        email: registerDto.email,
+        password: expect.any(String),
+        name: registerDto.name,
+      });
+      const { password: storedPassword } = mockUsersRepository.create.mock.calls[0][0];
+      expect(storedPassword).not.toBe(registerDto.password);
+      expect(await bcrypt.compare(registerDto.password, storedPassword)).toBe(true);
     });
 
     it('should throw UnauthorizedException when user already exists', async () => {
@@ -215,7 +223,7 @@ describe('AuthService', () => {
         name: 'Existing User',
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue({
+      mockUsersRepository.findByEmail.mockResolvedValue({
         id: '1',
         email: registerDto.email,
         password: 'hashed-password',
@@ -230,6 +238,7 @@ describe('AuthService', () => {
       await expect(service.register(registerDto)).rejects.toThrow(
         'User with this email already exists'
       );
+      expect(usersRepository.create).not.toHaveBeenCalled();
     });
   });
 
@@ -242,15 +251,16 @@ describe('AuthService', () => {
         createdAt: new Date(),
       };
 
-      mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+      mockUsersRepository.findProfileById.mockResolvedValue(mockUser);
 
       const result = await service.getProfile('1');
 
       expect(result).toEqual(mockUser);
+      expect(usersRepository.findProfileById).toHaveBeenCalledWith('1');
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      mockUsersRepository.findProfileById.mockResolvedValue(null);
 
       await expect(service.getProfile('nonexistent-id')).rejects.toThrow(
         UnauthorizedException

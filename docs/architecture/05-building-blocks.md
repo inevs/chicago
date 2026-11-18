@@ -32,9 +32,10 @@ api/
 │   │   ├── exchange-rates/          # Exchange rate sync
 │   │   ├── security-prices/         # Price history
 │   │   ├── data/                    # Import/export
+│   │   ├── database/                # DatabaseModule (global: PrismaService + repositories)
 │   │   └── app.module.ts
 │   ├── testing/                     # Test factories and integration test helper
-│   ├── prisma.service.ts            # Prisma client singleton
+│   ├── prisma.service.ts            # Prisma client (single instance, provided by DatabaseModule)
 │   └── main.ts                      # Application bootstrap
 └── prisma/
     └── schema.prisma                # Database schema
@@ -50,6 +51,8 @@ feature-name/
 ├── feature-name.controller.ts       # HTTP endpoints
 ├── feature-name.service.ts          # Business logic
 ├── feature-name.service.spec.ts     # Unit tests
+├── feature-name.repository.ts       # Data access (Prisma queries), provided by DatabaseModule
+├── feature-name.repository.spec.ts  # Repository unit tests
 ├── dto/
 │   ├── create-feature.dto.ts        # Input validation
 │   ├── update-feature.dto.ts        # Update validation

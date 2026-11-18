@@ -1,26 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { DividendPaymentsService } from './dividend-payments.service';
-import { PrismaService } from '../../prisma.service';
+import { DividendPaymentsRepository } from './dividend-payments.repository';
+import { SecuritiesRepository } from '../securities/securities.repository';
+import { CurrenciesRepository } from '../currencies/currencies.repository';
 
 describe('DividendPaymentsService', () => {
   let service: DividendPaymentsService;
-  let prisma: PrismaService;
 
-  const mockPrismaService = {
-    security: {
-      findUnique: jest.fn(),
-    },
-    currency: {
-      findUnique: jest.fn(),
-    },
-    dividendPayment: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
+  const mockDividendPaymentsRepository = {
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    findByIdWithSecurity: jest.fn(),
+    findBySecurityId: jest.fn(),
+    findByPayoutDateRange: jest.fn(),
+    create: jest.fn(),
+    createMany: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  const mockSecuritiesRepository = {
+    existsById: jest.fn(),
+    findIdsByIsins: jest.fn(),
+  };
+
+  const mockCurrenciesRepository = {
+    existsByCode: jest.fn(),
+    findExistingCodes: jest.fn(),
   };
 
   const baseCreateDto = {
@@ -42,14 +49,21 @@ describe('DividendPaymentsService', () => {
       providers: [
         DividendPaymentsService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: DividendPaymentsRepository,
+          useValue: mockDividendPaymentsRepository,
+        },
+        {
+          provide: SecuritiesRepository,
+          useValue: mockSecuritiesRepository,
+        },
+        {
+          provide: CurrenciesRepository,
+          useValue: mockCurrenciesRepository,
         },
       ],
     }).compile();
 
     service = module.get<DividendPaymentsService>(DividendPaymentsService);
-    prisma = module.get<PrismaService>(PrismaService);
   });
 
   afterEach(() => {
@@ -80,68 +94,60 @@ describe('DividendPaymentsService', () => {
         security,
       };
 
-      mockPrismaService.security.findUnique.mockResolvedValue(security);
-      mockPrismaService.currency.findUnique
-        .mockResolvedValueOnce({ code: baseCreateDto.originCurrency })
-        .mockResolvedValueOnce({ code: baseCreateDto.destCurrency });
-      mockPrismaService.dividendPayment.create.mockResolvedValue(
-        createdPayment
-      );
+      mockSecuritiesRepository.existsById.mockResolvedValue(true);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockDividendPaymentsRepository.create.mockResolvedValue(createdPayment);
 
       const result = await service.createDividendPayment(baseCreateDto);
 
       expect(result).toEqual(createdPayment);
-      expect(prisma.security.findUnique).toHaveBeenCalledWith({
-        where: { id: baseCreateDto.securityId },
-      });
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: baseCreateDto.originCurrency },
-      });
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: baseCreateDto.destCurrency },
-      });
-      expect(prisma.dividendPayment.create).toHaveBeenCalledWith({
-        data: {
-          exDate: new Date(baseCreateDto.exDate),
-          payoutDate: new Date(baseCreateDto.payoutDate),
-          securityId: baseCreateDto.securityId,
-          shares: baseCreateDto.shares,
-          dividendYield: baseCreateDto.dividendYield,
-          taxAmount: baseCreateDto.taxAmount,
-          originCurrency: baseCreateDto.originCurrency,
-          destCurrency: baseCreateDto.destCurrency,
-          conversionRate: baseCreateDto.conversionRate,
-          finalPayment: baseCreateDto.finalPayment,
-          note: baseCreateDto.note,
-        },
-        include: {
-          security: true,
-        },
+      expect(mockSecuritiesRepository.existsById).toHaveBeenCalledWith(
+        baseCreateDto.securityId
+      );
+      expect(mockCurrenciesRepository.existsByCode).toHaveBeenCalledWith(
+        baseCreateDto.originCurrency
+      );
+      expect(mockCurrenciesRepository.existsByCode).toHaveBeenCalledWith(
+        baseCreateDto.destCurrency
+      );
+      expect(mockDividendPaymentsRepository.create).toHaveBeenCalledWith({
+        exDate: new Date(baseCreateDto.exDate),
+        payoutDate: new Date(baseCreateDto.payoutDate),
+        securityId: baseCreateDto.securityId,
+        shares: baseCreateDto.shares,
+        dividendYield: baseCreateDto.dividendYield,
+        taxAmount: baseCreateDto.taxAmount,
+        originCurrency: baseCreateDto.originCurrency,
+        destCurrency: baseCreateDto.destCurrency,
+        conversionRate: baseCreateDto.conversionRate,
+        finalPayment: baseCreateDto.finalPayment,
+        note: baseCreateDto.note,
       });
     });
 
     it('should throw when security does not exist', async () => {
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.existsById.mockResolvedValue(false);
 
       await expect(
         service.createDividendPayment(baseCreateDto)
       ).rejects.toThrow(NotFoundException);
 
-      expect(prisma.currency.findUnique).not.toHaveBeenCalled();
-      expect(prisma.dividendPayment.create).not.toHaveBeenCalled();
+      expect(mockCurrenciesRepository.existsByCode).not.toHaveBeenCalled();
+      expect(mockDividendPaymentsRepository.create).not.toHaveBeenCalled();
     });
 
     it('should throw when origin currency does not exist', async () => {
-      mockPrismaService.security.findUnique.mockResolvedValue({
-        id: baseCreateDto.securityId,
-      });
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.existsById.mockResolvedValue(true);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
 
       await expect(
         service.createDividendPayment(baseCreateDto)
       ).rejects.toThrow(NotFoundException);
 
-      expect(prisma.dividendPayment.create).not.toHaveBeenCalled();
+      expect(mockCurrenciesRepository.existsByCode).toHaveBeenCalledWith(
+        baseCreateDto.originCurrency
+      );
+      expect(mockDividendPaymentsRepository.create).not.toHaveBeenCalled();
     });
   });
 
@@ -153,17 +159,12 @@ describe('DividendPaymentsService', () => {
         },
       ];
 
-      mockPrismaService.dividendPayment.findMany.mockResolvedValue(payments);
+      mockDividendPaymentsRepository.findAll.mockResolvedValue(payments);
 
       const result = await service.getAllDividendPayments();
 
       expect(result).toEqual(payments);
-      expect(prisma.dividendPayment.findMany).toHaveBeenCalledWith({
-        include: {
-          security: true,
-        },
-        orderBy: { payoutDate: 'desc' },
-      });
+      expect(mockDividendPaymentsRepository.findAll).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -173,21 +174,22 @@ describe('DividendPaymentsService', () => {
         id: 'payment-1',
       };
 
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue(payment);
+      mockDividendPaymentsRepository.findByIdWithSecurity.mockResolvedValue(
+        payment
+      );
 
       const result = await service.getDividendPaymentById('payment-1');
 
       expect(result).toEqual(payment);
-      expect(prisma.dividendPayment.findUnique).toHaveBeenCalledWith({
-        where: { id: 'payment-1' },
-        include: {
-          security: true,
-        },
-      });
+      expect(
+        mockDividendPaymentsRepository.findByIdWithSecurity
+      ).toHaveBeenCalledWith('payment-1');
     });
 
     it('should throw when dividend payment is not found', async () => {
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue(null);
+      mockDividendPaymentsRepository.findByIdWithSecurity.mockResolvedValue(
+        null
+      );
 
       await expect(
         service.getDividendPaymentById('missing-payment')
@@ -203,18 +205,16 @@ describe('DividendPaymentsService', () => {
         },
       ];
 
-      mockPrismaService.dividendPayment.findMany.mockResolvedValue(payments);
+      mockDividendPaymentsRepository.findBySecurityId.mockResolvedValue(
+        payments
+      );
 
       const result = await service.getDividendPaymentsBySecurityId('security-1');
 
       expect(result).toEqual(payments);
-      expect(prisma.dividendPayment.findMany).toHaveBeenCalledWith({
-        where: { securityId: 'security-1' },
-        include: {
-          security: true,
-        },
-        orderBy: { payoutDate: 'desc' },
-      });
+      expect(
+        mockDividendPaymentsRepository.findBySecurityId
+      ).toHaveBeenCalledWith('security-1');
     });
   });
 
@@ -228,7 +228,9 @@ describe('DividendPaymentsService', () => {
       const startDate = new Date('2024-01-01T00:00:00.000Z');
       const endDate = new Date('2024-01-31T00:00:00.000Z');
 
-      mockPrismaService.dividendPayment.findMany.mockResolvedValue(payments);
+      mockDividendPaymentsRepository.findByPayoutDateRange.mockResolvedValue(
+        payments
+      );
 
       const result = await service.getDividendPaymentsByDateRange(
         startDate,
@@ -236,18 +238,9 @@ describe('DividendPaymentsService', () => {
       );
 
       expect(result).toEqual(payments);
-      expect(prisma.dividendPayment.findMany).toHaveBeenCalledWith({
-        where: {
-          payoutDate: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        include: {
-          security: true,
-        },
-        orderBy: { payoutDate: 'desc' },
-      });
+      expect(
+        mockDividendPaymentsRepository.findByPayoutDateRange
+      ).toHaveBeenCalledWith(startDate, endDate);
     });
   });
 
@@ -281,18 +274,12 @@ describe('DividendPaymentsService', () => {
         updatedAt: new Date(),
       };
 
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue(
+      mockDividendPaymentsRepository.findById.mockResolvedValue(
         existingPayment
       );
-      mockPrismaService.security.findUnique.mockResolvedValue({
-        id: 'security-2',
-      });
-      mockPrismaService.currency.findUnique
-        .mockResolvedValueOnce({ code: updateDto.originCurrency })
-        .mockResolvedValueOnce({ code: updateDto.destCurrency });
-      mockPrismaService.dividendPayment.update.mockResolvedValue(
-        updatedPayment
-      );
+      mockSecuritiesRepository.existsById.mockResolvedValue(true);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockDividendPaymentsRepository.update.mockResolvedValue(updatedPayment);
 
       const result = await service.updateDividendPayment(
         'payment-1',
@@ -300,18 +287,21 @@ describe('DividendPaymentsService', () => {
       );
 
       expect(result).toEqual(updatedPayment);
-      expect(prisma.security.findUnique).toHaveBeenCalledWith({
-        where: { id: updateDto.securityId },
-      });
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: updateDto.originCurrency },
-      });
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: updateDto.destCurrency },
-      });
-      expect(prisma.dividendPayment.update).toHaveBeenCalledWith({
-        where: { id: 'payment-1' },
-        data: {
+      expect(mockDividendPaymentsRepository.findById).toHaveBeenCalledWith(
+        'payment-1'
+      );
+      expect(mockSecuritiesRepository.existsById).toHaveBeenCalledWith(
+        updateDto.securityId
+      );
+      expect(mockCurrenciesRepository.existsByCode).toHaveBeenCalledWith(
+        updateDto.originCurrency
+      );
+      expect(mockCurrenciesRepository.existsByCode).toHaveBeenCalledWith(
+        updateDto.destCurrency
+      );
+      expect(mockDividendPaymentsRepository.update).toHaveBeenCalledWith(
+        'payment-1',
+        {
           exDate: new Date(updateDto.exDate),
           payoutDate: new Date(updateDto.payoutDate),
           securityId: updateDto.securityId,
@@ -323,21 +313,18 @@ describe('DividendPaymentsService', () => {
           conversionRate: updateDto.conversionRate,
           finalPayment: updateDto.finalPayment,
           note: updateDto.note,
-        },
-        include: {
-          security: true,
-        },
-      });
+        }
+      );
     });
 
     it('should throw when dividend payment does not exist', async () => {
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue(null);
+      mockDividendPaymentsRepository.findById.mockResolvedValue(null);
 
       await expect(
         service.updateDividendPayment('missing-payment', { shares: 5 })
       ).rejects.toThrow(NotFoundException);
 
-      expect(prisma.dividendPayment.update).not.toHaveBeenCalled();
+      expect(mockDividendPaymentsRepository.update).not.toHaveBeenCalled();
     });
 
     it('should throw when updated security does not exist', async () => {
@@ -348,10 +335,10 @@ describe('DividendPaymentsService', () => {
         destCurrency: 'EUR',
       };
 
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue(
+      mockDividendPaymentsRepository.findById.mockResolvedValue(
         existingPayment
       );
-      mockPrismaService.security.findUnique.mockResolvedValue(null);
+      mockSecuritiesRepository.existsById.mockResolvedValue(false);
 
       await expect(
         service.updateDividendPayment('payment-1', {
@@ -359,31 +346,34 @@ describe('DividendPaymentsService', () => {
         })
       ).rejects.toThrow(NotFoundException);
 
-      expect(prisma.dividendPayment.update).not.toHaveBeenCalled();
+      expect(mockSecuritiesRepository.existsById).toHaveBeenCalledWith(
+        'missing-security'
+      );
+      expect(mockDividendPaymentsRepository.update).not.toHaveBeenCalled();
     });
   });
 
   describe('deleteDividendPayment', () => {
     it('should delete dividend payment when it exists', async () => {
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue({
+      mockDividendPaymentsRepository.findById.mockResolvedValue({
         id: 'payment-1',
       });
 
       await service.deleteDividendPayment('payment-1');
 
-      expect(prisma.dividendPayment.delete).toHaveBeenCalledWith({
-        where: { id: 'payment-1' },
-      });
+      expect(mockDividendPaymentsRepository.delete).toHaveBeenCalledWith(
+        'payment-1'
+      );
     });
 
     it('should throw when dividend payment does not exist', async () => {
-      mockPrismaService.dividendPayment.findUnique.mockResolvedValue(null);
+      mockDividendPaymentsRepository.findById.mockResolvedValue(null);
 
       await expect(
         service.deleteDividendPayment('missing-payment')
       ).rejects.toThrow(NotFoundException);
 
-      expect(prisma.dividendPayment.delete).not.toHaveBeenCalled();
+      expect(mockDividendPaymentsRepository.delete).not.toHaveBeenCalled();
     });
   });
 });

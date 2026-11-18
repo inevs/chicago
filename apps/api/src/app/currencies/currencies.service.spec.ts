@@ -1,21 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
 import { CurrenciesService } from './currencies.service';
-import { PrismaService } from '../../prisma.service';
+import { CurrenciesRepository } from './currencies.repository';
 import { CURRENCY_ERRORS } from '@dividends/shared';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
 
 describe('CurrenciesService', () => {
   let service: CurrenciesService;
-  let prisma: PrismaService;
+  let currenciesRepository: CurrenciesRepository;
   let exchangeRatesService: ExchangeRatesService;
 
-  const mockPrismaService = {
-    currency: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-    },
+  const mockCurrenciesRepository = {
+    findAll: jest.fn(),
+    findByCode: jest.fn(),
+    existsByCode: jest.fn(),
+    create: jest.fn(),
   };
 
   const mockExchangeRatesService = {
@@ -27,8 +26,8 @@ describe('CurrenciesService', () => {
       providers: [
         CurrenciesService,
         {
-          provide: PrismaService,
-          useValue: mockPrismaService,
+          provide: CurrenciesRepository,
+          useValue: mockCurrenciesRepository,
         },
         {
           provide: ExchangeRatesService,
@@ -38,7 +37,7 @@ describe('CurrenciesService', () => {
     }).compile();
 
     service = module.get<CurrenciesService>(CurrenciesService);
-    prisma = module.get<PrismaService>(PrismaService);
+    currenciesRepository = module.get<CurrenciesRepository>(CurrenciesRepository);
     exchangeRatesService = module.get<ExchangeRatesService>(ExchangeRatesService);
   });
 
@@ -72,18 +71,16 @@ describe('CurrenciesService', () => {
         },
       ];
 
-      mockPrismaService.currency.findMany.mockResolvedValue(currencies);
+      mockCurrenciesRepository.findAll.mockResolvedValue(currencies);
 
       const result = await service.findAll();
 
       expect(result).toEqual(currencies);
-      expect(prisma.currency.findMany).toHaveBeenCalledWith({
-        orderBy: { code: 'asc' },
-      });
+      expect(currenciesRepository.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('should return empty array when no currencies exist', async () => {
-      mockPrismaService.currency.findMany.mockResolvedValue([]);
+      mockCurrenciesRepository.findAll.mockResolvedValue([]);
 
       const result = await service.findAll();
 
@@ -106,20 +103,16 @@ describe('CurrenciesService', () => {
         createdAt: new Date(),
       };
 
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
-      mockPrismaService.currency.create.mockResolvedValue(createdCurrency);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
+      mockCurrenciesRepository.create.mockResolvedValue(createdCurrency);
 
       const result = await service.create(dto);
 
       expect(result).toEqual(createdCurrency);
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: 'USD' },
-      });
-      expect(prisma.currency.create).toHaveBeenCalledWith({
-        data: {
-          code: 'USD',
-          name: 'US Dollar',
-        },
+      expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('USD');
+      expect(currenciesRepository.create).toHaveBeenCalledWith({
+        code: 'USD',
+        name: 'US Dollar',
       });
       expect(exchangeRatesService.syncExchangeRates).toHaveBeenCalledWith('USD');
     });
@@ -130,20 +123,13 @@ describe('CurrenciesService', () => {
         name: 'Euro',
       };
 
-      const existingCurrency = {
-        id: 'existing-id',
-        code: 'EUR',
-        name: 'Euro',
-        isDefault: true,
-        createdAt: new Date(),
-      };
-
-      mockPrismaService.currency.findUnique.mockResolvedValue(existingCurrency);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
 
       await expect(service.create(dto)).rejects.toThrow(
         new ConflictException(CURRENCY_ERRORS.ALREADY_EXISTS('EUR'))
       );
-      expect(prisma.currency.create).not.toHaveBeenCalled();
+      expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('EUR');
+      expect(currenciesRepository.create).not.toHaveBeenCalled();
       expect(exchangeRatesService.syncExchangeRates).not.toHaveBeenCalled();
     });
 
@@ -161,19 +147,15 @@ describe('CurrenciesService', () => {
         createdAt: new Date(),
       };
 
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
-      mockPrismaService.currency.create.mockResolvedValue(createdCurrency);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
+      mockCurrenciesRepository.create.mockResolvedValue(createdCurrency);
 
       await service.create(dto);
 
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: 'GBP' },
-      });
-      expect(prisma.currency.create).toHaveBeenCalledWith({
-        data: {
-          code: 'GBP',
-          name: 'British Pound',
-        },
+      expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('GBP');
+      expect(currenciesRepository.create).toHaveBeenCalledWith({
+        code: 'GBP',
+        name: 'British Pound',
       });
     });
 
@@ -191,16 +173,15 @@ describe('CurrenciesService', () => {
         createdAt: new Date(),
       };
 
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
-      mockPrismaService.currency.create.mockResolvedValue(createdCurrency);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
+      mockCurrenciesRepository.create.mockResolvedValue(createdCurrency);
 
       await service.create(dto);
 
-      expect(prisma.currency.create).toHaveBeenCalledWith({
-        data: {
-          code: 'CHF',
-          name: 'Swiss Franc',
-        },
+      expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('CHF');
+      expect(currenciesRepository.create).toHaveBeenCalledWith({
+        code: 'CHF',
+        name: 'Swiss Franc',
       });
     });
   });
@@ -228,14 +209,12 @@ describe('CurrenciesService', () => {
         createdAt: new Date(),
       };
 
-      mockPrismaService.currency.findUnique.mockResolvedValue(defaultCurrency);
+      mockCurrenciesRepository.findByCode.mockResolvedValue(defaultCurrency);
 
       const result = await service.getDefaultCurrency();
 
       expect(result).toEqual(defaultCurrency);
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: 'USD' },
-      });
+      expect(currenciesRepository.findByCode).toHaveBeenCalledWith('USD');
     });
 
     it('should default to EUR when DEFAULT_CURRENCY env var is not set', async () => {
@@ -249,24 +228,23 @@ describe('CurrenciesService', () => {
         createdAt: new Date(),
       };
 
-      mockPrismaService.currency.findUnique.mockResolvedValue(defaultCurrency);
+      mockCurrenciesRepository.findByCode.mockResolvedValue(defaultCurrency);
 
       const result = await service.getDefaultCurrency();
 
       expect(result).toEqual(defaultCurrency);
-      expect(prisma.currency.findUnique).toHaveBeenCalledWith({
-        where: { code: 'EUR' },
-      });
+      expect(currenciesRepository.findByCode).toHaveBeenCalledWith('EUR');
     });
 
     it('should return null when default currency does not exist in database', async () => {
       process.env.DEFAULT_CURRENCY = 'JPY';
 
-      mockPrismaService.currency.findUnique.mockResolvedValue(null);
+      mockCurrenciesRepository.findByCode.mockResolvedValue(null);
 
       const result = await service.getDefaultCurrency();
 
       expect(result).toBeNull();
+      expect(currenciesRepository.findByCode).toHaveBeenCalledWith('JPY');
     });
   });
 });

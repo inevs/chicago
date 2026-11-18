@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
-import { PrismaService } from '../prisma.service';
+import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { SecuritiesModule } from './securities/securities.module';
 import { DividendPaymentsModule } from './dividend-payments/dividend-payments.module';
@@ -14,6 +14,7 @@ import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    DatabaseModule,
     HealthModule,
     AuthModule,
     SecuritiesModule,
@@ -25,7 +26,5 @@ import { HealthModule } from './health/health.module';
     ExchangeRatesModule,
   ],
   controllers: [],
-  providers: [PrismaService],
-  exports: [PrismaService],
 })
 export class AppModule {}
