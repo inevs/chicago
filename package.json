@@ -14,7 +14,8 @@
     "db:seed": "tsx apps/api/prisma/seed.ts",
     "db:reset": "prisma migrate reset --config=apps/api/prisma.config.ts --skip-seed",
     "db:format": "prisma format --config=apps/api/prisma.config.ts",
-    "db:validate": "prisma validate --config=apps/api/prisma.config.ts"
+    "db:validate": "prisma validate --config=apps/api/prisma.config.ts",
+    "docker:redeploy": "scripts/redeploy.sh"
   },
   "private": true,
   "overrides": {

@@ -275,6 +275,8 @@ On every start, the API container applies pending migrations (`prisma migrate de
 
 The application is then available at `http://localhost`. Stop any running `nx serve` processes first, because the API container uses port 3000.
 
+To rebuild and restart everything after a code change, run `scripts/redeploy.sh` (or `npm run docker:redeploy`); see [docs/DOCKER.md](docs/DOCKER.md#redeploy-after-a-change).
+
 Details on configuration, access from other machines and Podman are described in [docs/DOCKER.md](docs/DOCKER.md).
 
 ## Deployment
@@ -318,6 +320,8 @@ chicago/
 │   └── shared/                 # Shared library (@dividends/shared)
 │       └── src/                # Shared types and utilities
 ├── docs/                       # Project documentation (Docker, features, architecture)
+├── scripts/
+│   └── redeploy.sh             # Rebuild and restart the Docker stack after a change
 ├── docker-compose.yml          # Full stack: PostgreSQL, API and frontend
 ├── .env.example                # Template for environment variables
 ├── .nvmrc                      # Node version specification

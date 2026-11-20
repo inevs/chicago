@@ -16,7 +16,8 @@
 - `nx lint <project>` or `nx run-many -t lint`: Run linting.
 - `nx run-many -t build|test` or `nx affected -t build|test|lint`: Batch or affected-only targets.
 - `npm run db:generate`, `npm run db:migrate`: Prisma client generation and migrations.
-- `docker compose up -d`: Start local PostgreSQL (required before migrations).
+- `docker compose up -d postgres`: Start local PostgreSQL (required before migrations); `docker compose up -d` starts the full stack.
+- `scripts/redeploy.sh` (`npm run docker:redeploy`): Rebuild all Docker images and restart the stack after a change (runs tests first; `--skip-tests`, `--no-cache`).
 
 ## Coding Style & Naming Conventions
 - TypeScript and SCSS are the defaults; format with Prettier (single quotes, 2-space indentation).

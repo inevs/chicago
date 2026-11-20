@@ -109,6 +109,12 @@ docker compose down
 
 # Stop and remove volumes
 docker compose down -v
+
+# Rebuild all images and restart the stack after a change (runs the tests first;
+# --skip-tests, --no-cache; waits for the API health check)
+scripts/redeploy.sh
+# or
+npm run docker:redeploy
 ```
 
 ### Testing
