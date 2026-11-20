@@ -303,14 +303,24 @@ export class SecuritiesService {
         const createResult =
           await this.securitiesRepository.createMany(securitiesToCreate);
 
-        // Update results with actual security IDs
-        let createdIndex = 0;
+        // Match created rows to results by symbol (unique). createMany skips
+        // duplicates (e.g. a symbol inserted concurrently since the pre-check)
+        // and returns only the inserted rows, so matching by position could
+        // assign IDs of other securities.
+        const idsBySymbol = new Map(
+          createResult.map((security) => [security.symbol, security.id])
+        );
         for (const result of results) {
-          if (result.status === 'created' && createdIndex < createResult.length) {
-            const createdSecurity = createResult[createdIndex];
-            result.securityId = createdSecurity.id;
-            createdSecurityIds.push(createdSecurity.id);
-            createdIndex++;
+          if (result.status !== 'created') {
+            continue;
+          }
+          const securityId = idsBySymbol.get(result.symbol);
+          if (securityId) {
+            result.securityId = securityId;
+            createdSecurityIds.push(securityId);
+          } else {
+            result.status = 'skipped';
+            result.reason = 'Symbol already exists';
           }
         }
       } catch (error) {

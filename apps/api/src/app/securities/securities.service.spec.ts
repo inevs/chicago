@@ -702,6 +702,73 @@ Microsoft Corp.,MSFT,STOCK,NASDAQ,USD`;
       expect(result.results[1].status).toBe('created');
     });
 
+    it('should assign security IDs by symbol, not by position', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,USD
+Microsoft Corp.,MSFT,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([
+        { id: 'uuid-msft', symbol: 'MSFT', name: 'Microsoft Corp.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+        { id: 'uuid-aapl', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.results[0]).toMatchObject({ symbol: 'AAPL', status: 'created', securityId: 'uuid-aapl' });
+      expect(result.results[1]).toMatchObject({ symbol: 'MSFT', status: 'created', securityId: 'uuid-msft' });
+    });
+
+    it('should mark rows skipped at insert time (concurrent duplicate) as skipped', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,USD
+Microsoft Corp.,MSFT,STOCK,NASDAQ,USD
+Alphabet Inc.,GOOGL,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      // MSFT was inserted concurrently after the pre-check and is skipped by createMany
+      mockSecuritiesRepository.createMany.mockResolvedValue([
+        { id: 'uuid-aapl', symbol: 'AAPL', name: 'Apple Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+        { id: 'uuid-googl', symbol: 'GOOGL', name: 'Alphabet Inc.', type: 'STOCK', exchange: 'NASDAQ', currency: 'USD' },
+      ]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.created).toBe(2);
+      expect(result.skipped).toBe(1);
+      expect(result.results[0]).toMatchObject({ symbol: 'AAPL', status: 'created', securityId: 'uuid-aapl' });
+      expect(result.results[1]).toMatchObject({ symbol: 'MSFT', status: 'skipped', reason: 'Symbol already exists' });
+      expect(result.results[1].securityId).toBeUndefined();
+      expect(result.results[2]).toMatchObject({ symbol: 'GOOGL', status: 'created', securityId: 'uuid-googl' });
+      expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledTimes(2);
+      expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledWith({ securityId: 'uuid-aapl' });
+      expect(securityPricesService.syncHistoricalPrices).toHaveBeenCalledWith({ securityId: 'uuid-googl' });
+    });
+
+    it('should not trigger a price sync when all rows are skipped at insert time', async () => {
+      const csvContent = `name,symbol,type,exchange,currency
+Apple Inc.,AAPL,STOCK,NASDAQ,USD`;
+
+      const file = createMockFile(csvContent);
+
+      mockSecuritiesRepository.findExistingSymbols.mockResolvedValue([]);
+      mockCurrenciesRepository.findExistingCodes.mockResolvedValue(['USD']);
+      mockSecuritiesRepository.createMany.mockResolvedValue([]);
+
+      const result = await service.importFromCsv(file);
+
+      expect(result.created).toBe(0);
+      expect(result.skipped).toBe(1);
+      expect(result.pricesSyncTriggered).toBe(false);
+      expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
+    });
+
     it('should reject CSV with missing headers', async () => {
       const csvContent = `name,symbol,type
 Apple Inc.,AAPL,STOCK`;
