@@ -154,7 +154,8 @@ All domain controllers are protected with `@UseGuards(JwtAuthGuard)`; only `/api
 
 **Components**:
 - `ExchangeRatesController`: Sync endpoints
-- `ExchangeRatesService`: ECB API integration
+- `ExchangeRatesService`: Sync logic (date range validation, storing rates) independent of the provider
+- `EcbExchangeRateProvider`: ECB API integration (HTTP request, CSV parsing); implements `ExchangeRateProvider` and is injected via the token `EXCHANGE_RATE_PROVIDER`
 
 **Key Operations**:
 - Sync EUR-based rates from ECB

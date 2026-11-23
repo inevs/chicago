@@ -1,21 +1,20 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import axios from 'axios';
+import { Injectable, Logger, BadRequestException, Inject } from '@nestjs/common';
 import { ExchangeRatesRepository } from './exchange-rates.repository';
 import { CurrenciesRepository } from '../currencies/currencies.repository';
-
-interface EcbRate {
-  date: Date;
-  rate: number;
-}
+import {
+  EXCHANGE_RATE_PROVIDER,
+  type ExchangeRateProvider,
+} from './providers/exchange-rate-provider';
 
 @Injectable()
 export class ExchangeRatesService {
   private readonly logger = new Logger(ExchangeRatesService.name);
-  private readonly ECB_API_BASE = 'https://data-api.ecb.europa.eu/service/data';
 
   constructor(
     private readonly exchangeRatesRepository: ExchangeRatesRepository,
-    private readonly currenciesRepository: CurrenciesRepository
+    private readonly currenciesRepository: CurrenciesRepository,
+    @Inject(EXCHANGE_RATE_PROVIDER)
+    private readonly provider: ExchangeRateProvider
   ) {}
 
   /**
@@ -33,7 +32,7 @@ export class ExchangeRatesService {
   }
 
   /**
-   * Sync exchange rates from ECB for a specific currency
+   * Sync exchange rates from the configured provider for a specific currency
    * @param targetCurrency The target currency to fetch rates for (e.g., 'USD')
    * @param from Start date (defaults to SECURITY_PRICE_HISTORY_START)
    * @param to End date (defaults to today)
@@ -45,10 +44,10 @@ export class ExchangeRatesService {
     to?: Date,
     baseCurrency = 'EUR'
   ): Promise<{ synced: number; skipped: number }> {
-    // Validate that base currency is EUR (ECB only provides EUR-based rates)
-    if (baseCurrency !== 'EUR') {
+    // The provider only delivers rates for its own base currency (ECB: EUR)
+    if (baseCurrency !== this.provider.baseCurrency) {
       throw new BadRequestException(
-        'ECB API only supports EUR as base currency'
+        `${this.provider.name.toUpperCase()} API only supports ${this.provider.baseCurrency} as base currency`
       );
     }
 
@@ -73,14 +72,15 @@ export class ExchangeRatesService {
     );
 
     try {
-      // Fetch rates from ECB
-      const rates = await this.fetchEcbRates(
+      const rates = await this.provider.fetchRates(
         targetCurrency,
         startDate,
         endDate
       );
 
-      this.logger.log(`Fetched ${rates.length} rates from ECB`);
+      this.logger.log(
+        `Fetched ${rates.length} rates from ${this.provider.name.toUpperCase()}`
+      );
 
       if (rates.length === 0) {
         this.logger.warn(
@@ -106,7 +106,7 @@ export class ExchangeRatesService {
                 targetCurrency,
                 date: rate.date,
                 rate: rate.rate,
-                provider: 'ecb',
+                provider: this.provider.name,
               });
               return { success: true };
             } catch (error) {
@@ -139,139 +139,6 @@ export class ExchangeRatesService {
       );
       throw error;
     }
-  }
-
-  /**
-   * Fetch exchange rates from ECB API
-   * ECB provides daily exchange rates with EUR as the base currency
-   */
-  private async fetchEcbRates(
-    targetCurrency: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<EcbRate[]> {
-    try {
-      // Format dates as YYYY-MM-DD
-      const startStr = startDate.toISOString().split('T')[0];
-      const endStr = endDate.toISOString().split('T')[0];
-
-      // ECB API endpoint for exchange rates
-      // EXR = Exchange Rates
-      // D = Daily frequency
-      // EUR = Base currency
-      // targetCurrency = Quote currency
-      const url = `${this.ECB_API_BASE}/EXR/D.${targetCurrency}.EUR.SP00.A`;
-      const params = {
-        startPeriod: startStr,
-        endPeriod: endStr,
-        format: 'csvdata',
-      };
-
-      this.logger.debug(`Fetching from ECB: ${url}`);
-
-      const response = await axios.get(url, {
-        params,
-        timeout: 30000,
-        headers: {
-          Accept: 'text/csv',
-        },
-      });
-
-      // Parse CSV response
-      const rates = this.parseEcbCsv(response.data);
-
-      return rates;
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 404) {
-          this.logger.warn(
-            `Currency ${targetCurrency} not found in ECB data`
-          );
-          return [];
-        }
-        this.logger.error(
-          `ECB API error: ${error.response?.status} - ${error.message}`
-        );
-      }
-      throw new BadRequestException(
-        `Failed to fetch exchange rates from ECB: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Parse ECB CSV response to extract rates
-   * Dynamically parses the header to map column names to indices,
-   * making the parser resilient to ECB format changes
-   */
-  private parseEcbCsv(csv: string): EcbRate[] {
-    const rates: EcbRate[] = [];
-    const lines = csv.split('\n');
-
-    if (lines.length === 0) {
-      this.logger.warn('ECB CSV response is empty');
-      return rates;
-    }
-
-    // Parse header line to map column names to indices
-    const headerLine = lines[0].trim();
-    if (!headerLine) {
-      this.logger.warn('ECB CSV header line is empty');
-      return rates;
-    }
-
-    const headers = headerLine.split(',').map((h) => h.trim());
-    const columnMap = new Map<string, number>();
-    headers.forEach((header, index) => {
-      columnMap.set(header, index);
-    });
-
-    // Validate required columns exist
-    const requiredColumns = ['TIME_PERIOD', 'OBS_VALUE'];
-    const missingColumns = requiredColumns.filter(
-      (col) => !columnMap.has(col)
-    );
-
-    if (missingColumns.length > 0) {
-      this.logger.warn(
-        `ECB CSV format missing required columns: ${missingColumns.join(', ')}`
-      );
-      this.logger.warn(`Available columns: ${headers.join(', ')}`);
-      return rates;
-    }
-
-    // These columns are guaranteed to exist due to the validation above
-    const dateIndex = columnMap.get('TIME_PERIOD') as number;
-    const rateIndex = columnMap.get('OBS_VALUE') as number;
-
-    // Log format validation success
-    this.logger.debug(
-      `ECB CSV format validated. TIME_PERIOD at index ${dateIndex}, OBS_VALUE at index ${rateIndex}`
-    );
-
-    // Process data rows
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      const columns = line.split(',');
-
-      if (columns.length > Math.max(dateIndex, rateIndex)) {
-        const dateStr = columns[dateIndex]?.trim();
-        const rateStr = columns[rateIndex]?.trim();
-
-        if (dateStr && rateStr) {
-          const date = new Date(dateStr);
-          const rate = parseFloat(rateStr);
-
-          if (!isNaN(date.getTime()) && !isNaN(rate)) {
-            rates.push({ date, rate });
-          }
-        }
-      }
-    }
-
-    return rates;
   }
 
   /**

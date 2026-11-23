@@ -59,27 +59,21 @@ Quality
 **Scenario**: Replace or supplement ECB with another exchange rate provider
 
 **Current State**:
-- ExchangeRatesService hardcoded to ECB
-- CSV parsing specific to ECB format
+- `ExchangeRatesService` depends only on the interface `ExchangeRateProvider` (`name`, `baseCurrency`, `fetchRates(targetCurrency, from, to)`), injected via the token `EXCHANGE_RATE_PROVIDER`
+- ECB-specific logic (HTTP request, CSV parsing) is isolated in `EcbExchangeRateProvider` (`apps/api/src/app/exchange-rates/providers/`)
+- `ExchangeRatesModule` binds the token to `EcbExchangeRateProvider`
+
+**Steps**:
+1. Implement `ExchangeRateProvider` in a new class next to `EcbExchangeRateProvider`
+2. Bind `EXCHANGE_RATE_PROVIDER` to the new class in `ExchangeRatesModule`
 
 **Challenges**:
-- ❌ No provider abstraction
-- ❌ Single provider hardcoded
-- ❌ No strategy pattern
+- ⚠️ Only one provider can be active; no selection per currency and no fallback
+- ⚠️ EUR is still assumed as base currency in parts of `ExchangeRatesService` and in the frontend
 
-**Effort**: ~8 hours (refactoring required)
+**Effort**: Mainly the new provider class and its tests; no changes to `ExchangeRatesService` needed
 
-**Assessment**: ❌ Poor extensibility
-
-**Recommendation**:
-```typescript
-interface ExchangeRateProvider {
-  fetchRates(currency: string, from: Date, to: Date): Promise<Rate[]>;
-}
-
-class EcbProvider implements ExchangeRateProvider { }
-class CurrencyLayerProvider implements ExchangeRateProvider { }
-```
+**Assessment**: ✅ Good extensibility for replacing the provider; ⚠️ fallback or multiple providers need additional work
 
 #### M3: Adding Unit Tests for a Service
 

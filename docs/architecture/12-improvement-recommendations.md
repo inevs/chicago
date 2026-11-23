@@ -526,7 +526,7 @@ export class SecurityFactory {
 
 ### Issue 7: Hardcoded Exchange Rate Provider
 
-**Status**: ❌ Open — ECB remains hardcoded in `exchange-rates.service.ts`.
+**Status**: ⚠️ Partial — The provider abstraction exists (#23): `ExchangeRatesService` uses the interface `ExchangeRateProvider` (`apps/api/src/app/exchange-rates/providers/exchange-rate-provider.ts`), injected via the token `EXCHANGE_RATE_PROVIDER`. The ECB logic (HTTP request, CSV parsing, error mapping) lives in `EcbExchangeRateProvider`, which `ExchangeRatesModule` registers as the only provider. Open: additional providers, provider selection (factory) and a fallback if the ECB is down.
 
 **Problem**:
 - ECB provider hardcoded in service
@@ -633,7 +633,7 @@ export class ExchangeRatesService {
 - Frontend assumes EUR
 
 **Locations**:
-- `apps/api/src/app/exchange-rates/exchange-rates.service.ts:42` (baseCurrency = 'EUR')
+- `apps/api/src/app/exchange-rates/exchange-rates.service.ts:45` (`baseCurrency = 'EUR'`), also in `syncAllCurrencies` and `getLatestRatesToEur`
 - `apps/dividends/src/app/services/transaction-facade.service.ts` (`destCurrency: 'EUR'`; `app-state.service.ts` no longer exists)
 - `apps/dividends/src/app/services/dividend-data.service.ts`, `ui-state.service.ts`, table components (`currency: 'EUR'`)
 - Database constraints assume EUR
