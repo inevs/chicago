@@ -24,6 +24,7 @@ api/
 │   ├── app/
 │   │   ├── auth/                    # JWT authentication (guards, strategies, DTOs)
 │   │   ├── common/filters/          # GlobalExceptionFilter
+│   │   ├── common/middleware/       # RequestLoggingMiddleware
 │   │   ├── health/                  # Health checks (@nestjs/terminus)
 │   │   ├── securities/              # Security management
 │   │   ├── dividend-payments/       # Dividend tracking

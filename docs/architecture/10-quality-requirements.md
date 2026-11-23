@@ -166,7 +166,7 @@ Quality
 - ✅ Self-registration disabled by default (`ALLOW_REGISTRATION`)
 - ❌ No per-user data ownership (any authenticated account can access all data)
 - ❌ No rate limiting (including login endpoint)
-- ❌ No request logging
+- ✅ Request logging (`RequestLoggingMiddleware`: method, URL, status code, duration)
 
 **Impact**: ✅ Unauthenticated access blocked; ⚠️ brute-force attempts on login not throttled
 

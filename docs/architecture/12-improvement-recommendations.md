@@ -927,7 +927,7 @@ throw new NotFoundException(
 
 ### Issue 13: No Request Logging
 
-**Status**: ❌ Open — only errors are logged (by the global exception filter); response compression is also not enabled.
+**Status**: ✅ Implemented — `RequestLoggingMiddleware` (`apps/api/src/app/common/middleware/request-logging.middleware.ts`), registered for all routes in `AppModule.configure()`. It logs one structured entry per request (`method`, `url`, `statusCode`, `durationMs`, logger context `HTTP`) once the response is sent. Deviations from the recommendation below: IP address and user agent are not logged (personal data), and the health checks (`/api/health`, `/api/health/db`) are excluded. Response compression is still not enabled.
 
 **Problem**:
 - No access logs
@@ -988,7 +988,7 @@ export class AppModule implements NestModule {
 1. ⚠️ Add authentication & authorization (24h) — authentication done, authorization open
 2. ✅ Add centralized error handling (8h)
 3. ⚠️ Add health checks (4h) — database done, external providers open
-4. ❌ Add request logging (2h)
+4. ✅ Add request logging (2h)
 
 **Total**: ~38 hours
 
@@ -1036,7 +1036,7 @@ export class AppModule implements NestModule {
 ### Quick Wins (< 4 hours each)
 
 1. Add health checks ⚠️ (database done, external providers open)
-2. Add request logging ❌
+2. Add request logging ✅
 3. Add caching for currencies ❌
 4. Add response compression ❌
 5. Standardize error messages ❌
