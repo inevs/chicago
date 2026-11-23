@@ -156,6 +156,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
 **Backend**:
 - NestJS Logger used in some services and in the global exception filter
+- Request/access logging: `RequestLoggingMiddleware` (`apps/api/src/app/common/middleware/request-logging.middleware.ts`, registered in `AppModule.configure()`) logs every API request once the response is sent, as a structured entry with logger context `HTTP`: `{ method, url, statusCode, durationMs }`. The URL includes the query string. IP address and user agent are not logged (personal data). The health checks (`/api/health`, `/api/health/db`) are excluded because Docker polls them every 30 s
 - Manual `console.log`/`console.error` still used in some places (e.g. `securities.service.ts`, `security-transactions.service.ts`)
 - Inconsistent logging levels
 
@@ -167,10 +168,9 @@ this.logger.error('Sync failed');
 ```
 
 **Limitations**:
-- ❌ No structured logging
+- ⚠️ Structured logging only for request logs
 - ❌ No log aggregation
 - ⚠️ Correlation IDs only per error response (generated in the exception filter), no per-request IDs
-- ❌ No request/access logging
 - ❌ Inconsistent usage across modules
 
 ### Recommended Improvements

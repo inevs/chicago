@@ -47,10 +47,9 @@ This architecture documentation is organized according to the Arc42 template:
 
 ### Open Security & Operations Issues
 
-Authentication (JWT, single-user mode), centralized error handling (`GlobalExceptionFilter`) and health checks (`/api/health`, `/api/health/db`) are implemented. Still missing:
+Authentication (JWT, single-user mode), centralized error handling (`GlobalExceptionFilter`), health checks (`/api/health`, `/api/health/db`) and request logging (`RequestLoggingMiddleware`) are implemented. Still missing:
 
 1. ❌ **No Rate Limiting, Security Headers or Explicit CORS Configuration**: no throttling, no `helmet`
-2. ❌ **No Request Logging**: no request logging middleware
 
 ### Maintainability Concerns
 
@@ -71,7 +70,7 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 - Add authentication & authorization (done: JWT, single-user mode)
 - Add centralized error handling (done)
 - Add health checks (done)
-- Add request logging (open)
+- Add request logging (done)
 - Add rate limiting and security headers (open)
 
 **Impact**: Enables production deployment with proper security
@@ -138,7 +137,7 @@ Authentication (JWT, single-user mode), centralized error handling (`GlobalExcep
 **Backend**: Add provider abstractions (strategy pattern) for exchange rates and prices
 **Frontend**: Further split `TransactionFacade` into smaller units
 **Security**: Add rate limiting, security headers (`helmet`) and explicit CORS configuration
-**Monitoring**: Add request logging and structured logging (health checks exist)
+**Monitoring**: Extend structured logging beyond request logs (health checks and request logging exist)
 **Scaling**: Add server-side pagination and caching
 
 ## 📖 Related Documentation

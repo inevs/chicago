@@ -1,6 +1,6 @@
 // Must stay the first import: validates the environment before other modules read it
 import { environment } from './config/environment';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module';
@@ -13,6 +13,7 @@ import { CurrenciesModule } from './currencies/currencies.module';
 import { SecurityPricesModule } from './security-prices/security-prices.module';
 import { ExchangeRatesModule } from './exchange-rates/exchange-rates.module';
 import { HealthModule } from './health/health.module';
+import { RequestLoggingMiddleware } from './common/middleware/request-logging.middleware';
 
 @Module({
   imports: [
@@ -37,4 +38,12 @@ import { HealthModule } from './health/health.module';
   ],
   controllers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Health checks are polled by Docker every 30 s and are not logged
+    consumer
+      .apply(RequestLoggingMiddleware)
+      .exclude('health', 'health/{*path}')
+      .forRoutes('{*path}');
+  }
+}
