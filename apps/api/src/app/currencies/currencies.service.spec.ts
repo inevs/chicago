@@ -4,6 +4,7 @@ import { CurrenciesService } from './currencies.service';
 import { CurrenciesRepository } from './currencies.repository';
 import { CURRENCY_ERRORS } from '@dividends/shared';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
+import { DuplicateRecordError } from '../database/duplicate-record.error';
 
 describe('CurrenciesService', () => {
   let service: CurrenciesService;
@@ -130,6 +131,23 @@ describe('CurrenciesService', () => {
       );
       expect(currenciesRepository.existsByCode).toHaveBeenCalledWith('EUR');
       expect(currenciesRepository.create).not.toHaveBeenCalled();
+      expect(exchangeRatesService.syncExchangeRates).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException when a concurrent request created the currency after the check', async () => {
+      const dto = {
+        code: 'EUR',
+        name: 'Euro',
+      };
+
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(false);
+      mockCurrenciesRepository.create.mockRejectedValue(
+        new DuplicateRecordError()
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(
+        new ConflictException(CURRENCY_ERRORS.ALREADY_EXISTS('EUR'))
+      );
       expect(exchangeRatesService.syncExchangeRates).not.toHaveBeenCalled();
     });
 

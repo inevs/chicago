@@ -4,6 +4,7 @@ import { CURRENCY_ERRORS } from '@dividends/shared';
 import { CreateCurrencyDto } from './dto/create-currency.dto';
 import type { Currency } from '../../../generated/prisma/client';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
+import { rethrowDuplicateAsConflict } from '../database/duplicate-record.error';
 
 @Injectable()
 export class CurrenciesService {
@@ -31,10 +32,14 @@ export class CurrenciesService {
       );
     }
 
-    const currency = await this.currenciesRepository.create({
-      code: normalizedCode,
-      name: createCurrencyDto.name.trim(),
-    });
+    const currency = await this.currenciesRepository
+      .create({
+        code: normalizedCode,
+        name: createCurrencyDto.name.trim(),
+      })
+      .catch(
+        rethrowDuplicateAsConflict(CURRENCY_ERRORS.ALREADY_EXISTS(normalizedCode))
+      );
 
     // Trigger background job to fetch exchange rates
     // We don't await this promise so it runs in the background

@@ -97,6 +97,11 @@ if (!security) {
 }
 ```
 
+**Unique constraint violations** (`apps/api/src/app/database/duplicate-record.error.ts`):
+- Services check for duplicates before writing (e.g. `findBySymbol`, `existsByCode`) to return a clear message in the common case
+- Concurrent requests can still pass that check. Repositories therefore wrap writes on unique columns (`SecuritiesRepository.create`/`update`, `CurrenciesRepository.create`) in `translateDuplicateError()`, which turns the Prisma error `P2002` into an ORM-independent `DuplicateRecordError`; other errors are rethrown unchanged
+- Services map it to a `ConflictException` (409) with the same message as the pre-check via `.catch(rethrowDuplicateAsConflict(message))`
+
 **Global Exception Filter** (`apps/api/src/app/common/filters/global-exception.filter.ts`, registered in `main.ts` via `app.useGlobalFilters`):
 - Catches all exceptions (`@Catch()`)
 - Returns a consistent response format: `statusCode`, `message`, `error`, `correlationId`, `timestamp`, `path`

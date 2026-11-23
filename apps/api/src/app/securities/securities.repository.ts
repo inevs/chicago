@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import type { Security, SecurityType } from '../../../generated/prisma/client';
+import { translateDuplicateError } from '../database/duplicate-record.error';
 
 export interface CreateSecurityData {
   name: string;
@@ -90,8 +91,11 @@ export class SecuritiesRepository {
     });
   }
 
+  /** @throws DuplicateRecordError if the symbol already exists. */
   create(data: CreateSecurityData): Promise<Security> {
-    return this.prisma.security.create({ data });
+    return translateDuplicateError(() =>
+      this.prisma.security.create({ data })
+    );
   }
 
   /** Inserts the given securities, skipping duplicates, and returns the created rows. */
@@ -102,10 +106,13 @@ export class SecuritiesRepository {
     });
   }
 
+  /** @throws DuplicateRecordError if the new symbol already exists. */
   update(id: string, data: UpdateSecurityData): Promise<Security> {
-    return this.prisma.security.update({
-      where: { id },
-      data,
-    });
+    return translateDuplicateError(() =>
+      this.prisma.security.update({
+        where: { id },
+        data,
+      })
+    );
   }
 }

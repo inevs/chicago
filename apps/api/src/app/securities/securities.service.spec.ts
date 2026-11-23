@@ -6,6 +6,7 @@ import { CurrenciesRepository } from '../currencies/currencies.repository';
 import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { SecurityType } from '@dividends/shared';
 import { UploadedFile } from './dto/import-securities-csv.dto';
+import { DuplicateRecordError } from '../database/duplicate-record.error';
 
 describe('SecuritiesService', () => {
   let service: SecuritiesService;
@@ -117,6 +118,27 @@ describe('SecuritiesService', () => {
       );
       expect(currenciesRepository.existsByCode).not.toHaveBeenCalled();
       expect(securitiesRepository.create).not.toHaveBeenCalled();
+      expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException when a concurrent request created the symbol after the check', async () => {
+      const dto = {
+        name: 'Apple Inc.',
+        symbol: 'AAPL',
+        type: SecurityType.STOCK,
+        exchange: 'NASDAQ',
+        currency: 'USD',
+      };
+
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null);
+      mockCurrenciesRepository.existsByCode.mockResolvedValue(true);
+      mockSecuritiesRepository.create.mockRejectedValue(
+        new DuplicateRecordError()
+      );
+
+      await expect(service.createSecurity(dto)).rejects.toThrow(
+        new ConflictException('Security with this symbol already exists')
+      );
       expect(securityPricesService.syncHistoricalPrices).not.toHaveBeenCalled();
     });
 
@@ -347,6 +369,27 @@ describe('SecuritiesService', () => {
         ConflictException
       );
       expect(securitiesRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException when a concurrent request took the new symbol after the check', async () => {
+      const existingSecurity = {
+        id: 'uuid-123',
+        symbol: 'AAPL',
+      };
+
+      const dto = {
+        symbol: 'MSFT',
+      };
+
+      mockSecuritiesRepository.findById.mockResolvedValue(existingSecurity);
+      mockSecuritiesRepository.findBySymbol.mockResolvedValue(null);
+      mockSecuritiesRepository.update.mockRejectedValue(
+        new DuplicateRecordError()
+      );
+
+      await expect(service.updateSecurity('uuid-123', dto)).rejects.toThrow(
+        new ConflictException('Security with this symbol already exists')
+      );
     });
 
     it('should not check for duplicate when symbol is the same', async () => {

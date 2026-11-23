@@ -1,6 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SecuritiesRepository, CreateSecurityData } from './securities.repository';
 import { PrismaService } from '../../prisma.service';
+import { Prisma } from '../../../generated/prisma/client';
+import { DuplicateRecordError } from '../database/duplicate-record.error';
+
+const prismaError = (code: string) =>
+  new Prisma.PrismaClientKnownRequestError('Database error', {
+    code,
+    clientVersion: 'test',
+  });
+
+const appleData: CreateSecurityData = {
+  name: 'Apple Inc.',
+  symbol: 'AAPL',
+  type: 'STOCK',
+  exchange: 'NASDAQ',
+  currency: 'USD',
+};
 
 describe('SecuritiesRepository', () => {
   let repository: SecuritiesRepository;
@@ -256,6 +272,23 @@ describe('SecuritiesRepository', () => {
       expect(result).toEqual(apple);
       expect(prisma.security.create).toHaveBeenCalledWith({ data });
     });
+
+    it('should throw a DuplicateRecordError when the symbol violates the unique constraint', async () => {
+      mockPrismaService.security.create.mockRejectedValue(
+        prismaError('P2002')
+      );
+
+      await expect(repository.create(appleData)).rejects.toThrow(
+        DuplicateRecordError
+      );
+    });
+
+    it('should rethrow other database errors unchanged', async () => {
+      const error = prismaError('P2003');
+      mockPrismaService.security.create.mockRejectedValue(error);
+
+      await expect(repository.create(appleData)).rejects.toBe(error);
+    });
   });
 
   describe('createMany', () => {
@@ -304,6 +337,25 @@ describe('SecuritiesRepository', () => {
         where: { id: 'uuid-1' },
         data,
       });
+    });
+
+    it('should throw a DuplicateRecordError when the new symbol violates the unique constraint', async () => {
+      mockPrismaService.security.update.mockRejectedValue(
+        prismaError('P2002')
+      );
+
+      await expect(
+        repository.update('uuid-1', { symbol: 'MSFT' })
+      ).rejects.toThrow(DuplicateRecordError);
+    });
+
+    it('should rethrow other database errors unchanged', async () => {
+      const error = prismaError('P2025');
+      mockPrismaService.security.update.mockRejectedValue(error);
+
+      await expect(
+        repository.update('uuid-1', { symbol: 'MSFT' })
+      ).rejects.toBe(error);
     });
   });
 });

@@ -12,8 +12,10 @@ import { CsvSecurityRow, UploadedFile } from './dto/import-securities-csv.dto';
 import { Security, ImportCsvResponse, ImportSecurityResult, SecurityType } from '@dividends/shared';
 import { SecurityPricesService } from '../security-prices/security-prices.service';
 import { parse } from 'csv-parse/sync';
+import { rethrowDuplicateAsConflict } from '../database/duplicate-record.error';
 
 const SEARCH_RESULT_LIMIT = 10;
+const DUPLICATE_SYMBOL_MESSAGE = 'Security with this symbol already exists';
 
 @Injectable()
 export class SecuritiesService {
@@ -28,9 +30,7 @@ export class SecuritiesService {
     const existing = await this.securitiesRepository.findBySymbol(dto.symbol);
 
     if (existing) {
-      throw new ConflictException(
-        'Security with this symbol already exists'
-      );
+      throw new ConflictException(DUPLICATE_SYMBOL_MESSAGE);
     }
 
     if (!(await this.currenciesRepository.existsByCode(dto.currency))) {
@@ -40,7 +40,9 @@ export class SecuritiesService {
     }
 
     // Create security
-    const security = await this.securitiesRepository.create(dto);
+    const security = await this.securitiesRepository
+      .create(dto)
+      .catch(rethrowDuplicateAsConflict(DUPLICATE_SYMBOL_MESSAGE));
 
     // Trigger price update for the new security
     // We don't await this so the API response isn't delayed
@@ -97,9 +99,7 @@ export class SecuritiesService {
       const existing = await this.securitiesRepository.findBySymbol(newSymbol);
 
       if (existing) {
-        throw new ConflictException(
-          'Security with this symbol already exists'
-        );
+        throw new ConflictException(DUPLICATE_SYMBOL_MESSAGE);
       }
     }
 
@@ -113,7 +113,9 @@ export class SecuritiesService {
       }
     }
 
-    const updated = await this.securitiesRepository.update(id, dto);
+    const updated = await this.securitiesRepository
+      .update(id, dto)
+      .catch(rethrowDuplicateAsConflict(DUPLICATE_SYMBOL_MESSAGE));
 
     return updated as Security;
   }

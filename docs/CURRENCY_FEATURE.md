@@ -81,7 +81,7 @@ Client validation: Signal Forms schema in `apps/dividends/src/app/shared/modals/
 The global `ValidationPipe` in `apps/api/src/main.ts` enables transformation and whitelisting of known properties.
 
 **Service** (`currencies.service.ts`)
-- Rejects duplicates with `409 Conflict` (message from `CURRENCY_ERRORS` in `packages/shared/src/lib/shared.ts`)
+- Rejects duplicates with `409 Conflict` (message from `CURRENCY_ERRORS` in `packages/shared/src/lib/shared.ts`), also when a concurrent request inserts the same code after the existence check (the repository turns the unique-constraint violation into a `DuplicateRecordError`)
 - After creating a currency, starts `ExchangeRatesService.syncExchangeRates(code)` without awaiting it; the result is only logged
 - The default currency is taken from the `DEFAULT_CURRENCY` environment variable (fallback `EUR`); the seed creates it from `DEFAULT_CURRENCY` / `DEFAULT_CURRENCY_NAME`
 

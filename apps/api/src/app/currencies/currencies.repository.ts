@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma.service';
 import type { Currency } from '../../../generated/prisma/client';
+import { translateDuplicateError } from '../database/duplicate-record.error';
 
 export interface CreateCurrencyData {
   code: string;
@@ -51,7 +52,10 @@ export class CurrenciesRepository {
     return currencies.map((currency) => currency.code);
   }
 
+  /** @throws DuplicateRecordError if the code already exists. */
   create(data: CreateCurrencyData): Promise<Currency> {
-    return this.prisma.currency.create({ data });
+    return translateDuplicateError(() =>
+      this.prisma.currency.create({ data })
+    );
   }
 }

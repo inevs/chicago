@@ -1,6 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CurrenciesRepository } from './currencies.repository';
 import { PrismaService } from '../../prisma.service';
+import { Prisma } from '../../../generated/prisma/client';
+import { DuplicateRecordError } from '../database/duplicate-record.error';
+
+const prismaError = (code: string) =>
+  new Prisma.PrismaClientKnownRequestError('Database error', {
+    code,
+    clientVersion: 'test',
+  });
 
 describe('CurrenciesRepository', () => {
   let repository: CurrenciesRepository;
@@ -160,6 +168,25 @@ describe('CurrenciesRepository', () => {
       expect(prisma.currency.create).toHaveBeenCalledWith({
         data: { code: 'USD', name: 'US Dollar' },
       });
+    });
+
+    it('should throw a DuplicateRecordError when the code violates the unique constraint', async () => {
+      mockPrismaService.currency.create.mockRejectedValue(
+        prismaError('P2002')
+      );
+
+      await expect(
+        repository.create({ code: 'USD', name: 'US Dollar' })
+      ).rejects.toThrow(DuplicateRecordError);
+    });
+
+    it('should rethrow other database errors unchanged', async () => {
+      const error = prismaError('P2003');
+      mockPrismaService.currency.create.mockRejectedValue(error);
+
+      await expect(
+        repository.create({ code: 'USD', name: 'US Dollar' })
+      ).rejects.toBe(error);
     });
   });
 });
