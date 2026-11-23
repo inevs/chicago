@@ -159,6 +159,15 @@ All endpoints require a JWT (`Authorization: Bearer <token>`).
 
 Exchange-rate endpoints are provided by the separate module `apps/api/src/app/exchange-rates/`.
 
+### Current Values in EUR
+
+The securities summary (`apps/dividends/src/app/pages/portfolio/securities-summary/`) and the allocation chart (`apps/dividends/src/app/pages/overview/allocation-chart/`) convert the current value of each holding into EUR with `convertToEur()` from `@dividends/shared` (`packages/shared/src/lib/utils/currency-conversion.ts`). The rates come from `GET /api/exchange-rates/latest`, which returns the most recent stored EUR rate per currency regardless of its date.
+
+If no exchange rate exists for a currency at all:
+
+- the securities summary shows a warning icon in the column "Aktueller Wert (EUR)" with the tooltip "Wechselkurs für <CURRENCY> nicht verfügbar"; the total row counts the value as 0,
+- the allocation chart leaves the security out.
+
 ## Testing
 
 ```bash
@@ -182,3 +191,4 @@ nx test api -- --testPathPatterns=currencies
 3. Usage statistics per currency
 4. Mark currencies as inactive instead of deleting them
 5. Remove outdated codes (e.g. HRK) from the whitelist
+6. Admin action to sync exchange rates for currencies without a rate (#79)

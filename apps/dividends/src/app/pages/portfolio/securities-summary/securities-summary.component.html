@@ -109,6 +109,16 @@
           >
             @if (security.currentValueEur !== null && security.currentValueEur !== undefined) {
               {{ formatCurrency(security.currentValueEur) }}
+            } @else if (security.missingExchangeRate) {
+              <span
+                data-testid="missing-exchange-rate"
+                role="img"
+                class="inline-flex text-amber-500 dark:text-amber-400"
+                [attr.title]="'Wechselkurs für ' + security.latestPriceCurrency + ' nicht verfügbar'"
+                [attr.aria-label]="'Wechselkurs für ' + security.latestPriceCurrency + ' nicht verfügbar'"
+              >
+                <svg lucideTriangleAlert class="w-4 h-4" aria-hidden="true"></svg>
+              </span>
             } @else {
               <span class="text-slate-400 dark:text-slate-500">-</span>
             }

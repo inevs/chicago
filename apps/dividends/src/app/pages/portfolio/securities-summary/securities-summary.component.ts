@@ -1,5 +1,6 @@
 import { Component, computed, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LucideTriangleAlert } from '@lucide/angular';
 import { DividendTransaction } from '../../../models/dividend.model';
 import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType, convertToEur } from '@dividends/shared';
 import { LatestExchangeRate } from '../../../services/exchange-rate.service';
@@ -9,7 +10,7 @@ type SortDirection = 'asc' | 'desc';
 
 @Component({
   selector: 'app-securities-summary',
-  imports: [CommonModule],
+  imports: [CommonModule, LucideTriangleAlert],
   templateUrl: './securities-summary.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./securities-summary.component.scss'],
@@ -196,6 +197,7 @@ export class SecuritiesSummaryComponent {
     latestPriceDate: Date | null;
     latestPriceCurrency: string;
     currentValueEur: number | null;
+    missingExchangeRate: boolean;
   }> {
     // Use epsilon to handle floating-point precision issues
     // Treats values below 0.0001 as effectively zero
@@ -233,6 +235,9 @@ export class SecuritiesSummaryComponent {
           const currentValue = quantity * latestPrice;
           currentValueEur = convertToEur(currentValue, latestPriceCurrency, exchangeRateMap);
         }
+        // A price exists, but it cannot be converted because no exchange rate is available
+        const missingExchangeRate =
+          latestPrice !== null && quantity > 0 && currentValueEur === null;
 
         return {
           securityId: data.securityId || (key || undefined),
@@ -245,6 +250,7 @@ export class SecuritiesSummaryComponent {
           latestPriceDate,
           latestPriceCurrency,
           currentValueEur,
+          missingExchangeRate,
         };
       })
       .filter((s) => s.quantity > EPSILON); // Only show securities with holdings
@@ -262,6 +268,7 @@ export class SecuritiesSummaryComponent {
       latestPriceDate: Date | null;
       latestPriceCurrency: string;
       currentValueEur: number | null;
+      missingExchangeRate: boolean;
     }>
   ): Array<{
     securityId?: string;
@@ -274,6 +281,7 @@ export class SecuritiesSummaryComponent {
     latestPriceDate: Date | null;
     latestPriceCurrency: string;
     currentValueEur: number | null;
+    missingExchangeRate: boolean;
   }> {
     const column = this.sortColumn();
     const direction = this.sortDirection();
