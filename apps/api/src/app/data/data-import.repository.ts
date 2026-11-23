@@ -42,6 +42,20 @@ interface ImportedExchangeRate {
 }
 
 /**
+ * Returns a copy of an imported record without the fields the database
+ * generates (`id`, `createdAt`, `updatedAt`).
+ */
+const TECHNICAL_FIELDS = new Set(['id', 'createdAt', 'updatedAt']);
+
+function withoutTechnicalFields(record: unknown): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(record as Record<string, unknown>).filter(
+      ([key]) => !TECHNICAL_FIELDS.has(key)
+    )
+  );
+}
+
+/**
  * Data access for the full data import. All writes run in a single database
  * transaction, so an import either succeeds completely or changes nothing.
  */
@@ -58,6 +72,9 @@ export class DataImportRepository {
    * natural key (`code`, `securityId + date`, `baseCurrency + targetCurrency +
    * date`), so a record that already exists under a different id (e.g. a rate
    * synced from the ECB) is updated instead of violating the unique constraint.
+   * New security prices and exchange rates are created without the imported
+   * `id`, `createdAt` and `updatedAt`, so the database generates them and an
+   * id that already exists for another record cannot conflict.
    * All other records are matched by id.
    */
   importAll(
@@ -138,7 +155,7 @@ export class DataImportRepository {
                 date: priceData.date,
               },
             },
-            create: price as never,
+            create: withoutTechnicalFields(price) as never,
             update: {
               open: priceData.open,
               high: priceData.high,
@@ -164,7 +181,7 @@ export class DataImportRepository {
                 date: rateData.date,
               },
             },
-            create: rate as never,
+            create: withoutTechnicalFields(rate) as never,
             update: {
               rate: rateData.rate,
               provider: rateData.provider,

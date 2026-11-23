@@ -122,7 +122,7 @@ describe('DataImportRepository', () => {
       });
     });
 
-    it('should upsert security prices by security and date and update the price fields', async () => {
+    it('should upsert security prices by security and date, update the price fields and create new prices without the imported id and timestamps', async () => {
       const price = {
         id: 'price-1',
         securityId: 'security-1',
@@ -147,7 +147,17 @@ describe('DataImportRepository', () => {
             date: '2026-01-02T00:00:00.000Z',
           },
         },
-        create: price,
+        create: {
+          securityId: 'security-1',
+          date: '2026-01-02T00:00:00.000Z',
+          open: '99.5',
+          high: '101',
+          low: '98.25',
+          close: '100',
+          volume: '12345',
+          currency: 'USD',
+          provider: 'yahoo',
+        },
         update: {
           open: '99.5',
           high: '101',
@@ -160,7 +170,7 @@ describe('DataImportRepository', () => {
       });
     });
 
-    it('should upsert exchange rates by currency pair and date and update rate and provider', async () => {
+    it('should upsert exchange rates by currency pair and date, update rate and provider and create new rates without the imported id and timestamps', async () => {
       const rate = {
         id: 'rate-1',
         baseCurrency: 'EUR',
@@ -182,12 +192,18 @@ describe('DataImportRepository', () => {
             date: '2026-01-02T00:00:00.000Z',
           },
         },
-        create: rate,
+        create: {
+          baseCurrency: 'EUR',
+          targetCurrency: 'USD',
+          date: '2026-01-02T00:00:00.000Z',
+          rate: '1.0345',
+          provider: 'ecb',
+        },
         update: { rate: '1.0345', provider: 'ecb' },
       });
     });
 
-    it('should not match security prices and exchange rates by id', async () => {
+    it('should neither match nor create security prices and exchange rates by id', async () => {
       await repository.importAll({
         securityPrices: [
           { id: 'price-1', securityId: 'security-1', date: '2026-01-02' },
@@ -208,6 +224,8 @@ describe('DataImportRepository', () => {
       expect(rateArgs.where).not.toHaveProperty('id');
       expect(priceArgs.update).not.toHaveProperty('id');
       expect(rateArgs.update).not.toHaveProperty('id');
+      expect(priceArgs.create).not.toHaveProperty('id');
+      expect(rateArgs.create).not.toHaveProperty('id');
     });
 
     it('should import currencies and securities before the dependent records', async () => {
