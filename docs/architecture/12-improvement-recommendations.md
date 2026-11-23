@@ -688,7 +688,7 @@ export class CurrencyService {
 
 ### Issue 9: No Price Provider Abstraction
 
-**Status**: ❌ Open — Yahoo Finance remains hardcoded.
+**Status**: ⚠️ Partial — The provider abstraction exists (#26): `SecurityPricesService` uses the interface `PriceProvider` (`apps/api/src/app/security-prices/providers/price-provider.ts`), injected via the token `PRICE_PROVIDER`. The Yahoo Finance logic lives in `YahooFinancePriceProvider`, which `SecurityPricesModule` registers as the only provider. Open: additional providers, provider selection (factory) and a fallback if Yahoo Finance fails.
 
 **Problem**:
 - Similar to exchange rate provider issue

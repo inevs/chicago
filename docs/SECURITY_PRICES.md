@@ -13,9 +13,10 @@ Code: `apps/api/src/app/security-prices/`
 
 ## Provider Strategy
 - The application uses Yahoo Finance as the market data provider.
+- `SecurityPricesService` depends only on the interface `PriceProvider` (`apps/api/src/app/security-prices/providers/price-provider.ts`), injected via the token `PRICE_PROVIDER`. The Yahoo-specific logic (HTTP request, response parsing) lives in `YahooFinancePriceProvider`, which `SecurityPricesModule` registers as the only provider. A provider signals rate limiting with `PriceProviderRateLimitError`.
 - Yahoo Finance chart data is accessed via `query1.finance.yahoo.com` (30 second request timeout).
 - Securities are processed sequentially with a 1 second delay between requests.
-- On rate limiting (HTTP 429) a request is retried up to 3 times with exponential backoff (1s, 2s, 4s). Other errors are not retried.
+- On rate limiting (HTTP 429 from Yahoo Finance, reported as `PriceProviderRateLimitError`) a request is retried up to 3 times with exponential backoff (1s, 2s, 4s). Other errors are not retried.
 - Prices are inserted in chunks of 500 rows with `skipDuplicates`, so existing prices are not overwritten.
 - If a single symbol fails, a warning is logged and the symbol is listed in `failures`; the sync continues with the next security.
 

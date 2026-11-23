@@ -4,6 +4,7 @@ import { SecurityPricesService } from './security-prices.service';
 import { SecurityPricesRepository } from './security-prices.repository';
 import { SecuritiesRepository } from '../securities/securities.repository';
 import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
+import { PRICE_PROVIDER, PriceProviderRateLimitError } from './providers/price-provider';
 
 describe('SecurityPricesService', () => {
   let service: SecurityPricesService;
@@ -25,6 +26,11 @@ describe('SecurityPricesService', () => {
     }),
   };
 
+  const mockPriceProvider = {
+    name: 'yahoo',
+    fetchPrices: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,6 +47,10 @@ describe('SecurityPricesService', () => {
           provide: ExchangeRatesService,
           useValue: mockExchangeRatesService,
         },
+        {
+          provide: PRICE_PROVIDER,
+          useValue: mockPriceProvider,
+        },
       ],
     }).compile();
 
@@ -54,15 +64,6 @@ describe('SecurityPricesService', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
-
-  /** Spies on the private provider fetch so that no HTTP requests are made. */
-  const spyOnFetch = () =>
-    jest.spyOn(
-      service as unknown as {
-        fetchHistoricalPricesWithRetry: () => Promise<unknown[]>;
-      },
-      'fetchHistoricalPricesWithRetry'
-    );
 
   describe('getLatestPrices', () => {
     it('should return latest prices for all securities', async () => {
@@ -159,8 +160,7 @@ describe('SecurityPricesService', () => {
       mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
       mockSecurityPricesRepository.createMany.mockResolvedValue(0);
 
-      // Mock the private fetchHistoricalPricesWithRetry to return empty
-      spyOnFetch().mockResolvedValue([]);
+      mockPriceProvider.fetchPrices.mockResolvedValue([]);
 
       const result = await service.syncHistoricalPrices();
 
@@ -187,7 +187,7 @@ describe('SecurityPricesService', () => {
       mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
       mockSecurityPricesRepository.createMany.mockResolvedValue(0);
 
-      spyOnFetch().mockResolvedValue([]);
+      mockPriceProvider.fetchPrices.mockResolvedValue([]);
 
       await service.syncHistoricalPrices({ securityId: 'security-1' });
 
@@ -210,13 +210,18 @@ describe('SecurityPricesService', () => {
       mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
       mockSecurityPricesRepository.createMany.mockResolvedValue(0);
 
-      spyOnFetch().mockResolvedValue([]);
+      mockPriceProvider.fetchPrices.mockResolvedValue([]);
 
       const result = await service.syncHistoricalPrices({ from, to });
 
       expect(result.from).toBe('2024-01-01');
       expect(result.to).toBe('2024-12-31');
       expect(result.exchangeRates.synced).toBe(true);
+      expect(mockPriceProvider.fetchPrices).toHaveBeenCalledWith(
+        mockSecurities[0],
+        from,
+        to
+      );
     });
 
     it('should track failures when fetching prices fails', async () => {
@@ -230,7 +235,7 @@ describe('SecurityPricesService', () => {
 
       mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
 
-      spyOnFetch().mockRejectedValueOnce(new Error('API error'));
+      mockPriceProvider.fetchPrices.mockRejectedValueOnce(new Error('API error'));
 
       const result = await service.syncHistoricalPrices();
 
@@ -252,17 +257,17 @@ describe('SecurityPricesService', () => {
       mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
       mockSecurityPricesRepository.createMany.mockResolvedValue(5);
 
-      spyOnFetch().mockResolvedValue([
-          {
-            date: new Date('2024-01-01'),
-            open: 100,
-            high: 105,
-            low: 99,
-            close: 102,
-            volume: 1000000,
-            currency: 'USD',
-          },
-        ]);
+      mockPriceProvider.fetchPrices.mockResolvedValue([
+        {
+          date: new Date('2024-01-01'),
+          open: 100,
+          high: 105,
+          low: 99,
+          close: 102,
+          volume: 1000000,
+          currency: 'USD',
+        },
+      ]);
 
       // Mock exchange rate sync to fail
       mockExchangeRatesService.syncAllCurrencies.mockRejectedValueOnce(
@@ -295,6 +300,59 @@ describe('SecurityPricesService', () => {
       expect(result.exchangeRates.synced).toBe(false);
       expect(result.exchangeRates.error).toBe('Exchange rate API error');
       expect(result.exchangeRates.currencies).toBeUndefined();
+    });
+  });
+
+  describe('syncHistoricalPrices - rate limiting', () => {
+    const mockSecurities = [{ id: 'security-1', symbol: 'AAPL', currency: 'USD' }];
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      mockSecuritiesRepository.findAllOrById.mockResolvedValue(mockSecurities);
+      mockSecurityPricesRepository.createMany.mockResolvedValue(0);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should retry with backoff when the provider signals rate limiting', async () => {
+      mockPriceProvider.fetchPrices
+        .mockRejectedValueOnce(new PriceProviderRateLimitError())
+        .mockResolvedValueOnce([]);
+
+      const promise = service.syncHistoricalPrices();
+      // 1 s delay before the request, 1 s backoff before the retry
+      await jest.advanceTimersByTimeAsync(2000);
+      const result = await promise;
+
+      expect(mockPriceProvider.fetchPrices).toHaveBeenCalledTimes(2);
+      expect(result.failures).toEqual([]);
+    });
+
+    it('should report a failure after three rate-limited attempts', async () => {
+      mockPriceProvider.fetchPrices.mockRejectedValue(new PriceProviderRateLimitError());
+
+      const promise = service.syncHistoricalPrices();
+      // 1 s delay before the request, backoff of 1 s, 2 s and 4 s
+      await jest.advanceTimersByTimeAsync(8000);
+      const result = await promise;
+
+      expect(mockPriceProvider.fetchPrices).toHaveBeenCalledTimes(3);
+      expect(result.failures).toEqual([
+        { symbol: 'AAPL', error: 'Rate limit exceeded' },
+      ]);
+    });
+
+    it('should not retry other provider errors', async () => {
+      mockPriceProvider.fetchPrices.mockRejectedValue(new Error('API error'));
+
+      const promise = service.syncHistoricalPrices();
+      await jest.advanceTimersByTimeAsync(1000);
+      const result = await promise;
+
+      expect(mockPriceProvider.fetchPrices).toHaveBeenCalledTimes(1);
+      expect(result.failures).toEqual([{ symbol: 'AAPL', error: 'API error' }]);
     });
   });
 

@@ -124,16 +124,16 @@ Quality
 **Current Behavior**:
 - Request times out after 30s
 - Error logged
-- Sync fails for that security
-- No retry logic
+- Sync fails for that security; it is listed in `failures` and the sync continues
+- Rate limiting (HTTP 429) is retried up to 3 times with exponential backoff (1s, 2s, 4s); other errors are not retried
 
 **Impact**: ⚠️ Partial data staleness
 
 **Assessment**: ⚠️ Acceptable (not critical path)
 
 **Recommendation**:
-1. Add retry with exponential backoff
-2. Fallback to alternative provider
+1. ~~Add retry with exponential backoff~~ (done for rate limiting)
+2. Fallback to alternative provider (the `PriceProvider` abstraction exists, a second provider does not)
 3. Queue failed requests for later
 
 #### R3: Data Corruption During Import
