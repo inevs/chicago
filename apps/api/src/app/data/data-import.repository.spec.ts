@@ -94,19 +94,15 @@ describe('DataImportRepository', () => {
       });
     });
 
-    it('should upsert the other records by id with the full record', async () => {
+    it('should upsert securities, payments and transactions by id with the full record', async () => {
       const security = { id: 'security-1', symbol: 'AAPL' };
       const payment = { id: 'payment-1', shares: 10 };
       const transaction = { id: 'transaction-1', quantity: 5 };
-      const price = { id: 'price-1', close: 100 };
-      const rate = { id: 'rate-1', rate: 1.1 };
 
       await repository.importAll({
         securities: [security],
         dividendPayments: [payment],
         securityTransactions: [transaction],
-        securityPrices: [price],
-        exchangeRates: [rate],
       });
 
       expect(mockTx.security.upsert).toHaveBeenCalledWith({
@@ -124,16 +120,94 @@ describe('DataImportRepository', () => {
         create: transaction,
         update: transaction,
       });
+    });
+
+    it('should upsert security prices by security and date and update the price fields', async () => {
+      const price = {
+        id: 'price-1',
+        securityId: 'security-1',
+        date: '2026-01-02T00:00:00.000Z',
+        open: '99.5',
+        high: '101',
+        low: '98.25',
+        close: '100',
+        volume: '12345',
+        currency: 'USD',
+        provider: 'yahoo',
+        createdAt: '2026-01-02T18:00:00.000Z',
+        updatedAt: '2026-01-02T18:00:00.000Z',
+      };
+
+      await repository.importAll({ securityPrices: [price] });
+
       expect(mockTx.securityPrice.upsert).toHaveBeenCalledWith({
-        where: { id: 'price-1' },
+        where: {
+          securityId_date: {
+            securityId: 'security-1',
+            date: '2026-01-02T00:00:00.000Z',
+          },
+        },
         create: price,
-        update: price,
+        update: {
+          open: '99.5',
+          high: '101',
+          low: '98.25',
+          close: '100',
+          volume: '12345',
+          currency: 'USD',
+          provider: 'yahoo',
+        },
       });
+    });
+
+    it('should upsert exchange rates by currency pair and date and update rate and provider', async () => {
+      const rate = {
+        id: 'rate-1',
+        baseCurrency: 'EUR',
+        targetCurrency: 'USD',
+        date: '2026-01-02T00:00:00.000Z',
+        rate: '1.0345',
+        provider: 'ecb',
+        createdAt: '2026-01-02T18:00:00.000Z',
+        updatedAt: '2026-01-02T18:00:00.000Z',
+      };
+
+      await repository.importAll({ exchangeRates: [rate] });
+
       expect(mockTx.exchangeRate.upsert).toHaveBeenCalledWith({
-        where: { id: 'rate-1' },
+        where: {
+          baseCurrency_targetCurrency_date: {
+            baseCurrency: 'EUR',
+            targetCurrency: 'USD',
+            date: '2026-01-02T00:00:00.000Z',
+          },
+        },
         create: rate,
-        update: rate,
+        update: { rate: '1.0345', provider: 'ecb' },
       });
+    });
+
+    it('should not match security prices and exchange rates by id', async () => {
+      await repository.importAll({
+        securityPrices: [
+          { id: 'price-1', securityId: 'security-1', date: '2026-01-02' },
+        ],
+        exchangeRates: [
+          {
+            id: 'rate-1',
+            baseCurrency: 'EUR',
+            targetCurrency: 'USD',
+            date: '2026-01-02',
+          },
+        ],
+      });
+
+      const priceArgs = mockTx.securityPrice.upsert.mock.calls[0][0];
+      const rateArgs = mockTx.exchangeRate.upsert.mock.calls[0][0];
+      expect(priceArgs.where).not.toHaveProperty('id');
+      expect(rateArgs.where).not.toHaveProperty('id');
+      expect(priceArgs.update).not.toHaveProperty('id');
+      expect(rateArgs.update).not.toHaveProperty('id');
     });
 
     it('should import currencies and securities before the dependent records', async () => {
