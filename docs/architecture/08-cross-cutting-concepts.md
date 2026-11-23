@@ -210,31 +210,22 @@ this.logger.log({
 - `ADMIN_EMAIL` / `ADMIN_PASSWORD` / `ADMIN_NAME`: Initial user created by the database seed
 - `SEED_SAMPLE_DATA`: Lets the database seed create sample securities, transactions and dividends (default: disabled)
 
-See `.env.example` in the project root. Variables are read directly via `process.env`.
+See `.env.example` in the project root.
+
+**Startup Validation**:
+- `EnvironmentVariables` in `apps/api/src/app/config/environment.validation.ts` describes the API's variables with `class-validator` rules; `validateEnvironment()` applies the defaults and throws an error that lists every invalid variable, without its value (values such as `DATABASE_URL` may contain credentials)
+- Rules: `DATABASE_URL` required, `postgresql://` or `postgres://` URL; `JWT_SECRET` required, not empty; `PORT` integer 1–65535 (default `3000`); `DEFAULT_CURRENCY` three uppercase letters (default `EUR`); `SECURITY_PRICE_HISTORY_START` valid date `YYYY-MM-DD` (default `2017-01-01`); `ALLOW_REGISTRATION` `true`/`false`, case-insensitive (default `false`); `NODE_ENV` optional, `development`, `production` or `test`. Empty values count as not set
+- `apps/api/src/app/config/environment.ts` runs the validation when it is loaded; it is the first import of `app.module.ts`, so the API aborts before other modules read variables at import time (e.g. `AuthModule` with `JWT_SECRET`)
+- `ConfigModule.forRoot()` (`@nestjs/config`, global, `ignoreEnvFile: true`) receives the validated result. `.env` files are loaded by Nx (`nx serve`) and Docker Compose, not by the API itself
+- The seed (`apps/api/prisma/seed.ts`) checks its own variables (`ADMIN_*`, `DEFAULT_CURRENCY_NAME`, `SEED_SAMPLE_DATA`) separately
 
 **Limitations**:
-- ❌ No validation of environment variables at startup (`@nestjs/config` is not used)
-- ❌ No type-safe configuration
+- ❌ Services still read variables directly via `process.env` instead of a typed `ConfigService`
 - ❌ Hardcoded values in code (e.g., EUR base currency in `exchange-rates.service.ts`)
 
 ### Recommended Improvements
 
-**1. Configuration Module**:
-```typescript
-@Injectable()
-export class ConfigService {
-  @ValidateNested()
-  database: DatabaseConfig;
-
-  @ValidateNested()
-  api: ApiConfig;
-
-  constructor() {
-    // Validate on startup
-    // Throw error if invalid
-  }
-}
-```
+**1. Typed Configuration Access**: Replace the `process.env` reads in the API with `ConfigService<EnvironmentVariables, true>`.
 
 **2. Environment-Specific Configs**:
 - `.env.development`

@@ -58,14 +58,16 @@ Review the remaining variables and replace the placeholders:
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | yes | Connection string to PostgreSQL |
-| `JWT_SECRET` | yes | Secret for signing access tokens; the API does not start without it |
+| `DATABASE_URL` | yes | Connection string to PostgreSQL (`postgresql://...` or `postgres://...`) |
+| `JWT_SECRET` | yes | Secret for signing access tokens; must not be empty |
 | `ADMIN_PASSWORD` | yes | Password of the login user created by the seed |
 | `ADMIN_EMAIL`, `ADMIN_NAME` | no | Login user created by the seed (defaults: `admin@example.com`, `Admin User`) |
-| `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`) |
-| `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (default `false`) |
-| `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (default `2017-01-01`) |
+| `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`); `DEFAULT_CURRENCY` is a code of three uppercase letters |
+| `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (`true` or `false`, case-insensitive; default `false`) |
+| `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (`YYYY-MM-DD`, default `2017-01-01`) |
 | `SEED_SAMPLE_DATA` | no | `true` makes the seed create sample securities, transactions and dividends (default `false`, see [Set up the database schema](#4-set-up-the-database-schema)) |
+
+The API validates its environment variables at startup (`apps/api/src/app/config/environment.validation.ts`): if a required variable is missing or a variable has an invalid value, it does not start and lists every invalid variable (without its value). Besides the variables above, it also checks `PORT` (integer from 1 to 65535, default `3000`) and `NODE_ENV` (`development`, `production` or `test`, optional). Empty values count as not set.
 
 The application runs in single-user mode. The login user is created by the database seed from `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME`. Self-registration (`POST /api/auth/register`) is disabled by default and returns `403 Forbidden`; set `ALLOW_REGISTRATION=true` only if you need it, because data is not separated per user and every account can access all data.
 

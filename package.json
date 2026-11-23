@@ -101,6 +101,7 @@
     "@angular/router": "~22.2.0",
     "@lucide/angular": "^1.73.0",
     "@nestjs/common": "^12.5.0",
+    "@nestjs/config": "^12.1.1",
     "@nestjs/core": "^12.5.0",
     "@nestjs/jwt": "^12.0.5",
     "@nestjs/mapped-types": "^12.0.1",
