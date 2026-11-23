@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import axios from 'axios';
 import { SecurityPricesRepository } from './security-prices.repository';
@@ -24,7 +24,6 @@ export class SecurityPricesService {
   constructor(
     private readonly securityPricesRepository: SecurityPricesRepository,
     private readonly securitiesRepository: SecuritiesRepository,
-    @Inject(forwardRef(() => ExchangeRatesService))
     private readonly exchangeRatesService: ExchangeRatesService
   ) {}
 
