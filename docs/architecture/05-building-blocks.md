@@ -170,7 +170,8 @@ All domain controllers are protected with `@UseGuards(JwtAuthGuard)`; only `/api
 
 **Components**:
 - `SecurityPricesController`: Sync and query endpoints
-- `SecurityPricesService`: Yahoo Finance integration
+- `SecurityPricesService`: Sync logic (delay between requests, retry with backoff, storing prices) independent of the provider
+- `YahooFinancePriceProvider`: Yahoo Finance integration (HTTP request, response parsing); implements `PriceProvider` and is injected via the token `PRICE_PROVIDER`
 - `PriceUpdateSchedulerService`: Daily scheduled price update (`@Cron`, 07:00 server time, always active)
 
 **Key Operations**:
