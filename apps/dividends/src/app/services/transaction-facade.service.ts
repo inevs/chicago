@@ -14,10 +14,10 @@ import {
   UpdateSecurityTransactionDto,
   CreateCurrencyDto,
 } from '@dividends/shared';
-import { TransactionForm } from '../shared/modals/transaction-modal/transaction-modal.component';
-import { SecurityForm } from '../shared/modals/security-modal/security-modal.component';
-import { SecurityTransactionForm } from '../shared/modals/security-transaction-modal/security-transaction-modal.component';
-import { ImportMode } from '../shared/modals/import-confirm-modal/import-confirm-modal.component';
+import type { TransactionForm } from '../shared/modals/transaction-modal/transaction-modal.component';
+import type { SecurityForm } from '../shared/modals/security-modal/security-modal.component';
+import type { SecurityTransactionForm } from '../shared/modals/security-transaction-modal/security-transaction-modal.component';
+import type { ImportMode } from '../shared/modals/import-confirm-modal/import-confirm-modal.component';
 
 @Injectable({
   providedIn: 'root',

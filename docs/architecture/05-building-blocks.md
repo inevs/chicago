@@ -207,6 +207,7 @@ dividends/
 │   │   ├── guards/                  # authGuard
 │   │   ├── interceptors/            # authInterceptor, errorInterceptor
 │   │   ├── layout/                  # Layout components
+│   │   │   ├── global-modals/       # Modals opened via UiStateService, loaded with @defer
 │   │   │   ├── header-nav/
 │   │   │   ├── sidebar-nav/
 │   │   │   └── main-layout/

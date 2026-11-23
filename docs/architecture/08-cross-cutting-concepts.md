@@ -369,6 +369,8 @@ code: string;
 
 **Frontend**:
 - ✅ Lazy-loaded routes
+- ✅ Global modals (`layout/global-modals`) are loaded with `@defer` on first use, which keeps them and `@angular/forms` out of the initial bundle (initial bundle below the 500 kB budget)
+- ✅ No `@angular/animations`; the toast animation uses native `animate.enter`/`animate.leave`
 - ✅ Signal-based reactivity (efficient change detection)
 - ✅ Zoneless change detection (no Zone.js); all components use `ChangeDetectionStrategy.OnPush`
 

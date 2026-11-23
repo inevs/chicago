@@ -1,0 +1,48 @@
+<!-- Each modal is loaded on first use, which keeps the modals and @angular/forms out of the initial bundle -->
+@defer (when uiState.showTransactionModal(); prefetch on idle) {
+  <app-transaction-modal
+    [show]="uiState.showTransactionModal()"
+    [editTransaction]="uiState.editingTransaction()"
+    [currencies]="portfolioState.currencies()"
+    [defaultCurrency]="portfolioState.defaultCurrency()"
+    (transactionSubmit)="transactionFacade.handleTransactionSubmit($event)"
+    (closeModal)="uiState.toggleTransactionModal()"
+  />
+}
+
+@defer (when uiState.showSecurityModal(); prefetch on idle) {
+  <app-security-modal
+    [show]="uiState.showSecurityModal()"
+    [currencies]="portfolioState.currencies()"
+    [defaultCurrency]="portfolioState.defaultCurrency()"
+    [security]="uiState.editingSecurity()"
+    (securitySubmit)="transactionFacade.handleSecuritySubmit($event)"
+    (closeModal)="uiState.toggleSecurityModal()"
+  />
+}
+
+@defer (when uiState.showSecurityTransactionModal(); prefetch on idle) {
+  <app-security-transaction-modal
+    [show]="uiState.showSecurityTransactionModal()"
+    [editTransaction]="uiState.editingSecurityTransaction()"
+    [currencies]="portfolioState.currencies()"
+    [defaultCurrency]="portfolioState.defaultCurrency()"
+    (transactionSubmit)="transactionFacade.handleSecurityTransactionSubmit($event)"
+    (closeModal)="uiState.toggleSecurityTransactionModal()"
+  />
+}
+
+@defer (when uiState.showCurrencyModal(); prefetch on idle) {
+  <app-currency-modal
+    [show]="uiState.showCurrencyModal()"
+    (currencySubmit)="onCurrencySubmit($event)"
+    (closeModal)="uiState.toggleCurrencyModal()"
+  />
+}
+
+@defer (when uiState.showImportConfirmModal(); prefetch on idle) {
+  <app-import-confirm-modal
+    [show]="uiState.showImportConfirmModal()"
+    (confirm)="transactionFacade.handleImportConfirm($event)"
+  />
+}
