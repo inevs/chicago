@@ -6,7 +6,7 @@ User feedback (success, errors, warnings) is shown as non-blocking toast notific
 
 - Toasts appear in the top-right corner and stack vertically.
 - They disappear automatically after a type-specific duration and can be closed manually.
-- They slide in and out (Angular animations).
+- They slide in and out (native Angular `animate.enter`/`animate.leave` with CSS keyframes; the app does not use `@angular/animations`).
 
 ## Toast Types
 
@@ -46,14 +46,14 @@ export class ToastService {
 ### Toast Container Component
 **Location:** `apps/dividends/src/app/shared/toast-container/toast-container.component.ts`
 
-- Renders `toastService.toasts()` with a slide-in/slide-out animation (`@slideIn`)
+- Renders `toastService.toasts()` with a slide-in/slide-out animation (`animate.enter="toast-enter"`, `animate.leave="toast-leave"`, keyframes in the inline styles)
 - Each toast has `role="alert"` and a close button with `aria-label="Schließen"`
 - Desktop: fixed in the top-right corner, max. width 28rem
 - Below 640px: full width with 1rem side margins
 - Styles are defined inline in the component; there are no separate dark-mode styles
+- Tests: `toast-container.component.spec.ts`
 
 ### Integration
-- `apps/dividends/src/app/app.config.ts`: `provideAnimations()`
 - `apps/dividends/src/app/layout/main-layout/main-layout.component.html`: `<app-toast-container />`
 
 ## Where Toasts Are Used

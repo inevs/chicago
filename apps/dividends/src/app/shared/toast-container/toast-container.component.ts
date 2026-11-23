@@ -1,7 +1,6 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../../services/toast.service';
-import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
   selector: 'app-toast-container',
@@ -10,7 +9,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
     <div class="toast-container">
       @for (toast of toastService.toasts(); track toast.id) {
         <div
-          [@slideIn]
+          animate.enter="toast-enter"
+          animate.leave="toast-leave"
           class="toast"
           [class.toast-success]="toast.type === 'success'"
           [class.toast-error]="toast.type === 'error'"
@@ -79,6 +79,28 @@ import { trigger, transition, style, animate } from '@angular/animations';
       backdrop-filter: blur(8px);
       border-width: 1px;
       transition: all 0.2s ease-in-out;
+    }
+
+    .toast-enter {
+      animation: toast-slide-in 300ms ease-out;
+    }
+
+    .toast-leave {
+      animation: toast-slide-out 200ms ease-in forwards;
+    }
+
+    @keyframes toast-slide-in {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    @keyframes toast-slide-out {
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
     }
 
     .toast:hover {
@@ -164,17 +186,6 @@ import { trigger, transition, style, animate } from '@angular/animations';
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  animations: [
-    trigger('slideIn', [
-      transition(':enter', [
-        style({ transform: 'translateX(100%)', opacity: 0 }),
-        animate('300ms ease-out', style({ transform: 'translateX(0)', opacity: 1 }))
-      ]),
-      transition(':leave', [
-        animate('200ms ease-in', style({ transform: 'translateX(100%)', opacity: 0 }))
-      ])
-    ])
-  ]
 })
 export class ToastContainerComponent {
   protected readonly toastService = inject(ToastService);

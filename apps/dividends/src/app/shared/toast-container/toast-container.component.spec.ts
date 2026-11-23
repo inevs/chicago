@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ToastContainerComponent } from './toast-container.component';
 import { ToastService } from '../../services/toast.service';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 describe('ToastContainerComponent', () => {
   let fixture: ComponentFixture<ToastContainerComponent>;
@@ -10,7 +9,6 @@ describe('ToastContainerComponent', () => {
   beforeEach(async () => {
     TestBed.configureTestingModule({
       imports: [ToastContainerComponent],
-      providers: [provideNoopAnimations()],
     });
     toastService = TestBed.inject(ToastService);
     fixture = TestBed.createComponent(ToastContainerComponent);
