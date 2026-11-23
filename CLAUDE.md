@@ -237,7 +237,7 @@ nx graph
 
 <!-- nx configuration end-->
 
-- for every change to production code, follow the `test-first-development` skill (`.claude/skills/test-first-development/SKILL.md`): write a test describing the change, show that it fails, ask the user to review the test, and only after approval implement the code without changing the approved test until all tests pass and the linter succeeds. Refactorings are never mixed with functional changes: they go into their own commit beforehand, start and end with all tests green and must not change tests without the user's review
+- for every change to production code, follow the `test-first-development` skill (`.claude/skills/test-first-development/SKILL.md`): write a test describing the change, show that it fails, ask the user to review the test (the user stages the approved tests with `git add`), and only after approval implement the code without changing the approved test until all tests pass and the linter succeeds. Refactorings are never mixed with functional changes: they go into their own commit beforehand, start and end with all tests green and must not change tests without the user's review
 - update the test suites after changes to prevent regressions
 - create new tests for new functionality
 - always run 'nx run-many -t test' to ensure the tests still run successfully
