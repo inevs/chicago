@@ -2,7 +2,7 @@ import { Component, OnDestroy, effect, input, ChangeDetectionStrategy } from '@a
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration } from 'chart.js';
 import { setupChartDefaults, CHART_PALETTE } from '../../../shared/charts/chart-defaults';
-import { SecurityTransactionWithSecurity, SecurityPrice, TransactionType } from '@dividends/shared';
+import { SecurityTransactionWithSecurity, SecurityPrice, TransactionType, convertToEur } from '@dividends/shared';
 import { LatestExchangeRate } from '../../../services/exchange-rate.service';
 
 setupChartDefaults();
@@ -101,23 +101,10 @@ export class AllocationChartComponent implements OnDestroy {
           // Current value = current quantity × current price
           const currentValue = data.quantity * currentPrice;
 
-          // Convert to EUR if needed
-          if (price.currency === 'EUR') {
-            // Already in EUR
-            if (currentValue > 0) {
-              companies[name] = currentValue;
-            }
-          } else {
-            // Convert using exchange rate
-            const exchangeRate = exchangeRateMap.get(price.currency);
-            if (exchangeRate) {
-              // Exchange rate is from EUR to currency, so we need to divide
-              const currentValueEur = currentValue / exchangeRate;
-              if (currentValueEur > 0) {
-                companies[name] = currentValueEur;
-              }
-            }
-            // If no exchange rate, skip this security
+          // Securities without an exchange rate are skipped
+          const currentValueEur = convertToEur(currentValue, price.currency, exchangeRateMap);
+          if (currentValueEur !== null && currentValueEur > 0) {
+            companies[name] = currentValueEur;
           }
         }
       }

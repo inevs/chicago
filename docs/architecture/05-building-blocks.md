@@ -288,7 +288,7 @@ dividends/
 
 ## 5.4 Level 3: Shared Package
 
-**Location**: `packages/shared/src/lib/shared.ts`
+**Location**: `packages/shared/src/lib/shared.ts`, utilities in `packages/shared/src/lib/utils/`
 
 **Purpose**: Share TypeScript interfaces and types between frontend and backend
 
@@ -298,6 +298,7 @@ dividends/
 - Enums (SecurityType, TransactionType)
 - CSV import result types (ImportCsvResponse, ImportTransactionsCsvResponse, ImportDividendsCsvResponse, etc.)
 - `CurrencyConverter` utility class and `CURRENCY_ERRORS` constants
+- `convertToEur()` (`utils/currency-conversion.ts`): converts a value into EUR using the latest EUR-based exchange rates; returns `null` if no rate exists. Used by the securities summary and the allocation chart
 
 **Benefits**:
 - Type safety across the stack

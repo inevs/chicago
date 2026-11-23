@@ -1,7 +1,7 @@
 import { Component, computed, input, output, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DividendTransaction } from '../../../models/dividend.model';
-import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType } from '@dividends/shared';
+import { SecurityPrice, SecurityTransactionWithSecurity, TransactionType, convertToEur } from '@dividends/shared';
 import { LatestExchangeRate } from '../../../services/exchange-rate.service';
 
 type SortColumn = 'name' | 'quantity' | 'averageBuyPrice' | 'latestPrice' | 'currentValueEur' | 'dividendYield' | 'totalDividends';
@@ -231,21 +231,7 @@ export class SecuritiesSummaryComponent {
         let currentValueEur: number | null = null;
         if (latestPrice !== null && quantity > 0) {
           const currentValue = quantity * latestPrice;
-
-          // Convert to EUR based on currency
-          if (latestPriceCurrency === 'EUR') {
-            currentValueEur = currentValue;
-          } else {
-            // Convert using exchange rate
-            const exchangeRate = exchangeRateMap.get(latestPriceCurrency);
-            if (exchangeRate) {
-              // Exchange rate is from EUR to currency, so we need to divide
-              currentValueEur = currentValue / exchangeRate;
-            } else {
-              // No exchange rate available
-              currentValueEur = null;
-            }
-          }
+          currentValueEur = convertToEur(currentValue, latestPriceCurrency, exchangeRateMap);
         }
 
         return {
