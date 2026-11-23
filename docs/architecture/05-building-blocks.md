@@ -190,7 +190,7 @@ All domain controllers are protected with `@UseGuards(JwtAuthGuard)`; only `/api
 
 **Key Operations**:
 - Export entire database to JSON
-- Import from JSON (merge, or replace via `clearExisting`). When merging, currencies are matched by `code`, security prices by `securityId` + `date` and exchange rates by `baseCurrency` + `targetCurrency` + `date` (existing rows are updated, e.g. rates already synced from the ECB); all other records are matched by `id`
+- Import from JSON (merge, or replace via `clearExisting`). When merging, currencies are matched by `code`, security prices by `securityId` + `date` and exchange rates by `baseCurrency` + `targetCurrency` + `date` (existing rows are updated, e.g. rates already synced from the ECB; new rows get a database-generated `id`, `createdAt` and `updatedAt` instead of the imported ones); all other records are matched by `id`
 - Bulk operations with transaction support
 
 ## 5.3 Level 2: Frontend Structure
