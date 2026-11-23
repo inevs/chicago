@@ -51,7 +51,7 @@ docker compose down -v
 `scripts/redeploy.sh` (or `npm run docker:redeploy`) rebuilds all images from the current working tree and restarts the stack:
 
 1. Checks that Docker is running and `.env` exists; notes uncommitted changes (they are included in the build)
-2. Runs `nx run-many -t test` (skip with `--skip-tests`)
+2. Runs `npm ci --legacy-peer-deps` and `npm run db:generate` if `package-lock.json` or `apps/api/prisma/schema.prisma` changed since the last run (e.g. after a `git pull`; tracked in `node_modules/.redeploy-install.hash`), then `nx run-many -t test` (skip both with `--skip-tests`). The tests run without watch mode, so the script does not wait in an interactive terminal
 3. `docker compose build` (`--no-cache` builds without the layer cache), then `docker compose up -d --remove-orphans`
 4. Waits up to 180 seconds for the `api` container to become healthy; otherwise prints the last 50 API log lines and exits with an error
 5. Removes dangling images (`docker image prune -f`) and shows `docker compose ps`

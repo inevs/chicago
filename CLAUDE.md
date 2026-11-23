@@ -110,8 +110,9 @@ docker compose down
 # Stop and remove volumes
 docker compose down -v
 
-# Rebuild all images and restart the stack after a change (runs the tests first;
-# --skip-tests, --no-cache; waits for the API health check)
+# Rebuild all images and restart the stack after a change (runs npm ci when
+# package-lock.json or the Prisma schema changed, then the tests; --skip-tests,
+# --no-cache; waits for the API health check)
 scripts/redeploy.sh
 # or
 npm run docker:redeploy
@@ -124,6 +125,9 @@ npm run docker:redeploy
 nx test api
 nx test dividends
 nx test shared
+
+# Frontend tests in watch mode (re-run on file changes)
+nx test dividends -c watch
 
 # Run tests for all projects
 nx run-many -t test
@@ -208,7 +212,7 @@ nx graph
 - Bundle budgets configured: 500kb warning / 1mb error for initial bundle
 - Proxies `/api` requests to `http://localhost:3000` via `proxy.conf.json`
 - Zoneless change detection (Angular default, no `provideZoneChangeDetection`, no `zone.js` dependency or polyfill); all components use `ChangeDetectionStrategy.OnPush`, enforced by the lint rule `@angular-eslint/prefer-on-push-component-change-detection` (`error`). Template state must be signals (or trigger change detection explicitly)
-- Unit tests run with Vitest via the `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom, `isolate: true`); there is no `jest.config.ts` or `test-setup.ts`, the builder initializes TestBed itself (zoneless). Use `vi.*` APIs and Vitest fake timers (`fakeAsync` is not supported with Vitest); with fake timers, advance the timers (e.g. `vi.advanceTimersByTimeAsync`) before `fixture.whenStable()`, because the zoneless scheduler runs change detection from a timer. Spec files are type-checked during the test build.
+- Unit tests run with Vitest via the `@angular/build:unit-test` builder (`test` target in `apps/dividends/project.json`, jsdom, `isolate: true`, `watch: false`; watch mode via the configuration `watch`: `nx test dividends -c watch`); there is no `jest.config.ts` or `test-setup.ts`, the builder initializes TestBed itself (zoneless). Use `vi.*` APIs and Vitest fake timers (`fakeAsync` is not supported with Vitest); with fake timers, advance the timers (e.g. `vi.advanceTimersByTimeAsync`) before `fixture.whenStable()`, because the zoneless scheduler runs change detection from a timer. Spec files are type-checked during the test build.
 
 ### Shared Package
 

@@ -150,6 +150,9 @@ nx test api
 nx test dividends
 nx test shared
 
+# Frontend tests in watch mode (re-run on file changes)
+nx test dividends -c watch
+
 # Run tests for all projects
 nx run-many -t test
 

@@ -5,7 +5,8 @@
 # migrations are applied by the API container on startup.
 #
 # Usage: scripts/redeploy.sh [--skip-tests] [--no-cache]
-#   --skip-tests  do not run `nx run-many -t test` before building
+#   --skip-tests  do not run `npm ci` (if needed) and `nx run-many -t test`
+#                 before building
 #   --no-cache    build the images without the Docker layer cache
 
 set -euo pipefail
@@ -19,7 +20,7 @@ for arg in "$@"; do
     --skip-tests) SKIP_TESTS=true ;;
     --no-cache) NO_CACHE=(--no-cache) ;;
     -h | --help)
-      sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -48,6 +49,18 @@ fi
 echo "Commit: $(git log -1 --format='%h %s' 2>/dev/null || echo 'unknown')"
 
 if [[ "$SKIP_TESTS" == false ]]; then
+  # The tests run against the local node_modules and Prisma client; refresh
+  # them when package-lock.json or the Prisma schema changed since the last run
+  # (e.g. after a git pull). The Docker images install their own dependencies.
+  install_hash_file=node_modules/.redeploy-install.hash
+  install_hash="$(git hash-object package-lock.json apps/api/prisma/schema.prisma | tr '\n' ' ')"
+  if [[ ! -f "$install_hash_file" || "$(cat "$install_hash_file")" != "$install_hash" ]]; then
+    step "Installing dependencies (package-lock.json or Prisma schema changed)"
+    npm ci --legacy-peer-deps --no-audit --no-fund
+    npm run db:generate
+    echo "$install_hash" > "$install_hash_file"
+  fi
+
   step "Running tests (nx run-many -t test)"
   npx nx run-many -t test
 fi

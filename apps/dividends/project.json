@@ -79,7 +79,13 @@
         "runner": "vitest",
         "buildTarget": "dividends:build:development",
         "tsConfig": "apps/dividends/tsconfig.spec.json",
-        "isolate": true
+        "isolate": true,
+        "watch": false
+      },
+      "configurations": {
+        "watch": {
+          "watch": true
+        }
       }
     },
     "serve-static": {
