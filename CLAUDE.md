@@ -11,7 +11,7 @@ This is an **Nx monorepo** containing a full-stack dividends tracking applicatio
 - **Shared Library** (`packages/shared`): Common code shared between frontend and backend
 - **E2E Tests** (`apps/api-e2e`): End-to-end tests for the API
 
-**Test runners**: The API and API e2e tests use Jest (`jest.config.ts`, `jest.preset.js`, `@nx/jest/plugin`); the Angular app uses Vitest through the Angular unit-test builder.
+**Test runners**: The API, the API e2e tests and the shared package use Jest (`jest.config.cts`, `jest.preset.js`, `@nx/jest/plugin`); the Angular app uses Vitest through the Angular unit-test builder.
 
 ### Key Architectural Details
 
@@ -214,6 +214,7 @@ nx graph
 - Location: `packages/shared`
 - Import path: `@dividends/shared`
 - Used by both API and frontend for shared types, utilities, etc.
+- Unit tests run with Jest (`packages/shared/jest.config.cts`, `testEnvironment: 'node'`, `passWithNoTests`); spec files are excluded from `tsconfig.lib.json`
 
 ## Environment Setup
 

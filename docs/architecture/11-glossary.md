@@ -87,7 +87,7 @@
 | **Stub** | Simple implementation of an interface for testing |
 | **Spy** | Test double that records how it was called |
 | **Test Coverage** | Percentage of code executed by tests |
-| **Jest** | JavaScript testing framework (used for the API and API e2e tests) |
+| **Jest** | JavaScript testing framework (used for the API, the API e2e tests and the shared package) |
 | **Vitest** | Vite-based testing framework with a Jest-compatible API (used for the Angular frontend) |
 | **Supertest** | HTTP assertion library for testing APIs |
 

@@ -25,7 +25,7 @@
 |------------|----------------|
 | **Code Style** | ESLint for linting, Prettier for formatting (configured in Nx) |
 | **Git Workflow** | Main branch for releases, feature branches |
-| **Testing** | Vitest for frontend unit tests (Angular `@angular/build:unit-test` builder), Jest for API unit/integration and e2e tests |
+| **Testing** | Vitest for frontend unit tests (Angular `@angular/build:unit-test` builder), Jest for API unit/integration and e2e tests and for the shared package |
 | **API Documentation** | OpenAPI/Swagger for REST API documentation |
 | **Database Naming** | Plural table names (e.g., `securities`, `currencies`) |
 | **DTO Validation** | class-validator decorators for input validation |

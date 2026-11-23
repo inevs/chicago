@@ -140,7 +140,7 @@ nx affected -t build
 
 ### Testing
 
-The API and the API e2e tests use Jest; the Angular frontend uses Vitest (via the Angular `@angular/build:unit-test` builder).
+The API, the API e2e tests and the shared package use Jest; the Angular frontend uses Vitest (via the Angular `@angular/build:unit-test` builder).
 
 ```bash
 # Run tests for a specific project
