@@ -104,16 +104,18 @@ podman-compose down -v
 
   | Variable | Required | Description |
   |---|---|---|
-  | `DATABASE_URL` | set in compose | Connection string to PostgreSQL |
+  | `DATABASE_URL` | set in compose | Connection string to PostgreSQL (`postgresql://...` or `postgres://...`) |
   | `NODE_ENV` | set in compose | `production` |
   | `PORT` | set in compose | `3000` |
-  | `JWT_SECRET` | yes | Secret for signing access tokens; the API does not start without it |
+  | `JWT_SECRET` | yes | Secret for signing access tokens; must not be empty |
   | `ADMIN_PASSWORD` | yes | Password of the login user created by the seed |
   | `ADMIN_EMAIL`, `ADMIN_NAME` | no | Login user created by the seed (defaults: `admin@example.com`, `Admin User`) |
-  | `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`) |
-  | `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (default `false`, single-user mode) |
-  | `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (default `2017-01-01`) |
+  | `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` | yes | Default currency created by the seed (e.g. `EUR`, `Euro`); `DEFAULT_CURRENCY` is a code of three uppercase letters |
+  | `ALLOW_REGISTRATION` | no | Enables `POST /api/auth/register` (`true` or `false`, case-insensitive; default `false`, single-user mode) |
+  | `SECURITY_PRICE_HISTORY_START` | no | Start date for historical price and exchange-rate sync (`YYYY-MM-DD`, default `2017-01-01`) |
   | `SEED_SAMPLE_DATA` | no | `true` makes the seed create sample securities, transactions and dividends on an empty database (default `false`; requires `DEFAULT_CURRENCY=EUR`) |
+
+  The API validates `DATABASE_URL`, `JWT_SECRET`, `PORT`, `NODE_ENV`, `DEFAULT_CURRENCY`, `ALLOW_REGISTRATION` and `SECURITY_PRICE_HISTORY_START` at startup and does not start if one of them is missing (where required) or invalid; empty values count as not set.
 
 - **Dependencies**: Waits for PostgreSQL to be healthy
 - **Startup Process** (`CMD` in `apps/api/Dockerfile`):
@@ -269,7 +271,7 @@ docker compose exec postgres sh
    ```bash
    docker compose logs api
    ```
-   Typical cause: `ADMIN_PASSWORD`, `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` or `JWT_SECRET` is not set in `.env`.
+   Typical cause: `ADMIN_PASSWORD`, `DEFAULT_CURRENCY`, `DEFAULT_CURRENCY_NAME` or `JWT_SECRET` is not set in `.env`, or a variable has an invalid value. In that case the log shows `Invalid environment configuration:` followed by every invalid variable.
 
 2. Verify database connection:
    ```bash
