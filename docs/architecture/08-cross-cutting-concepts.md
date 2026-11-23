@@ -284,7 +284,7 @@ code: string;
 
 **SQL Injection Prevention**:
 - ✅ Prisma ORM with parameterized queries
-- ✅ Raw SQL only via Prisma `$queryRaw` tagged templates (parameterized), e.g. in `security-prices.service.ts`, `exchange-rates.service.ts` and the health indicator; no `$queryRawUnsafe`
+- ✅ Raw SQL only via Prisma `$queryRaw` tagged templates (parameterized), e.g. in `security-prices.repository.ts`, `exchange-rates.repository.ts` and the health indicator (`health/prisma.health.ts`); no `$queryRawUnsafe`
 
 **XSS Prevention**:
 - ✅ Angular automatic escaping
