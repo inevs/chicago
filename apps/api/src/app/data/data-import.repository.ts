@@ -19,6 +19,28 @@ export interface ImportCounts {
   exchangeRatesImported: number;
 }
 
+/** Fields of an imported security price used for its natural-key upsert. */
+interface ImportedSecurityPrice {
+  securityId: string;
+  date: string | Date;
+  open?: unknown;
+  high?: unknown;
+  low?: unknown;
+  close?: unknown;
+  volume?: unknown;
+  currency?: string;
+  provider?: string;
+}
+
+/** Fields of an imported exchange rate used for its natural-key upsert. */
+interface ImportedExchangeRate {
+  baseCurrency: string;
+  targetCurrency: string;
+  date: string | Date;
+  rate?: unknown;
+  provider?: string;
+}
+
 /**
  * Data access for the full data import. All writes run in a single database
  * transaction, so an import either succeeds completely or changes nothing.
@@ -31,6 +53,12 @@ export class DataImportRepository {
    * Upserts the given records (currencies and securities first, because the
    * other tables reference them). With `clearExisting`, all existing data
    * (except users) is deleted first.
+   *
+   * Currencies, security prices and exchange rates are matched by their
+   * natural key (`code`, `securityId + date`, `baseCurrency + targetCurrency +
+   * date`), so a record that already exists under a different id (e.g. a rate
+   * synced from the ECB) is updated instead of violating the unique constraint.
+   * All other records are matched by id.
    */
   importAll(
     data: ImportRecords,
@@ -102,10 +130,24 @@ export class DataImportRepository {
 
       if (Array.isArray(data.securityPrices)) {
         for (const price of data.securityPrices) {
+          const priceData = price as ImportedSecurityPrice;
           await tx.securityPrice.upsert({
-            where: { id: (price as { id: string }).id },
+            where: {
+              securityId_date: {
+                securityId: priceData.securityId,
+                date: priceData.date,
+              },
+            },
             create: price as never,
-            update: price as never,
+            update: {
+              open: priceData.open,
+              high: priceData.high,
+              low: priceData.low,
+              close: priceData.close,
+              volume: priceData.volume,
+              currency: priceData.currency,
+              provider: priceData.provider,
+            } as never,
           });
           counts.securityPricesImported++;
         }
@@ -113,10 +155,20 @@ export class DataImportRepository {
 
       if (Array.isArray(data.exchangeRates)) {
         for (const rate of data.exchangeRates) {
+          const rateData = rate as ImportedExchangeRate;
           await tx.exchangeRate.upsert({
-            where: { id: (rate as { id: string }).id },
+            where: {
+              baseCurrency_targetCurrency_date: {
+                baseCurrency: rateData.baseCurrency,
+                targetCurrency: rateData.targetCurrency,
+                date: rateData.date,
+              },
+            },
             create: rate as never,
-            update: rate as never,
+            update: {
+              rate: rateData.rate,
+              provider: rateData.provider,
+            } as never,
           });
           counts.exchangeRatesImported++;
         }
