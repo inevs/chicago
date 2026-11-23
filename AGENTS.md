@@ -28,6 +28,7 @@
 - The API (`apps/api`) and the e2e tests (`apps/api-e2e`) use Jest; the Angular frontend (`apps/dividends`) uses Vitest via the `@angular/build:unit-test` builder (use `vi.fn()`, `vi.spyOn()` and Vitest fake timers instead of `fakeAsync`).
 - Run relevant unit tests with `nx test <project>` and e2e with `nx e2e api-e2e`.
 - When changing API endpoints, shared types, or UI flows, update or add tests to match.
+- Work test-first (`.claude/skills/test-first-development/SKILL.md`): write a test describing the change and show that it fails, get the test reviewed by the user, then implement without changing the approved test until all tests pass and lint succeeds. Refactorings go into their own commit before the functional change, start and end with all tests green and must not change tests without the user's review.
 
 ## Commit & Pull Request Guidelines
 - Commit messages are short, imperative, and usually lowercase (e.g., "fix memory leak").
